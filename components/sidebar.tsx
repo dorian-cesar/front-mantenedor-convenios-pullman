@@ -222,7 +222,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                     variant="ghost"
                     size="icon"
                     onClick={onToggle}
-                    className="absolute -right-3 top-20 h-6 w-6 rounded-full border border-sidebar-border bg-sidebar hover:bg-sidebar-accent"
+                    className="absolute -right-3 top-5 h-6 w-6 rounded-full border border-sidebar-border bg-sidebar hover:bg-sidebar-accent"
                 >
                     {collapsed ? (
                         <ChevronRight className="h-3 w-3" />
