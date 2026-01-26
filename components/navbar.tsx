@@ -53,10 +53,10 @@ export function Navbar({ sidebarCollapsed, onMobileMenuToggle }: NavbarProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="md:hidden text-foreground">
+          {/* <Button variant="ghost" size="icon" className="md:hidden text-foreground">
             <Search className="h-5 w-5" />
             <span className="sr-only">Buscar</span>
-          </Button>
+          </Button> */}
 
           {/* <DropdownMenu>
             <DropdownMenuTrigger asChild>
