@@ -90,24 +90,28 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 )}
             >
                 <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
-                    <Link href="/" className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary overflow-hidden">
-                            <img
-                                src="/logo-wit-light.png"
-                                alt="logo-wit"
-                                className="h-full w-full object-cover"
-                            />
-                        </div>
-
-                        {!collapsed && (
-                            <span className="font-semibold text-lg text-sidebar-foreground">
-                                WIT - admin
-                            </span>
-                        )}
+                    <Link href="/dashboard" className="flex items-center gap-3">
+                        {collapsed ? (
+                            <div className="flex h-10 w-full items-center justify-center">
+                                <img
+                                    src="/logo-wit-mini-dark.png"
+                                    alt="logo-wit"
+                                    className="h-full w-full object-cover"
+                                />
+                            </div>
+                        ) : (
+                            <div className="flex h-10 w-full items-center justify-center">
+                                <img
+                                    src="/logo-wit-dark.png"
+                                    alt="logo-wit"
+                                    className="h-full w-full object-cover"
+                                />
+                            </div>
+                        )
+                        }
                     </Link>
                 </div>
 
-                {/* Navigation */}
                 <nav className="flex-1 overflow-y-auto py-4 px-3">
                     <div className="flex flex-col gap-1">
                         {mainNavItems.map((item) => {
