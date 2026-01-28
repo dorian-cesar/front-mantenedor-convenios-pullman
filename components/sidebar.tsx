@@ -1,28 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-    LayoutDashboard,
-    Users,
-    BarChart3,
-    Settings,
-    FileText,
-    Package,
-    Mail,
-    HelpCircle,
     ChevronLeft,
     ChevronRight,
     LogOut,
-    Zap,
-    Building2,
-    Handshake,
-    Percent,
-    Ticket,
-    Shield,
-    IdCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,47 +16,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-export const mainNavItems = [
-    {
-        title: "Dashboard",
-        href: "/test",
-        icon: LayoutDashboard,
-    },
-    {
-        title: "Boletos",
-        href: "/test/eventos",
-        icon: Ticket, // tabla EVENTOS (core)
-    },
-    {
-        title: "Empresas",
-        href: "/test/empresas",
-        icon: Building2, // EMPRESAS
-    },
-    {
-        title: "Convenios",
-        href: "/test/convenios",
-        icon: Handshake, // CONVENIOS
-    },
-    {
-        title: "Descuentos",
-        href: "/test/descuentos",
-        icon: Percent, // DESCUENTOS + CODIGOS_DESCUENTO
-    },
-];
-
-
-export const secondaryNavItems = [
-    {
-        title: "Usuarios y Roles",
-        href: "/test/usuarios",
-        icon: Users, // USUARIOS + TIPOS_USUARIO
-    },
-    {
-        title: "Pasajeros",
-        href: "/test/pasajeros",
-        icon: IdCard,
-    },
-];
+import { NAVIGATION } from "@/constants/navigation";
 
 interface SidebarProps {
     collapsed: boolean;
@@ -82,6 +26,38 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     const pathname = usePathname();
 
+    const renderNavItems = (items: typeof NAVIGATION) =>
+        items.map((item) => {
+            const isActive = pathname === item.href;
+
+            const NavContent = (
+                <Link
+                    key={item.id}
+                    href={item.href}
+                    className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                        isActive
+                            ? "bg-sidebar-accent text-sidebar-primary"
+                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    )}
+                >
+                    {item.icon && <item.icon className="h-5 w-5 shrink-0" />}
+                    {!collapsed && <span>{item.title}</span>}
+                </Link>
+            );
+
+            if (collapsed) {
+                return (
+                    <Tooltip key={item.id}>
+                        <TooltipTrigger asChild>{NavContent}</TooltipTrigger>
+                        <TooltipContent side="right">{item.title}</TooltipContent>
+                    </Tooltip>
+                );
+            }
+
+            return NavContent;
+        });
+
     return (
         <TooltipProvider delayDuration={0}>
             <aside
@@ -90,100 +66,38 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                     collapsed ? "w-[72px]" : "w-64"
                 )}
             >
-                <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
-                    <Link href="/dashboard" className="flex items-center gap-3">
+                {/* HEADER */}
+                <div className="flex h-16 items-center justify-center px-4 border-b border-sidebar-border">
+                    <Link href="/test" className="flex items-center gap-3">
                         {collapsed ? (
-                            <div className="flex h-10 w-full items-center justify-center">
-                                <img
-                                    src="/logo-wit-mini-dark.png"
-                                    alt="logo-wit"
-                                    className="h-full w-full object-cover"
-                                />
-                            </div>
+                            <img
+                                src="/logo-wit-mini-dark.png"
+                                alt="logo"
+                                className="h-10 w-10 object-contain"
+                            />
                         ) : (
-                            <div className="flex h-10 w-full items-center justify-center">
-                                <img
-                                    src="/logo-wit-dark.png"
-                                    alt="logo-wit"
-                                    className="h-full w-full object-cover"
-                                />
-                            </div>
-                        )
-                        }
+                            <img
+                                src="/logo-wit-dark.png"
+                                alt="logo"
+                                className="h-10 object-contain"
+                            />
+                        )}
                     </Link>
                 </div>
 
                 <nav className="flex-1 overflow-y-auto py-4 px-3">
                     <div className="flex flex-col gap-1">
-                        {mainNavItems.map((item) => {
-                            const isActive = pathname === item.href;
-                            const NavContent = (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={cn(
-                                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors relative",
-                                        isActive
-                                            ? "bg-sidebar-accent text-sidebar-primary"
-                                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                                    )}
-                                >
-                                    <item.icon className="h-5 w-5 shrink-0" />
-                                    {!collapsed && (
-                                        <>
-                                            <span>{item.title}</span>
-                                        </>
-                                    )}
-                                </Link>
-                            );
-
-                            if (collapsed) {
-                                return (
-                                    <Tooltip key={item.href}>
-                                        <TooltipTrigger asChild>{NavContent}</TooltipTrigger>
-                                        <TooltipContent side="right" className="flex items-center gap-2">
-                                            {item.title}
-                                        </TooltipContent>
-                                    </Tooltip>
-                                );
-                            }
-
-                            return NavContent;
-                        })}
+                        {renderNavItems(
+                            NAVIGATION.filter((item) => item.section === "main")
+                        )}
                     </div>
 
                     <div className="my-4 border-t border-sidebar-border" />
 
                     <div className="flex flex-col gap-1">
-                        {secondaryNavItems.map((item) => {
-                            const isActive = pathname === item.href;
-                            const NavContent = (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={cn(
-                                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                                        isActive
-                                            ? "bg-sidebar-accent text-sidebar-primary"
-                                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                                    )}
-                                >
-                                    <item.icon className="h-5 w-5 shrink-0" />
-                                    {!collapsed && <span>{item.title}</span>}
-                                </Link>
-                            );
-
-                            if (collapsed) {
-                                return (
-                                    <Tooltip key={item.href}>
-                                        <TooltipTrigger asChild>{NavContent}</TooltipTrigger>
-                                        <TooltipContent side="right">{item.title}</TooltipContent>
-                                    </Tooltip>
-                                );
-                            }
-
-                            return NavContent;
-                        })}
+                        {renderNavItems(
+                            NAVIGATION.filter((item) => item.section === "secondary")
+                        )}
                     </div>
                 </nav>
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import {
     Combobox,
     ComboboxContent,
@@ -16,37 +16,57 @@ import {
     ItemTitle,
 } from "@/components/ui/item"
 
-import { navigation } from "@/lib/navigation"
+import { NAVIGATION } from "@/constants/navigation"
+
+type SearchItem = {
+    label: string
+    description?: string
+    href: string
+    group: string
+}
 
 export function GlobalSearch() {
     const router = useRouter()
     const [open, setOpen] = useState(false)
     const [inputValue, setInputValue] = useState("")
 
-    // Agrupar manualmente usando reduce
-    const groupedItems = navigation.reduce((acc, item) => {
-        if (!acc[item.group]) {
-            acc[item.group] = []
-        }
-        acc[item.group].push(item)
-        return acc
-    }, {} as Record<string, typeof navigation>)
+    // Adaptar NAVIGATION → SearchItem
+    const navigation: SearchItem[] = useMemo(
+        () =>
+            NAVIGATION.map((item) => ({
+                label: item.title,
+                description: item.description,
+                href: item.href,
+                group: item.group,
+            })),
+        []
+    )
 
-    // Filtrar elementos basados en el valor de entrada
-    const filteredItems = Object.entries(groupedItems).reduce((acc, [group, items]) => {
-        const filtered = items.filter(item =>
-            item.label.toLowerCase().includes(inputValue.toLowerCase()) ||
-            (item.description?.toLowerCase() || '').includes(inputValue.toLowerCase()) ||
-            item.group.toLowerCase().includes(inputValue.toLowerCase())
-        )
+    // Agrupar por grupo
+    const groupedItems = useMemo(() => {
+        return navigation.reduce((acc, item) => {
+            if (!acc[item.group]) acc[item.group] = []
+            acc[item.group].push(item)
+            return acc
+        }, {} as Record<string, SearchItem[]>)
+    }, [navigation])
 
-        if (filtered.length > 0) {
-            acc[group] = filtered
-        }
-        return acc
-    }, {} as Record<string, typeof navigation>)
+    // Filtrar según input
+    const filteredItems = useMemo(() => {
+        return Object.entries(groupedItems).reduce((acc, [group, items]) => {
+            const filtered = items.filter(
+                (item) =>
+                    item.label.toLowerCase().includes(inputValue.toLowerCase()) ||
+                    item.description?.toLowerCase().includes(inputValue.toLowerCase()) ||
+                    item.group.toLowerCase().includes(inputValue.toLowerCase())
+            )
 
-    const handleSelect = (item: { label: string; href?: string } | null) => {
+            if (filtered.length > 0) acc[group] = filtered
+            return acc
+        }, {} as Record<string, SearchItem[]>)
+    }, [groupedItems, inputValue])
+
+    const handleSelect = (item: SearchItem | null) => {
         if (item?.href) {
             router.push(item.href)
             setOpen(false)
@@ -55,21 +75,19 @@ export function GlobalSearch() {
     }
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && inputValue.trim()) {
-            const firstMatch = navigation.find(item =>
+        if (e.key === "Enter" && inputValue.trim()) {
+            const firstMatch = navigation.find((item) =>
                 item.label.toLowerCase().includes(inputValue.toLowerCase())
             )
 
-            if (firstMatch) {
-                handleSelect(firstMatch)
-            }
+            if (firstMatch) handleSelect(firstMatch)
         }
     }
 
     return (
         <Combobox
             items={navigation}
-            itemToStringValue={(item: { label: string; href?: string }) => item.label}
+            itemToStringValue={(item: SearchItem) => item.label}
             onValueChange={handleSelect}
             open={open}
             onOpenChange={setOpen}
@@ -88,14 +106,11 @@ export function GlobalSearch() {
                 ) : (
                     Object.entries(filteredItems).map(([group, items]) => (
                         <div key={group}>
-                            {items?.map((item) => (
+                            {items.map((item) => (
                                 <ComboboxItem
                                     key={item.href}
                                     value={item}
-                                    onSelect={() => {
-                                        handleSelect(item)
-                                        setInputValue("")
-                                    }}
+                                    onSelect={() => handleSelect(item)}
                                 >
                                     <Item size="sm" className="p-0">
                                         <ItemContent>
