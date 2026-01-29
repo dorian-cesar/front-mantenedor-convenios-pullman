@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes"; // Añade esta importación
 import { cn } from "@/lib/utils";
 import {
     ChevronLeft,
@@ -15,8 +16,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-
 import { NAVIGATION } from "@/constants/navigation";
+import { useEffect, useState } from "react"; // Añade useState y useEffect
 
 interface SidebarProps {
     collapsed: boolean;
@@ -25,6 +26,20 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     const pathname = usePathname();
+    const { theme, systemTheme } = useTheme(); // Obtén el tema actual
+    const [mounted, setMounted] = useState(false); // Para evitar errores de hidratación
+
+    // Evita renderizado en servidor
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) {
+        return null;
+    }
+
+    // Determina qué tema está activo realmente
+    const currentTheme = theme === "system" ? systemTheme : theme;
 
     const renderNavItems = (items: typeof NAVIGATION) =>
         items.map((item) => {
@@ -58,6 +73,26 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             return NavContent;
         });
 
+    const getLogoPath = () => {
+        if (!mounted) return "/logo-wit-dark.png";
+
+        const isDarkTheme = currentTheme === "dark";
+
+        const variant = isDarkTheme ? "light" : "dark";
+        const size = collapsed ? "mini-" : "";
+
+        return `/logo-wit-${size}${variant}.png`;
+    };
+    // Texto alternativo para el logo
+    const getLogoAlt = () => {
+        if (collapsed) {
+            return "logo";
+        } else {
+            const themeName = currentTheme === "dark" ? "Oscuro" : "Claro";
+            return `logo ${themeName}`;
+        }
+    };
+
     return (
         <TooltipProvider delayDuration={0}>
             <aside
@@ -66,22 +101,26 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                     collapsed ? "w-[72px]" : "w-64"
                 )}
             >
-                {/* HEADER */}
+                {/* HEADER - Logo que cambia con el tema */}
                 <div className="flex h-16 items-center justify-center px-4 border-b border-sidebar-border">
                     <Link href="/test" className="flex items-center gap-3">
-                        {collapsed ? (
-                            <img
-                                src="/logo-wit-mini-dark.png"
-                                alt="logo"
-                                className="h-10 w-10 object-contain"
-                            />
-                        ) : (
-                            <img
-                                src="/logo-wit-dark.png"
-                                alt="logo"
-                                className="h-10 object-contain"
-                            />
-                        )}
+                        <img
+                            src={getLogoPath()}
+                            alt={getLogoAlt()}
+                            className={cn(
+                                "object-contain transition-opacity duration-300",
+                                collapsed ? "h-10 w-10" : "h-10"
+                            )}
+                            onError={(e) => {
+                                // Fallback si la imagen no existe
+                                const target = e.target as HTMLImageElement;
+                                if (currentTheme === "dark") {
+                                    target.src = "/logo-wit-light.png";
+                                } else {
+                                    target.src = "/logo-wit-dark.png";
+                                }
+                            }}
+                        />
                     </Link>
                 </div>
 

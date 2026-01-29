@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes"; // Añade esta importación
 import { cn } from "@/lib/utils";
 import { LogOut, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 
 import { NAVIGATION } from "@/constants/navigation";
+import { useEffect, useState } from "react";
 
 interface MobileSidebarProps {
   open: boolean;
@@ -21,6 +23,21 @@ interface MobileSidebarProps {
 
 export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
   const pathname = usePathname();
+
+  const { theme, systemTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Evita renderizado en servidor
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
+
+  const currentTheme = theme === "system" ? systemTheme : theme;
 
   const renderNavItems = (items: typeof NAVIGATION) =>
     items.map((item) => {
@@ -44,6 +61,22 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
       );
     });
 
+  const getLogoPath = () => {
+    if (!mounted) return "/logo-wit-dark.png";
+
+    const isDarkTheme = currentTheme === "dark";
+
+    const variant = isDarkTheme ? "light" : "dark";
+
+    return `/logo-wit-${variant}.png`;
+  };
+  // Texto alternativo para el logo
+  const getLogoAlt = () => {
+    const themeName = currentTheme === "dark" ? "Oscuro" : "Claro";
+    return `logo ${themeName}`;
+  };
+
+
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent
@@ -53,12 +86,22 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
         {/* HEADER */}
         <SheetHeader className="flex h-16 items-center px-4 border-b border-sidebar-border">
           <SheetTitle className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-              <Zap className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="font-semibold text-lg text-sidebar-foreground">
-              AdminPanel
-            </span>
+            <img
+              src={getLogoPath()}
+              alt={getLogoAlt()}
+              className={cn(
+                "object-contain transition-opacity duration-300 h-10"
+              )}
+              onError={(e) => {
+                // Fallback si la imagen no existe
+                const target = e.target as HTMLImageElement;
+                if (currentTheme === "dark") {
+                  target.src = "/logo-wit-light.png";
+                } else {
+                  target.src = "/logo-wit-dark.png";
+                }
+              }}
+            />
           </SheetTitle>
         </SheetHeader>
 

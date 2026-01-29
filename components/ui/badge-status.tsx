@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils"
 type StatusValue = string | number | boolean | null | undefined
 
 const BADGE_STATUS_CLASSES: Record<string, string> = {
-    active: "bg-green-100 text-green-800 border-green-200 hover:bg-green-100",
-    inactive: "bg-red-100 text-red-800 border-red-200 hover:bg-red-100",
-    pending: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100",
+    active: "bg-green-500/50 text-green-900 dark:text-black hover:bg-green-100",
+    inactive: "bg-red-500/50 text-red-900 dark:text-black hover:bg-red-100",
+    pending: "bg-yellow-500/50 text-yellow-900 dark:text-black hover:bg-yellow-100",
 }
 
 function normalizeStatus(value: StatusValue): string {
