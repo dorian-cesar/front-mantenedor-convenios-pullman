@@ -9,6 +9,8 @@ import * as Card from "@/components/ui/card"
 import { useState, useEffect } from "react"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
+import ExportModal from "@/components/modals/export"
+import AddEmpresaModal from "@/components/modals/add-empresa"
 
 const mockEmpresas = Array.from({ length: 100 }, (_, i) => ({
     id: i + 1,
@@ -22,6 +24,9 @@ export default function EmpresasPage() {
     const [searchValue, setSearchValue] = useState("")
     const [empresas, setEmpresas] = useState(mockEmpresas)
     const [filteredEmpresas, setFilteredEmpresas] = useState(mockEmpresas)
+    const [openDetails, setOpenDetails] = useState(false)
+    const [openExport, setOpenExport] = useState(false)
+    const [openAdd, setOpenAdd] = useState(false)
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -73,14 +78,9 @@ export default function EmpresasPage() {
     const actionButtons = [
         {
             label: "Nueva Empresa",
-            onClick: () => console.log("Crear nueva empresa"),
+            onClick: () => setOpenAdd(true),
             icon: <Icon.PlusIcon className="h-4 w-4" />
         },
-        {
-            label: "Detalles",
-            onClick: () => console.log("Exportar datos"),
-            variant: "outline" as const
-        }
     ]
 
     return (
@@ -89,6 +89,21 @@ export default function EmpresasPage() {
                 title="Empresas en Convenio"
                 description="Listado de todas las empresas que tienen convenios activos."
                 actionButtons={actionButtons}
+                actionMenu={{
+                    title: "Detalles",
+                    items: [
+                        {
+                            label: "Visualización",
+                            onClick: () => setOpenDetails(true),
+                            icon: <Icon.InfoIcon className="h-4 w-4" />
+                        },
+                        {
+                            label: "Exportar",
+                            onClick: () => setOpenExport(true),
+                            icon: <Icon.DownloadIcon className="h-4 w-4" />
+                        }
+                    ]
+                }}
                 showSearch={true}
                 searchValue={searchValue}
                 onSearchChange={setSearchValue}
@@ -172,6 +187,16 @@ export default function EmpresasPage() {
                     </Table.TableBody>
                 </Table.Table>
             </Card.Card>
+
+            <ExportModal
+                open={openExport}
+                onOpenChange={setOpenExport}
+            />
+
+            <AddEmpresaModal
+                open={openAdd}
+                onOpenChange={setOpenAdd}
+            />
         </div>
     )
 }
