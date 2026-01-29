@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
 import { Input } from "@/components/ui/input"
 import AddUserModal from "@/components/modals/add-usuario"
+import ExportModal from "@/components/modals/export"
 import { set } from "date-fns"
 
 const mockUsuarios = Array.from({ length: 100 }, (_, i) => ({
@@ -30,6 +31,8 @@ export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState(mockUsuarios)
   const [filteredUsuarios, setFilteredUsuarios] = useState(mockUsuarios)
   const [openAddUserModal, setOpenAddUserModal] = useState(false)
+  const [openDetails, setOpenDetails] = useState(false)
+  const [openExportModal, setOpenExportModal] = useState(false)
 
   const [searchRol, setSearchRol] = useState("")
   const [roles, setRoles] = useState(mockRoles)
@@ -87,11 +90,6 @@ export default function UsuariosPage() {
       onClick: () => setOpenAddUserModal(true),
       icon: <Icon.PlusIcon className="h-4 w-4" />
     },
-    {
-      label: "Detalles",
-      onClick: () => console.log("Exportar datos"),
-      variant: "outline" as const
-    }
   ]
 
   return (
@@ -100,6 +98,21 @@ export default function UsuariosPage() {
         title="Usuarios del Sistema"
         description="Listado de los usuarios que tienen acceso a la plataforma"
         actionButtons={actionButtons}
+        actionMenu={{
+          title: "Detalles",
+          items: [
+            {
+              label: "Visualización",
+              onClick: () => setOpenDetails(true),
+              icon: <Icon.InfoIcon className="h-4 w-4" />
+            },
+            {
+              label: "Exportar",
+              onClick: () => setOpenExportModal(true),
+              icon: <Icon.DownloadIcon className="h-4 w-4" />
+            }
+          ]
+        }}
         showSearch={true}
         searchValue={searchUser}
         onSearchChange={setSearchUser}
@@ -282,6 +295,11 @@ export default function UsuariosPage() {
       <AddUserModal
         open={openAddUserModal}
         onOpenChange={setOpenAddUserModal}
+      />
+
+      <ExportModal
+        open={openExportModal}
+        onOpenChange={setOpenExportModal}
       />
     </div>
   )
