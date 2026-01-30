@@ -17,6 +17,8 @@ import { EmpresasService, type Empresa, type GetEmpresasParams } from "@/service
 import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
 import { formatRut } from "@/utils/helpers"
+import { exportToCSV } from "@/utils/export"
+
 
 export default function EmpresasPage() {
     const [searchValue, setSearchValue] = useState("")
@@ -121,6 +123,49 @@ export default function EmpresasPage() {
 
     const handleRefresh = () => {
         fetchEmpresas();
+    }
+
+    const handleExport = async (type: "csv" | "excel") => {
+        try {
+            toast.loading("Preparando exportación...", { id: "export" })
+
+            const params: GetEmpresasParams = {
+                sortBy: "id",
+                order: "DESC",
+            }
+
+            if (debouncedSearch.trim()) {
+                params.nombre = debouncedSearch.trim()
+            }
+
+            const response = await EmpresasService.getEmpresas(params)
+
+            if (!response.rows.length) {
+                toast.error("No hay datos para exportar", { id: "export" })
+                return
+            }
+
+            const formattedData = response.rows.map(emp => ({
+                ID: emp.id,
+                Nombre: emp.nombre,
+                RUT: formatRut(emp.rut_empresa),
+                Estado: emp.status,
+                Creado: new Date(emp.createdAt).toLocaleDateString(),
+            }))
+
+            if (type === "csv") {
+                exportToCSV(formattedData, "empresas.csv")
+                toast.success("CSV exportado correctamente", { id: "export" })
+            }
+
+            if (type === "excel") {
+                toast.info("Exportación Excel próximamente 👀", { id: "export" })
+            }
+
+        } catch (error) {
+            console.error("Error exporting empresas:", error)
+            toast.error("Error al exportar datos", { id: "export" })
+        }
     }
 
     const actionButtons = [
@@ -253,7 +298,11 @@ export default function EmpresasPage() {
                 </Table.Table>
             </Card.Card>
 
-            <ExportModal open={openExport} onOpenChange={setOpenExport} />
+            <ExportModal
+                open={openExport}
+                onOpenChange={setOpenExport}
+                onExport={handleExport}
+            />
 
             <AddEmpresaModal
                 open={openAdd}
