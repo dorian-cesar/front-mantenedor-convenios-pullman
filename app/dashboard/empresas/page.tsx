@@ -11,8 +11,9 @@ import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
 import ExportModal from "@/components/modals/export"
 import AddEmpresaModal from "@/components/modals/add-empresa"
+import UpdateEmpresaModal from "@/components/modals/update-empresa"
 import { EmpresasService, type Empresa, type GetEmpresasParams } from "@/services/empresa.service"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
 
 export default function EmpresasPage() {
@@ -21,6 +22,8 @@ export default function EmpresasPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [openExport, setOpenExport] = useState(false)
     const [openAdd, setOpenAdd] = useState(false)
+    const [openUpdate, setOpenUpdate] = useState(false)
+    const [selectedEmpresa, setSelectedEmpresa] = useState<Empresa | null>(null)
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -30,8 +33,6 @@ export default function EmpresasPage() {
         hasNextPage: false,
         hasPrevPage: false,
     })
-
-    const { toast } = useToast()
 
     const debouncedSearch = useDebounce(searchValue, 500)
 
@@ -62,11 +63,7 @@ export default function EmpresasPage() {
             }))
         } catch (error) {
             console.error('Error fetching empresas:', error)
-            toast({
-                title: "Error",
-                description: "No se pudieron cargar las empresas",
-                variant: "destructive"
-            })
+            toast.error("No se pudieron cargar las empresas")
         } finally {
             setIsLoading(false)
         }
@@ -80,27 +77,38 @@ export default function EmpresasPage() {
         setPagination(prev => ({ ...prev, page: newPage }))
     }
 
-    const handleToggleStatus = async (id: number, currentStatus: "ACTIVO" | "INACTIVO") => {
+    const handleToggleStatus = async (
+        id: number,
+        currentStatus: "ACTIVO" | "INACTIVO"
+    ) => {
         try {
             await EmpresasService.toggleStatus(id, currentStatus)
-            toast({
-                title: "Éxito",
-                description: "Estado actualizado correctamente",
-            })
+
+            toast.success(
+                currentStatus === "ACTIVO"
+                    ? "Empresa desactivada correctamente"
+                    : "Empresa activada correctamente"
+            )
+
             fetchEmpresas()
         } catch (error) {
             console.error('Error toggling status:', error)
-            toast({
-                title: "Error",
-                description: "No se pudo actualizar el estado",
-                variant: "destructive"
-            })
+            toast.error("No se pudo actualizar el estado")
         }
     }
 
     const handleEmpresaAdded = () => {
         fetchEmpresas()
         setOpenAdd(false)
+    }
+
+    const handleEditEmpresa = (empresa: Empresa) => {
+        setSelectedEmpresa(empresa)
+        setOpenUpdate(true)
+    }
+
+    const handleEmpresaUpdated = () => {
+        fetchEmpresas()
     }
 
     const actionButtons = [
@@ -202,7 +210,9 @@ export default function EmpresasPage() {
                                                     <Icon.EyeIcon className="h-4 w-4 mr-2" />
                                                     Ver detalles
                                                 </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuItem>
+                                                <Dropdown.DropdownMenuItem
+                                                    onClick={() => handleEditEmpresa(empresa)}
+                                                >
                                                     <Icon.PencilIcon className="h-4 w-4 mr-2" />
                                                     Editar
                                                 </Dropdown.DropdownMenuItem>
@@ -239,6 +249,13 @@ export default function EmpresasPage() {
                 open={openAdd}
                 onOpenChange={setOpenAdd}
                 onSuccess={handleEmpresaAdded}
+            />
+
+            <UpdateEmpresaModal
+                open={openUpdate}
+                onOpenChange={setOpenUpdate}
+                empresa={selectedEmpresa}
+                onSuccess={handleEmpresaUpdated}
             />
         </div>
     )

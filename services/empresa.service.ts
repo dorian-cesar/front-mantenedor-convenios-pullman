@@ -33,7 +33,7 @@ export interface CreateEmpresaData {
 
 export interface UpdateEmpresaData {
     nombre?: string;
-    rut_empresa?: string;
+    rut?: string;
     status?: "ACTIVO" | "INACTIVO";
 }
 
@@ -54,7 +54,7 @@ export class EmpresasService {
     }
 
     static async updateEmpresa(id: number, data: UpdateEmpresaData): Promise<Empresa> {
-        const response = await api.patch<Empresa>(`/empresas/${id}`, data);
+        const response = await api.put<Empresa>(`/empresas/${id}`, data);
         return response.data;
     }
 

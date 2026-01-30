@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import * as Dialog from "@/components/ui/dialog"
 import * as Form from "@/components/ui/form"
@@ -9,12 +9,20 @@ import { Input } from "@/components/ui/input"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { EmpresasService } from "@/services/empresa.service"
+import { EmpresasService, Empresa } from "@/services/empresa.service"
 import { toast } from "sonner"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
-interface AddEmpresaModalProps {
+interface UpdateEmpresaModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
+    empresa: Empresa | null
     onSuccess?: () => void
 }
 
@@ -31,16 +39,19 @@ const empresaSchema = z.object({
         .transform((val) => val.replace(/\./g, ""))
         .refine((val) => /^[0-9]+-[0-9kK]$/.test(val), {
             message: "Formato de RUT inválido (ej: 12345678-9)",
-        })
+        }),
+
+    status: z.enum(["ACTIVO", "INACTIVO"]),
 })
 
 type EmpresaFormValues = z.infer<typeof empresaSchema>
 
-export default function AddEmpresaModal({
+export default function UpdateEmpresaModal({
     open,
     onOpenChange,
+    empresa,
     onSuccess,
-}: AddEmpresaModalProps) {
+}: UpdateEmpresaModalProps) {
     const [isLoading, setIsLoading] = useState(false)
 
     const form = useForm<EmpresaFormValues>({
@@ -48,23 +59,39 @@ export default function AddEmpresaModal({
         defaultValues: {
             nombre: "",
             rut: "",
+            status: "ACTIVO",
         },
     })
 
+    useEffect(() => {
+        if (empresa) {
+            form.reset({
+                nombre: empresa.nombre,
+                rut: empresa.rut_empresa,
+                status: empresa.status,
+            })
+        }
+    }, [empresa, form])
+
     const onSubmit = async (data: EmpresaFormValues) => {
+        if (!empresa) return
+
         setIsLoading(true)
 
         try {
-            await EmpresasService.createEmpresa(data)
+            await EmpresasService.updateEmpresa(empresa.id, {
+                nombre: data.nombre,
+                rut: data.rut,
+                status: data.status,
+            })
 
-            toast.success("Empresa creada correctamente")
+            toast.success("Empresa actualizada correctamente")
 
-            form.reset()
             onSuccess?.()
+            onOpenChange(false)
         } catch (error) {
-            console.error("Error creating empresa:", error)
-
-            toast.error("No se pudo crear la empresa")
+            console.error("Error updating empresa:", error)
+            toast.error("No se pudo actualizar la empresa")
         } finally {
             setIsLoading(false)
         }
@@ -74,9 +101,9 @@ export default function AddEmpresaModal({
         <Dialog.Dialog open={open} onOpenChange={onOpenChange}>
             <Dialog.DialogContent>
                 <Dialog.DialogHeader>
-                    <Dialog.DialogTitle>Agregar Nueva Empresa</Dialog.DialogTitle>
+                    <Dialog.DialogTitle>Editar Empresa</Dialog.DialogTitle>
                     <Dialog.DialogDescription>
-                        Complete los datos de la nueva empresa.
+                        Modifique los datos de la empresa.
                     </Dialog.DialogDescription>
                 </Dialog.DialogHeader>
 
@@ -111,6 +138,32 @@ export default function AddEmpresaModal({
                             )}
                         />
 
+                        <Form.FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Estado</Form.FormLabel>
+                                    <Select
+                                        onValueChange={field.onChange}
+                                        value={field.value}
+                                    >
+                                        <Form.FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Seleccione estado" />
+                                            </SelectTrigger>
+                                        </Form.FormControl>
+
+                                        <SelectContent>
+                                            <SelectItem value="ACTIVO">Activo</SelectItem>
+                                            <SelectItem value="INACTIVO">Inactivo</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
                         <div className="flex justify-end space-x-2">
                             <Button
                                 type="button"
@@ -125,9 +178,9 @@ export default function AddEmpresaModal({
                                 {isLoading ? (
                                     <Icon.Loader2Icon className="h-4 w-4 animate-spin mr-2" />
                                 ) : (
-                                    <Icon.PlusIcon className="h-4 w-4 mr-2" />
+                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
                                 )}
-                                Crear Empresa
+                                Guardar Cambios
                             </Button>
                         </div>
 

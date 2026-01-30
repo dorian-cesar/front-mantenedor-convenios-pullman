@@ -162,10 +162,7 @@ export function Navbar({
               <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
-                <div className="flex items-center justify-between w-full">
-                  <span>Tema</span>
                   <ThemeToggle />
-                </div>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
