@@ -17,7 +17,8 @@ import { EmpresasService, type Empresa, type GetEmpresasParams } from "@/service
 import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
 import { formatRut } from "@/utils/helpers"
-import { exportToCSV } from "@/utils/export"
+import { exportToCSV } from "@/utils/exportCSV"
+import { exportToExcel } from "@/utils/exportXLSX"
 
 
 export default function EmpresasPage() {
@@ -151,6 +152,7 @@ export default function EmpresasPage() {
                 RUT: formatRut(emp.rut_empresa),
                 Estado: emp.status,
                 Creado: new Date(emp.createdAt).toLocaleDateString(),
+                Actualizado: new Date(emp.updatedAt).toLocaleDateString(),
             }))
 
             if (type === "csv") {
@@ -159,7 +161,8 @@ export default function EmpresasPage() {
             }
 
             if (type === "excel") {
-                toast.info("Exportación Excel próximamente 👀", { id: "export" })
+                exportToExcel(formattedData, "empresas.xlsx")
+                toast.success("Excel exportado correctamente", { id: "export" })
             }
 
         } catch (error) {

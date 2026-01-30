@@ -34,7 +34,7 @@ export default function DashboardLayoutClient({
 
         if (!isAuthenticated) {
             console.log("Redirigiendo a login. Token:", AuthService.getToken());
-            router.push("/");
+            router.replace("/");
         } else {
             console.log("Usuario autenticado:", user);
             setLoading(false);

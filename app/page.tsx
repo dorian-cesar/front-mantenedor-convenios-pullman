@@ -46,7 +46,9 @@ export default function LoginPage() {
         }
       }
 
-      window.location.href = "/dashboard";
+      setTimeout(() => {
+        router.replace("/dashboard");
+      }, 2000);
 
     } catch (error: any) {
       console.error("Login error:", error);
@@ -145,7 +147,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-accent hover:bg-accent/90"
+                className="w-full"
                 disabled={loading}
               >
                 {loading ? (
