@@ -11,20 +11,14 @@ import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
 import ExportModal from "@/components/modals/export"
 import AddEmpresaModal from "@/components/modals/add-empresa"
-
-const mockEmpresas = Array.from({ length: 100 }, (_, i) => ({
-    id: i + 1,
-    nombre: `Empresa ${i + 1}`,
-    rut: `${(10000000 + i).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${(9 - (i % 10))}`,
-    status: i % 3 === 0 ? "inactive" : "active",
-    convenio: i % 4 === 0 ? "vencido" : "activo"
-}))
+import { EmpresasService, type Empresa, type GetEmpresasParams } from "@/services/empresa.service"
+import { useToast } from "@/hooks/use-toast"
+import { useDebounce } from "@/hooks/use-debounce"
 
 export default function EmpresasPage() {
     const [searchValue, setSearchValue] = useState("")
-    const [empresas, setEmpresas] = useState(mockEmpresas)
-    const [filteredEmpresas, setFilteredEmpresas] = useState(mockEmpresas)
-    const [openDetails, setOpenDetails] = useState(false)
+    const [empresas, setEmpresas] = useState<Empresa[]>([])
+    const [isLoading, setIsLoading] = useState(true)
     const [openExport, setOpenExport] = useState(false)
     const [openAdd, setOpenAdd] = useState(false)
 
@@ -37,42 +31,76 @@ export default function EmpresasPage() {
         hasPrevPage: false,
     })
 
-    useEffect(() => {
-        if (!searchValue.trim()) {
-            setFilteredEmpresas(empresas)
-        } else {
-            const filtered = empresas.filter(empresa =>
-                empresa.nombre.toLowerCase().includes(searchValue.toLowerCase()) ||
-                empresa.rut.toLowerCase().includes(searchValue.toLowerCase())
-            )
-            setFilteredEmpresas(filtered)
+    const { toast } = useToast()
+
+    const debouncedSearch = useDebounce(searchValue, 500)
+
+    const fetchEmpresas = async () => {
+        setIsLoading(true)
+        try {
+            const params: GetEmpresasParams = {
+                page: pagination.page,
+                limit: pagination.limit,
+                sortBy: 'id',
+                order: 'DESC',
+            }
+
+            if (debouncedSearch.trim()) {
+                params.search = debouncedSearch.trim()
+            }
+
+            const response = await EmpresasService.getEmpresas(params)
+
+            setEmpresas(response.rows)
+
+            setPagination(prev => ({
+                ...prev,
+                total: response.totalItems,
+                totalPages: response.totalPages || 1,
+                hasPrevPage: (response.currentPage || 1) > 1,
+                hasNextPage: (response.currentPage || 1) < (response.totalPages || 1)
+            }))
+        } catch (error) {
+            console.error('Error fetching empresas:', error)
+            toast({
+                title: "Error",
+                description: "No se pudieron cargar las empresas",
+                variant: "destructive"
+            })
+        } finally {
+            setIsLoading(false)
         }
-        setPagination(prev => ({ ...prev, page: 1 }))
-    }, [searchValue, empresas])
+    }
 
     useEffect(() => {
-        const total = filteredEmpresas.length
-        const totalPages = Math.ceil(total / pagination.limit)
-        const hasPrevPage = pagination.page > 1
-        const hasNextPage = pagination.page < totalPages
-
-        setPagination(prev => ({
-            ...prev,
-            total,
-            totalPages,
-            hasPrevPage,
-            hasNextPage
-        }))
-    }, [filteredEmpresas, pagination.page, pagination.limit])
-
-    const getCurrentPageEmpresas = () => {
-        const startIndex = (pagination.page - 1) * pagination.limit
-        const endIndex = startIndex + pagination.limit
-        return filteredEmpresas.slice(startIndex, endIndex)
-    }
+        fetchEmpresas()
+    }, [pagination.page, pagination.limit, debouncedSearch])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
+    }
+
+    const handleToggleStatus = async (id: number, currentStatus: "ACTIVO" | "INACTIVO") => {
+        try {
+            await EmpresasService.toggleStatus(id, currentStatus)
+            toast({
+                title: "Éxito",
+                description: "Estado actualizado correctamente",
+            })
+            fetchEmpresas()
+        } catch (error) {
+            console.error('Error toggling status:', error)
+            toast({
+                title: "Error",
+                description: "No se pudo actualizar el estado",
+                variant: "destructive"
+            })
+        }
+    }
+
+    const handleEmpresaAdded = () => {
+        fetchEmpresas()
+        setOpenAdd(false)
     }
 
     const actionButtons = [
@@ -83,6 +111,14 @@ export default function EmpresasPage() {
         },
     ]
 
+    const formatRut = (rut: string) => {
+        if (rut.includes('-')) return rut
+
+        const rutBody = rut.slice(0, -1)
+        const dv = rut.slice(-1)
+        return `${rutBody.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${dv}`
+    }
+
     return (
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
@@ -92,11 +128,6 @@ export default function EmpresasPage() {
                 actionMenu={{
                     title: "Detalles",
                     items: [
-                        {
-                            label: "Visualización",
-                            onClick: () => setOpenDetails(true),
-                            icon: <Icon.InfoIcon className="h-4 w-4" />
-                        },
                         {
                             label: "Exportar",
                             onClick: () => setOpenExport(true),
@@ -120,8 +151,7 @@ export default function EmpresasPage() {
                         className="w-full"
                     />
                 }
-            >
-            </PageHeader>
+            />
 
             <Card.Card>
                 <Table.Table>
@@ -131,71 +161,84 @@ export default function EmpresasPage() {
                             <Table.TableHead>Nombre</Table.TableHead>
                             <Table.TableHead>RUT</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
-                            <Table.TableHead>Convenio</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
                     </Table.TableHeader>
                     <Table.TableBody>
-                        {getCurrentPageEmpresas().map((empresa) => (
-                            <Table.TableRow key={empresa.id}>
-                                <Table.TableCell>{empresa.id}</Table.TableCell>
-                                <Table.TableCell className="font-medium">{empresa.nombre}</Table.TableCell>
-                                <Table.TableCell>{empresa.rut}</Table.TableCell>
-                                <Table.TableCell>
-                                    <BadgeStatus status={empresa.status}>
-                                        {empresa.status === "active" ? "Activa" : "Inactiva"}
-                                    </BadgeStatus>
-                                </Table.TableCell>
-                                <Table.TableCell>
-                                    <BadgeStatus status={empresa.convenio === "activo" ? "active" : "inactive"}>
-                                        {empresa.convenio === "activo" ? "Activo" : "Vencido"}
-                                    </BadgeStatus>
-                                </Table.TableCell>
-                                <Table.TableCell className="text-right">
-                                    <Dropdown.DropdownMenu>
-                                        <Dropdown.DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="size-8">
-                                                <Icon.MoreHorizontalIcon />
-                                            </Button>
-                                        </Dropdown.DropdownMenuTrigger>
-                                        <Dropdown.DropdownMenuContent align="end">
-                                            <Dropdown.DropdownMenuItem>
-                                                <Icon.EyeIcon className="h-4 w-4 mr-2" />
-                                                Ver detalles
-                                            </Dropdown.DropdownMenuItem>
-                                            <Dropdown.DropdownMenuItem>
-                                                <Icon.PencilIcon className="h-4 w-4 mr-2" />
-                                                Editar
-                                            </Dropdown.DropdownMenuItem>
-                                            <Dropdown.DropdownMenuSeparator />
-                                            {empresa.status === "active" ? (
-                                                <Dropdown.DropdownMenuItem variant="destructive">
-                                                    <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                    Desactivar
-                                                </Dropdown.DropdownMenuItem>
-                                            ) : (
-                                                <Dropdown.DropdownMenuItem>
-                                                    <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                    Activar
-                                                </Dropdown.DropdownMenuItem>
-                                            )}
-                                        </Dropdown.DropdownMenuContent>
-                                    </Dropdown.DropdownMenu>
+                        {isLoading ? (
+                            <Table.TableRow>
+                                <Table.TableCell colSpan={5} className="text-center py-8">
+                                    <div className="flex justify-center">
+                                        <Icon.Loader2Icon className="h-6 w-6 animate-spin" />
+                                    </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ))}
+                        ) : empresas.length === 0 ? (
+                            <Table.TableRow>
+                                <Table.TableCell colSpan={5} className="text-center py-8">
+                                    No se encontraron empresas
+                                </Table.TableCell>
+                            </Table.TableRow>
+                        ) : (
+                            empresas.map((empresa) => (
+                                <Table.TableRow key={empresa.id}>
+                                    <Table.TableCell>{empresa.id}</Table.TableCell>
+                                    <Table.TableCell className="font-medium">{empresa.nombre}</Table.TableCell>
+                                    <Table.TableCell>{formatRut(empresa.rut_empresa)}</Table.TableCell>
+                                    <Table.TableCell>
+                                        <BadgeStatus status={empresa.status === "ACTIVO" ? "active" : "inactive"}>
+                                            {empresa.status === "ACTIVO" ? "Activa" : "Inactiva"}
+                                        </BadgeStatus>
+                                    </Table.TableCell>
+                                    <Table.TableCell className="text-right">
+                                        <Dropdown.DropdownMenu>
+                                            <Dropdown.DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="size-8">
+                                                    <Icon.MoreHorizontalIcon />
+                                                </Button>
+                                            </Dropdown.DropdownMenuTrigger>
+                                            <Dropdown.DropdownMenuContent align="end">
+                                                <Dropdown.DropdownMenuItem>
+                                                    <Icon.EyeIcon className="h-4 w-4 mr-2" />
+                                                    Ver detalles
+                                                </Dropdown.DropdownMenuItem>
+                                                <Dropdown.DropdownMenuItem>
+                                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                                    Editar
+                                                </Dropdown.DropdownMenuItem>
+                                                <Dropdown.DropdownMenuSeparator />
+                                                {empresa.status === "ACTIVO" ? (
+                                                    <Dropdown.DropdownMenuItem
+                                                        variant="destructive"
+                                                        onClick={() => handleToggleStatus(empresa.id, empresa.status)}
+                                                    >
+                                                        <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                        Desactivar
+                                                    </Dropdown.DropdownMenuItem>
+                                                ) : (
+                                                    <Dropdown.DropdownMenuItem
+                                                        onClick={() => handleToggleStatus(empresa.id, empresa.status)}
+                                                    >
+                                                        <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                        Activar
+                                                    </Dropdown.DropdownMenuItem>
+                                                )}
+                                            </Dropdown.DropdownMenuContent>
+                                        </Dropdown.DropdownMenu>
+                                    </Table.TableCell>
+                                </Table.TableRow>
+                            ))
+                        )}
                     </Table.TableBody>
                 </Table.Table>
             </Card.Card>
 
-            <ExportModal
-                open={openExport}
-                onOpenChange={setOpenExport}
-            />
+            <ExportModal open={openExport} onOpenChange={setOpenExport} />
 
             <AddEmpresaModal
                 open={openAdd}
                 onOpenChange={setOpenAdd}
+                onSuccess={handleEmpresaAdded}
             />
         </div>
     )

@@ -22,7 +22,7 @@ export const NAVIGATION: NavItem[] = [
     {
         id: "dashboard",
         title: "Dashboard",
-        href: "/test",
+        href: "/dashboard",
         icon: LayoutDashboard,
         description: "Resumen del sistema",
         group: "General",
@@ -31,7 +31,7 @@ export const NAVIGATION: NavItem[] = [
     {
         id: "boletos",
         title: "Boletos",
-        href: "/test/eventos",
+        href: "/dashboard/eventos",
         icon: Ticket,
         description: "eventos · viajes · tickets · pasajes · ventas",
         group: "Operación",
@@ -40,7 +40,7 @@ export const NAVIGATION: NavItem[] = [
     {
         id: "empresas",
         title: "Empresas",
-        href: "/test/empresas",
+        href: "/dashboard/empresas",
         icon: Building2,
         description: "empresas · compañias · organizaciones · clientes",
         group: "Empresas",
@@ -49,7 +49,7 @@ export const NAVIGATION: NavItem[] = [
     {
         id: "convenios",
         title: "Convenios",
-        href: "/test/convenios",
+        href: "/dashboard/convenios",
         icon: Handshake,
         description: "convenios · beneficios · alianzas",
         group: "Convenios y Beneficios",
@@ -58,7 +58,7 @@ export const NAVIGATION: NavItem[] = [
     {
         id: "descuentos",
         title: "Descuentos",
-        href: "/test/descuentos",
+        href: "/dashboard/descuentos",
         icon: Percent,
         description: "descuentos · promociones · cupones",
         group: "Convenios y Beneficios",
@@ -67,7 +67,7 @@ export const NAVIGATION: NavItem[] = [
     {
         id: "usuarios",
         title: "Usuarios y Roles",
-        href: "/test/usuarios",
+        href: "/dashboard/usuarios",
         icon: Users,
         description: "usuarios · roles · accesos",
         group: "Seguridad",
@@ -76,7 +76,7 @@ export const NAVIGATION: NavItem[] = [
     {
         id: "pasajeros",
         title: "Pasajeros",
-        href: "/test/pasajeros",
+        href: "/dashboard/pasajeros",
         icon: IdCard,
         description: "pasajeros · clientes · personas · tipos de usuarios",
         group: "Operación",

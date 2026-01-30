@@ -1,155 +1,146 @@
 "use client"
 
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
 import * as Dialog from "@/components/ui/dialog"
-import { Button } from "../ui/button"
-import { Input } from "../ui/input"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+import * as Form from "@/components/ui/form"
+import * as Icon from "lucide-react"
+import { Input } from "@/components/ui/input"
 import { useForm } from "react-hook-form"
-import { useEffect } from "react"
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { EmpresasService } from "@/services/empresa.service"
+import { useToast } from "@/hooks/use-toast"
 
 interface AddEmpresaModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
+    onSuccess?: () => void
 }
 
-type FormValues = {
-    nombre: string
-    rut: string
-    estado: "active" | "inactive"
-    convenio: "activo" | "vencido"
-}
+const empresaSchema = z.object({
+    nombre: z
+        .string()
+        .min(3, "El nombre debe tener al menos 3 caracteres")
+        .max(100, "El nombre es demasiado largo"),
 
-export default function AddEmpresaModal({ open, onOpenChange }: AddEmpresaModalProps) {
+    rut: z
+        .string()
+        .min(8, "RUT inválido")
+        .max(20, "RUT demasiado largo")
+        .transform((val) => val.replace(/\./g, ""))
+        .refine((val) => /^[0-9]+-[0-9kK]$/.test(val), {
+            message: "Formato de RUT inválido (ej: 12345678-9)",
+        })
+})
 
-    const {
-        register,
-        handleSubmit,
-        setValue,
-        reset,
-        formState: { errors }
-    } = useForm<FormValues>({
+type EmpresaFormValues = z.infer<typeof empresaSchema>
+
+export default function AddEmpresaModal({
+    open,
+    onOpenChange,
+    onSuccess,
+}: AddEmpresaModalProps) {
+    const [isLoading, setIsLoading] = useState(false)
+    const { toast } = useToast()
+
+    const form = useForm<EmpresaFormValues>({
+        resolver: zodResolver(empresaSchema),
         defaultValues: {
             nombre: "",
             rut: "",
-            estado: "active",
-            convenio: "activo"
-        }
+        },
     })
 
-    useEffect(() => {
-        if (!open) reset()
-    }, [open, reset])
+    const onSubmit = async (data: EmpresaFormValues) => {
+        setIsLoading(true)
 
-    const handleClose = () => {
-        onOpenChange(false)
-    }
+        try {
+            await EmpresasService.createEmpresa(data)
 
-    const onSubmit = (data: FormValues) => {
-        console.log("Empresa guardada:", data)
-        onOpenChange(false)
+            toast({
+                title: "Éxito",
+                description: "Empresa creada correctamente",
+            })
+
+            form.reset()
+            onSuccess?.()
+        } catch (error) {
+            console.error("Error creating empresa:", error)
+
+            toast({
+                title: "Error",
+                description: "No se pudo crear la empresa",
+                variant: "destructive",
+            })
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (
         <Dialog.Dialog open={open} onOpenChange={onOpenChange}>
             <Dialog.DialogContent>
                 <Dialog.DialogHeader>
-                    <Dialog.DialogTitle>Nueva Empresa</Dialog.DialogTitle>
+                    <Dialog.DialogTitle>Agregar Nueva Empresa</Dialog.DialogTitle>
                     <Dialog.DialogDescription>
-                        Agrega una nueva empresa al sistema
+                        Complete los datos de la nueva empresa.
                     </Dialog.DialogDescription>
                 </Dialog.DialogHeader>
 
-                <form
-                    onSubmit={handleSubmit(onSubmit)}
-                    className="space-y-4"
-                >
-                    <div className="no-scrollbar -mx-4 max-h-[50vh] overflow-y-auto px-4 space-y-4">
+                <Form.Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Nombre</label>
-                            <Input
-                                placeholder="Empresa S.A."
-                                {...register("nombre", {
-                                    required: "El nombre es obligatorio"
-                                })}
-                            />
-                            {errors.nombre && (
-                                <p className="text-sm text-destructive">
-                                    {errors.nombre.message}
-                                </p>
+                        <Form.FormField
+                            control={form.control}
+                            name="nombre"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Nombre de la Empresa</Form.FormLabel>
+                                    <Form.FormControl>
+                                        <Input placeholder="Ingrese el nombre" {...field} />
+                                    </Form.FormControl>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
                             )}
-                        </div>
+                        />
 
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">RUT</label>
-                            <Input
-                                placeholder="12.345.678-9"
-                                {...register("rut", {
-                                    required: "El RUT es obligatorio"
-                                })}
-                            />
-                            {errors.rut && (
-                                <p className="text-sm text-destructive">
-                                    {errors.rut.message}
-                                </p>
+                        <Form.FormField
+                            control={form.control}
+                            name="rut"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>RUT</Form.FormLabel>
+                                    <Form.FormControl>
+                                        <Input placeholder="Ej: 12.345.678-9" {...field} />
+                                    </Form.FormControl>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
                             )}
-                        </div>
+                        />
 
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Estado</label>
-                            <Select
-                                defaultValue="active"
-                                onValueChange={(value) =>
-                                    setValue("estado", value as FormValues["estado"])
-                                }
+                        <div className="flex justify-end space-x-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                                disabled={isLoading}
                             >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccionar estado" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="active">Activo</SelectItem>
-                                    <SelectItem value="inactive">Inactivo</SelectItem>
-                                </SelectContent>
-                            </Select>
+                                Cancelar
+                            </Button>
+
+                            <Button type="submit" disabled={isLoading}>
+                                {isLoading ? (
+                                    <Icon.Loader2Icon className="h-4 w-4 animate-spin mr-2" />
+                                ) : (
+                                    <Icon.PlusIcon className="h-4 w-4 mr-2" />
+                                )}
+                                Crear Empresa
+                            </Button>
                         </div>
 
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Convenio</label>
-                            <Select
-                                defaultValue="activo"
-                                onValueChange={(value) =>
-                                    setValue("convenio", value as FormValues["convenio"])
-                                }
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccionar convenio" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="activo">Activo</SelectItem>
-                                    <SelectItem value="vencido">Vencido</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                    </div>
-
-                    <Dialog.DialogFooter>
-                        <Button type="submit">Guardar</Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleClose}
-                        >
-                            Cancelar
-                        </Button>
-                    </Dialog.DialogFooter>
-                </form>
+                    </form>
+                </Form.Form>
             </Dialog.DialogContent>
         </Dialog.Dialog>
     )
