@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes"; // Añade esta importación
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import {
     ChevronLeft,
@@ -17,19 +17,19 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { NAVIGATION } from "@/constants/navigation";
-import { useEffect, useState } from "react"; // Añade useState y useEffect
+import { useEffect, useState } from "react";
 
 interface SidebarProps {
     collapsed: boolean;
     onToggle: () => void;
+    onLogout: () => void;
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, onLogout }: SidebarProps) {
     const pathname = usePathname();
-    const { theme, systemTheme } = useTheme(); // Obtén el tema actual
-    const [mounted, setMounted] = useState(false); // Para evitar errores de hidratación
+    const { theme, systemTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
 
-    // Evita renderizado en servidor
     useEffect(() => {
         setMounted(true);
     }, []);
@@ -38,7 +38,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         return null;
     }
 
-    // Determina qué tema está activo realmente
     const currentTheme = theme === "system" ? systemTheme : theme;
 
     const renderNavItems = (items: typeof NAVIGATION) =>
@@ -83,7 +82,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
         return `/logo-wit-${size}${variant}.png`;
     };
-    // Texto alternativo para el logo
+
     const getLogoAlt = () => {
         if (collapsed) {
             return "logo";
@@ -101,9 +100,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                     collapsed ? "w-[72px]" : "w-64"
                 )}
             >
-                {/* HEADER - Logo que cambia con el tema */}
                 <div className="flex h-16 items-center justify-center px-4 border-b border-sidebar-border">
-                    <Link href="/test" className="flex items-center gap-3">
+                    <Link href="/dashboard" className="flex items-center gap-3">
                         <img
                             src={getLogoPath()}
                             alt={getLogoAlt()}
@@ -112,7 +110,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                                 collapsed ? "h-10 w-10" : "h-10"
                             )}
                             onError={(e) => {
-                                // Fallback si la imagen no existe
                                 const target = e.target as HTMLImageElement;
                                 if (currentTheme === "dark") {
                                     target.src = "/logo-wit-light.png";
@@ -148,6 +145,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                                     variant="ghost"
                                     size="icon"
                                     className="w-full text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                                    onClick={onLogout}
                                 >
                                     <LogOut className="h-5 w-5" />
                                 </Button>
@@ -158,6 +156,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                         <Button
                             variant="ghost"
                             className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                            onClick={onLogout}
                         >
                             <LogOut className="h-5 w-5" />
                             Cerrar sesión

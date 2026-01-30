@@ -1,12 +1,8 @@
 "use client";
 
-import type React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-import { loginAction } from "@/app/actions/auth";
 import { AuthService } from "@/services/auth.service";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,39 +31,25 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // 1. Primero intentar login con el servidor
-      const serverResult = await loginAction(email, password);
+      const response = await AuthService.login({
+        correo: email,
+        password
+      });
 
-      if (!serverResult.ok) {
-        throw new Error(serverResult.message);
-      }
+      const validation = AuthService.validateToken(response.token);
 
-      // 2. También guardar en localStorage para el cliente
-      if (typeof window !== "undefined" && serverResult.token) {
-        localStorage.setItem("token", serverResult.token);
-        
-        // Validar token
-        const validation = AuthService.validateToken(serverResult.token);
-        if (validation.expiresIn) {
-          console.log(`Token válido por ${validation.expiresIn} segundos`);
-          
-          if (validation.expiresIn <= 300) {
-            console.warn("Token expira pronto, considere implementar renovación automática");
-          }
+      if (validation.expiresIn) {
+        console.log(`Sesión válida por: ${Math.floor(validation.expiresIn / 60)} minutos`);
+
+        if (validation.expiresIn <= 600) {
+          console.warn("La sesión expirará pronto. Por favor, guarde su trabajo.");
         }
       }
 
-      // 3. Redirigir al dashboard
-      router.push("/dashboard");
-      router.refresh();
+      window.location.href = "/dashboard";
 
     } catch (error: any) {
       console.error("Login error:", error);
-
-      // Limpiar tokens en caso de error
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("token");
-      }
 
       let errorMessage = "Credenciales inválidas";
 
@@ -78,13 +60,15 @@ export default function LoginPage() {
       }
 
       setError(errorMessage);
+
+      AuthService.logout();
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-linear-to-br from-primary/10 via-background to-accent/10 p-4">
+    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4">
       <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex justify-center mb-8">
           <div className="flex flex-col items-center gap-2 text-primary">
@@ -179,14 +163,6 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
-
-        {/* Información de debug (opcional, solo en desarrollo) */}
-        {process.env.NODE_ENV === "development" && (
-          <div className="mt-4 text-xs text-muted-foreground text-center">
-            <p>API URL: {process.env.NEXT_PUBLIC_API_URL || "No configurada"}</p>
-            <p>Modo: {process.env.NODE_ENV}</p>
-          </div>
-        )}
       </div>
 
       <img

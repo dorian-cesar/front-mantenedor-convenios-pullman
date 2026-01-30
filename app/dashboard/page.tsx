@@ -4,10 +4,7 @@ import * as Card from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import ExportModal from "@/components/modals/export";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useTokenValidation } from "@/hooks/useAuth";
 import { ArrowDownToLine, Plus, Upload, FileText, Users, Send, Download, DollarSign, Undo2, Percent, IdCard, ChartColumn, Activity } from "lucide-react";
-import { AuthService } from "@/services/auth.service";
 
 const actions = [
     { icon: Plus, label: "Nuevo proyecto", variant: "default" as const },
@@ -19,18 +16,8 @@ const actions = [
 ];
 
 export default function DashboardPage() {
-    const router = useRouter();
     const [openExport, setOpenExport] = useState(false);
-    const { timeLeft } = useTokenValidation();
 
-    useEffect(() => {
-        const token = localStorage.getItem("token") || "";
-        const validation = AuthService.validateToken(token);
-
-        if (!validation.isValid || validation.isExpired) {
-            router.push("/?session=expired");
-        }
-    }, [router]);
 
     const actionButtons = [
         {
@@ -43,11 +30,7 @@ export default function DashboardPage() {
 
     return (
         <div className="flex flex-col justify-center space-y-4">
-            {timeLeft && timeLeft <= 300 && (
-                <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-                    Tu sesión expira en {Math.floor(timeLeft / 60)} minutos
-                </div>
-            )}
+
             <PageHeader
                 title="Dashboard"
                 description="Resumen de la actividad."

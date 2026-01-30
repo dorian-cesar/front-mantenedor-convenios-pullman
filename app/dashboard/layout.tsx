@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import DashboardLayoutClient from "./layout-client";
 
 export const metadata: Metadata = {
     title: "Administración - Convenios",
@@ -10,5 +10,5 @@ export default function RootLayout({
 }: {
     children: React.ReactNode;
 }) {
-    return <DashboardLayout>{children}</DashboardLayout>;
+    return <DashboardLayoutClient>{children}</DashboardLayoutClient>;
 }

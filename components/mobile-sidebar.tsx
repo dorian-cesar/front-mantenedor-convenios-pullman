@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes"; // Añade esta importación
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import { LogOut, Zap } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -12,22 +12,20 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-
 import { NAVIGATION } from "@/constants/navigation";
 import { useEffect, useState } from "react";
 
 interface MobileSidebarProps {
   open: boolean;
   onClose: () => void;
+  onLogout: () => void;
 }
 
-export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
+export function MobileSidebar({ open, onClose, onLogout }: MobileSidebarProps) {
   const pathname = usePathname();
-
   const { theme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Evita renderizado en servidor
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -35,7 +33,6 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
   if (!mounted) {
     return null;
   }
-
 
   const currentTheme = theme === "system" ? systemTheme : theme;
 
@@ -70,12 +67,11 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
 
     return `/logo-wit-${variant}.png`;
   };
-  // Texto alternativo para el logo
+
   const getLogoAlt = () => {
     const themeName = currentTheme === "dark" ? "Oscuro" : "Claro";
     return `logo ${themeName}`;
   };
-
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
@@ -83,7 +79,6 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
         side="left"
         className="w-64 p-0 bg-background border-sidebar-border flex flex-col"
       >
-        {/* HEADER */}
         <SheetHeader className="flex h-16 items-center px-4 border-b border-sidebar-border">
           <SheetTitle className="flex items-center gap-3">
             <img
@@ -93,7 +88,6 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
                 "object-contain transition-opacity duration-300 h-10"
               )}
               onError={(e) => {
-                // Fallback si la imagen no existe
                 const target = e.target as HTMLImageElement;
                 if (currentTheme === "dark") {
                   target.src = "/logo-wit-light.png";
@@ -125,6 +119,10 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+            onClick={() => {
+              onLogout();
+              onClose();
+            }}
           >
             <LogOut className="h-5 w-5" />
             Cerrar sesión

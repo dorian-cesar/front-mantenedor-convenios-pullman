@@ -21,9 +21,37 @@ import { ThemeToggle } from "./ThemeToggle";
 interface NavbarProps {
   sidebarCollapsed: boolean;
   onMobileMenuToggle: () => void;
+  user?: {
+    id: number;
+    correo: string;
+    nombre: string | null;
+    rol: string;
+  } | null;
+  onLogout: () => void;
 }
 
-export function Navbar({ sidebarCollapsed, onMobileMenuToggle }: NavbarProps) {
+export function Navbar({
+  sidebarCollapsed,
+  onMobileMenuToggle,
+  user,
+  onLogout
+}: NavbarProps) {
+
+  const getInitials = () => {
+    if (!user?.nombre) return user?.correo?.charAt(0).toUpperCase() || "AD";
+
+    const names = user.nombre.split(' ');
+    if (names.length >= 2) {
+      return (names[0].charAt(0) + names[1].charAt(0)).toUpperCase();
+    }
+    return names[0].charAt(0).toUpperCase();
+  };
+
+  // Obtener nombre a mostrar
+  const getDisplayName = () => {
+    return user?.nombre || user?.correo?.split('@')[0] || "Usuario";
+  };
+
   return (
     <header
       className={cn(
@@ -116,23 +144,34 @@ export function Navbar({ sidebarCollapsed, onMobileMenuToggle }: NavbarProps) {
                 className="flex items-center gap-2 px-2 hover:bg-secondary"
               >
                 <Avatar className="h-8 w-8">
-                  {/* <AvatarImage src="/placeholder-avatar.jpg" alt="Avatar" /> */}
                   <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                    AD
+                    {getInitials()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden lg:flex flex-col items-start">
-                  <span className="text-sm font-medium text-foreground">Admin User</span>
-                  <span className="text-xs text-muted-foreground">admin@example.com</span>
+                  <span className="text-sm font-medium text-foreground">
+                    {getDisplayName()}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {user?.correo || "admin@example.com"}
+                  </span>
                 </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Mi cuenta</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem><ThemeToggle /></DropdownMenuItem>
+              <DropdownMenuItem>
+                <div className="flex items-center justify-between w-full">
+                  <span>Tema</span>
+                  <ThemeToggle />
+                </div>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive cursor-pointer">
+              <DropdownMenuItem
+                className="text-destructive cursor-pointer"
+                onClick={onLogout}
+              >
                 Cerrar sesión
               </DropdownMenuItem>
             </DropdownMenuContent>
