@@ -6,29 +6,32 @@ import * as Table from "@/components/ui/table"
 import * as Icon from "lucide-react"
 import { BadgeStatus } from "@/components/ui/badge-status"
 import * as Card from "@/components/ui/card"
-import * as Empty from "@/components/ui/empty"
 import { useState, useEffect } from "react"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
-import { Progress } from "@/components/ui/progress"
-import { Field, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import ExportModal from "@/components/modals/export"
 import AddConvenioModal from "@/components/modals/add-convenio"
-
-const mockEmpresas = Array.from({ length: 100 }, (_, i) => ({
-    id: i + 1,
-    empresa: `Empresa ${i + 1}`,
-    nombre: `Nombre ${i + 1}`,
-    codigo: i % 3 === 0 ? true : false,
-    status: i % 3 === 0 ? "inactive" : "active",
-}))
+import UpdateConvenioModal from "@/components/modals/update-convenio"
+import DetailsConvenioModal from "@/components/modals/details-convenio"
+import { ConveniosService, type Convenio, type GetConveniosParams } from "@/services/convenio.service"
+import { EmpresasService, type Empresa } from "@/services/empresa.service"
+import { toast } from "sonner"
+import { useDebounce } from "@/hooks/use-debounce"
+import { exportToCSV } from "@/utils/exportCSV"
+import { exportToExcel } from "@/utils/exportXLSX"
+import { formatDateOnly } from "@/utils/helpers"
 
 export default function ConveniosPage() {
     const [searchValue, setSearchValue] = useState("")
-    const [empresas, setEmpresas] = useState(mockEmpresas)
-    const [filteredEmpresas, setFilteredEmpresas] = useState(mockEmpresas)
+    const [convenios, setConvenios] = useState<Convenio[]>([])
+    const [empresas, setEmpresas] = useState<Empresa[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [openExport, setOpenExport] = useState(false)
+    const [openAdd, setOpenAdd] = useState(false)
+    const [openUpdate, setOpenUpdate] = useState(false)
+    const [openDetails, setOpenDetails] = useState(false)
+    const [selectedConvenio, setSelectedConvenio] = useState<Convenio | null>(null)
     const [selectedEmpresa, setSelectedEmpresa] = useState<number | null>(null)
-    const [openAddConvenioModal, setOpenAddConvenioModal] = useState(false)
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -39,59 +42,163 @@ export default function ConveniosPage() {
         hasPrevPage: false,
     })
 
-    const usosRealizados = 8
-    const maxUsos = 10
-    const porcentajeUso = Math.round((usosRealizados / maxUsos) * 100)
+    const debouncedSearch = useDebounce(searchValue, 500)
 
-    useEffect(() => {
-        if (!searchValue.trim()) {
-            setFilteredEmpresas(empresas)
-        } else {
-            const filtered = empresas.filter(empresa =>
-                empresa.empresa.toLowerCase().includes(searchValue.toLowerCase()) ||
-                empresa.nombre.toLowerCase().includes(searchValue.toLowerCase())
-            )
-            setFilteredEmpresas(filtered)
+    const fetchConvenios = async () => {
+        setIsLoading(true)
+        try {
+            const params: GetConveniosParams = {
+                page: pagination.page,
+                limit: pagination.limit,
+                sortBy: 'id',
+                order: 'DESC',
+            }
+
+            if (debouncedSearch.trim()) {
+                params.nombre = debouncedSearch.trim()
+            }
+
+            if (selectedEmpresa) {
+                params.empresa_id = selectedEmpresa
+            }
+
+            const response = await ConveniosService.getConvenios(params)
+            setConvenios(response.rows)
+
+            setPagination(prev => ({
+                ...prev,
+                total: response.totalItems,
+                totalPages: response.totalPages || 1,
+                hasPrevPage: (response.currentPage || 1) > 1,
+                hasNextPage: (response.currentPage || 1) < (response.totalPages || 1)
+            }))
+        } catch (error) {
+            console.error('Error fetching convenios:', error)
+            toast.error("No se pudieron cargar los convenios")
+        } finally {
+            setIsLoading(false)
         }
-        setPagination(prev => ({ ...prev, page: 1 }))
-    }, [searchValue, empresas])
+    }
+
+    const fetchEmpresas = async () => {
+        try {
+            const response = await EmpresasService.getEmpresas({
+                page: 1,
+                limit: 100,
+                status: "ACTIVO"
+            })
+            setEmpresas(response.rows)
+        } catch (error) {
+            console.error('Error fetching empresas:', error)
+        }
+    }
 
     useEffect(() => {
-        const total = filteredEmpresas.length
-        const totalPages = Math.ceil(total / pagination.limit)
-        const hasPrevPage = pagination.page > 1
-        const hasNextPage = pagination.page < totalPages
-
-        setPagination(prev => ({
-            ...prev,
-            total,
-            totalPages,
-            hasPrevPage,
-            hasNextPage
-        }))
-    }, [filteredEmpresas, pagination.page, pagination.limit])
-
-    const getCurrentPageEmpresas = () => {
-        const startIndex = (pagination.page - 1) * pagination.limit
-        const endIndex = startIndex + pagination.limit
-        return filteredEmpresas.slice(startIndex, endIndex)
-    }
+        fetchConvenios()
+        fetchEmpresas()
+    }, [pagination.page, pagination.limit, debouncedSearch, selectedEmpresa])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
     }
 
+    const handleToggleStatus = async (
+        id: number,
+        currentStatus: "ACTIVO" | "INACTIVO"
+    ) => {
+        try {
+            await ConveniosService.toggleStatus(id, currentStatus)
+            toast.success(
+                currentStatus === "ACTIVO"
+                    ? "Convenio desactivado correctamente"
+                    : "Convenio activado correctamente"
+            )
+            fetchConvenios()
+        } catch (error) {
+            console.error('Error toggling status:', error)
+            toast.error("No se pudo actualizar el estado")
+        }
+    }
+
+    const handleConvenioAdded = () => {
+        fetchConvenios()
+        setOpenAdd(false)
+    }
+
+    const handleEditConvenio = (convenio: Convenio) => {
+        setSelectedConvenio(convenio)
+        setOpenUpdate(true)
+    }
+
+    const handleConvenioUpdated = () => {
+        fetchConvenios()
+    }
+
+    const handleDetailsConvenio = (convenio: Convenio) => {
+        setSelectedConvenio(convenio)
+        setOpenDetails(true)
+    }
+
+    const handleRefresh = () => {
+        fetchConvenios()
+    }
+
+    const handleExport = async (type: "csv" | "excel") => {
+        try {
+            toast.loading("Preparando exportación...", { id: "export" })
+
+            const params: GetConveniosParams = {
+                sortBy: "id",
+                order: "DESC",
+            }
+
+            if (debouncedSearch.trim()) {
+                params.nombre = debouncedSearch.trim()
+            }
+
+            if (selectedEmpresa) {
+                params.empresa_id = selectedEmpresa
+            }
+
+            const response = await ConveniosService.getConvenios(params)
+
+            if (!response.rows.length) {
+                toast.error("No hay datos para exportar", { id: "export" })
+                return
+            }
+
+            const formattedData = response.rows.map(conv => ({
+                ID: conv.id,
+                Nombre: conv.nombre,
+                Empresa: conv.empresa?.nombre || "Sin empresa",
+                RUT_Empresa: conv.empresa?.rut || "N/A",
+                Estado: conv.status,
+                Creado: conv.createdAt ? new Date(conv.createdAt).toLocaleDateString() : "N/A",
+                Actualizado: conv.updatedAt ? new Date(conv.updatedAt).toLocaleDateString() : "N/A",
+            }))
+
+            if (type === "csv") {
+                exportToCSV(formattedData, "convenios.csv")
+                toast.success("CSV exportado correctamente", { id: "export" })
+            }
+
+            if (type === "excel") {
+                exportToExcel(formattedData, "convenios.xlsx")
+                toast.success("Excel exportado correctamente", { id: "export" })
+            }
+
+        } catch (error) {
+            console.error("Error exporting convenios:", error)
+            toast.error("Error al exportar datos", { id: "export" })
+        }
+    }
+
     const actionButtons = [
         {
             label: "Nuevo Convenio",
-            onClick: () => setOpenAddConvenioModal(true),
+            onClick: () => setOpenAdd(true),
             icon: <Icon.PlusIcon className="h-4 w-4" />
         },
-        {
-            label: "Detalles",
-            onClick: () => console.log("Exportar datos"),
-            variant: "outline" as const
-        }
     ]
 
     return (
@@ -100,6 +207,16 @@ export default function ConveniosPage() {
                 title="Convenios"
                 description="Gestione los convenios de las empresas aquí."
                 actionButtons={actionButtons}
+                actionMenu={{
+                    title: "Detalles",
+                    items: [
+                        {
+                            label: "Exportar",
+                            onClick: () => setOpenExport(true),
+                            icon: <Icon.DownloadIcon className="h-4 w-4" />
+                        }
+                    ]
+                }}
                 showSearch={true}
                 searchValue={searchValue}
                 onSearchChange={setSearchValue}
@@ -116,39 +233,63 @@ export default function ConveniosPage() {
                         className="w-full"
                     />
                 }
-            >
-            </PageHeader>
-            <div className="flex gap-4">
-                <Card.Card className="flex-1">
-                    <Table.Table>
-                        <Table.TableHeader>
+                showRefreshButton={true}
+                onRefresh={handleRefresh}
+                filters={
+                    <div className="flex items-center space-x-2">
+                        <select
+                            className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                            value={selectedEmpresa || ""}
+                            onChange={(e) => setSelectedEmpresa(e.target.value ? Number(e.target.value) : null)}
+                        >
+                            <option value="">Todas las empresas</option>
+                            {empresas.map((empresa) => (
+                                <option key={empresa.id} value={empresa.id}>
+                                    {empresa.nombre}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                }
+            />
+
+            <Card.Card>
+                <Table.Table>
+                    <Table.TableHeader>
+                        <Table.TableRow>
+                            <Table.TableHead>ID</Table.TableHead>
+                            <Table.TableHead>Nombre</Table.TableHead>
+                            <Table.TableHead>Empresa</Table.TableHead>
+                            <Table.TableHead>Estado</Table.TableHead>
+                            <Table.TableHead className="text-right">Acciones</Table.TableHead>
+                        </Table.TableRow>
+                    </Table.TableHeader>
+                    <Table.TableBody>
+                        {isLoading ? (
                             <Table.TableRow>
-                                <Table.TableHead>ID</Table.TableHead>
-                                <Table.TableHead>Empresa</Table.TableHead>
-                                <Table.TableHead>Nombre</Table.TableHead>
-                                <Table.TableHead>Codigo</Table.TableHead>
-                                <Table.TableHead>Estado</Table.TableHead>
-                                <Table.TableHead className="text-right">Acciones</Table.TableHead>
+                                <Table.TableCell colSpan={5} className="text-center py-8">
+                                    <div className="flex justify-center">
+                                        <Icon.Loader2Icon className="h-6 w-6 animate-spin" />
+                                    </div>
+                                </Table.TableCell>
                             </Table.TableRow>
-                        </Table.TableHeader>
-                        <Table.TableBody>
-                            {getCurrentPageEmpresas().map((empresa) => (
-                                <Table.TableRow
-                                    key={empresa.id}
-                                    onClick={() => setSelectedEmpresa(empresa.id)}
-                                    className={`${selectedEmpresa === empresa.id ? "bg-muted" : ""} cursor-pointer`}
-                                >
-                                    <Table.TableCell>{empresa.id}</Table.TableCell>
-                                    <Table.TableCell className="font-medium">{empresa.empresa}</Table.TableCell>
-                                    <Table.TableCell>{empresa.nombre}</Table.TableCell>
+                        ) : convenios.length === 0 ? (
+                            <Table.TableRow>
+                                <Table.TableCell colSpan={5} className="text-center py-8">
+                                    No se encontraron convenios
+                                </Table.TableCell>
+                            </Table.TableRow>
+                        ) : (
+                            convenios.map((convenio) => (
+                                <Table.TableRow key={convenio.id}>
+                                    <Table.TableCell>{convenio.id}</Table.TableCell>
+                                    <Table.TableCell className="font-medium">{convenio.nombre}</Table.TableCell>
                                     <Table.TableCell>
-                                        <BadgeStatus status={empresa.codigo}>
-                                            {empresa.codigo ? "Con código" : "Sin código"}
-                                        </BadgeStatus>
+                                        {convenio.empresa?.nombre || "Sin empresa asignada"}
                                     </Table.TableCell>
                                     <Table.TableCell>
-                                        <BadgeStatus status={empresa.status}>
-                                            {empresa.status === "active" ? "Activa" : "Inactiva"}
+                                        <BadgeStatus status={convenio.status === "ACTIVO" ? "active" : "inactive"}>
+                                            {convenio.status === "ACTIVO" ? "Activo" : "Inactivo"}
                                         </BadgeStatus>
                                     </Table.TableCell>
                                     <Table.TableCell className="text-right">
@@ -159,22 +300,31 @@ export default function ConveniosPage() {
                                                 </Button>
                                             </Dropdown.DropdownMenuTrigger>
                                             <Dropdown.DropdownMenuContent align="end">
-                                                <Dropdown.DropdownMenuItem>
+                                                <Dropdown.DropdownMenuItem
+                                                    onClick={() => handleDetailsConvenio(convenio)}
+                                                >
                                                     <Icon.EyeIcon className="h-4 w-4 mr-2" />
                                                     Ver detalles
                                                 </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuItem>
+                                                <Dropdown.DropdownMenuItem
+                                                    onClick={() => handleEditConvenio(convenio)}
+                                                >
                                                     <Icon.PencilIcon className="h-4 w-4 mr-2" />
                                                     Editar
                                                 </Dropdown.DropdownMenuItem>
                                                 <Dropdown.DropdownMenuSeparator />
-                                                {empresa.status === "active" ? (
-                                                    <Dropdown.DropdownMenuItem variant="destructive">
+                                                {convenio.status === "ACTIVO" ? (
+                                                    <Dropdown.DropdownMenuItem
+                                                        variant="destructive"
+                                                        onClick={() => handleToggleStatus(convenio.id, convenio.status)}
+                                                    >
                                                         <Icon.BanIcon className="h-4 w-4 mr-2" />
                                                         Desactivar
                                                     </Dropdown.DropdownMenuItem>
                                                 ) : (
-                                                    <Dropdown.DropdownMenuItem>
+                                                    <Dropdown.DropdownMenuItem
+                                                        onClick={() => handleToggleStatus(convenio.id, convenio.status)}
+                                                    >
                                                         <Icon.CheckIcon className="h-4 w-4 mr-2" />
                                                         Activar
                                                     </Dropdown.DropdownMenuItem>
@@ -183,119 +333,39 @@ export default function ConveniosPage() {
                                         </Dropdown.DropdownMenu>
                                     </Table.TableCell>
                                 </Table.TableRow>
-                            ))}
-                        </Table.TableBody>
-                    </Table.Table>
-                </Card.Card>
-                <Card.Card className="flex flex-col flex-1">
-                    <Card.CardHeader>
-                        <Card.CardTitle className="text-xl">Códigos de Descuento {selectedEmpresa !== null && (`${selectedEmpresa}`)}</Card.CardTitle>
-                        <Card.CardDescription>Códigos asociados a cada convenio</Card.CardDescription>
-                        {selectedEmpresa !== null && (
-                            <>
-                                <Card.CardAction>
-                                    <Button size="sm" onClick={() => console.log("Agregar código de descuento")}>
-                                        <Icon.PlusIcon className="h-4 w-4 mr-2" />
-                                        Agregar Código
-                                    </Button>
-                                </Card.CardAction>
-                                <div className="flex items-center space-x-2 max-w-md">
-                                    <div className="relative flex-1">
-                                        <Icon.SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                                        <Input
-                                            placeholder="Buscar código..."
-                                            value={searchValue}
-                                            onChange={(e) => alert(e.target.value)}
-                                            className="pl-10 pr-10"
-                                        />
-                                        {searchValue && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
-                                                onClick={() => alert("clear")}
-                                            >
-                                                <Icon.XIcon className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                    </div>
-                                    <Button type="submit">Buscar</Button>
-                                </div>
-                            </>
+                            ))
                         )}
-                    </Card.CardHeader>
-                    <Card.CardContent className="flex-1 flex items-center justify-center">
-                        {selectedEmpresa !== null ? (
-                            <div className="h-full w-full">
-                                <Card.Card className="mb-3 flex-1">
-                                    <Card.CardHeader>
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <Card.CardTitle className="text-lg">
-                                                    Código: <span className="font-mono">XYZ2025</span>
-                                                </Card.CardTitle>
-                                                <Card.CardDescription>
-                                                    Vigente del 01/01/2025 al 31/03/2025
-                                                </Card.CardDescription>
-                                            </div>
+                    </Table.TableBody>
+                </Table.Table>
+            </Card.Card>
 
-                                            <BadgeStatus status="active">Activo</BadgeStatus>
-                                        </div>
-                                    </Card.CardHeader>
-
-                                    <Card.CardContent className="space-y-3 text-sm">
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Tipo pasajero</span>
-                                            <span>Adulto</span>
-                                        </div>
-
-                                        <div className="flex justify-between items-center">
-                                            <Field className="w-full max-w-sm">
-                                                <FieldLabel>
-                                                    <span>Uso del código</span>
-                                                    <span className="ml-auto">{porcentajeUso}%</span>
-                                                </FieldLabel>
-                                                <Progress value={porcentajeUso} />
-                                            </Field>
-                                            <span>{usosRealizados} / {maxUsos}</span>
-                                        </div>
-                                    </Card.CardContent>
-
-                                    <Card.CardFooter className="flex justify-end gap-2">
-                                        <Button size="sm" variant="outline">
-                                            <Icon.PencilIcon className="h-4 w-4 mr-1" />
-                                            Editar
-                                        </Button>
-
-                                        <Button size="sm" variant="destructive">
-                                            <Icon.BanIcon className="h-4 w-4 mr-1" />
-                                            Desactivar
-                                        </Button>
-                                    </Card.CardFooter>
-                                </Card.Card>
-                            </div>
-
-                        ) : (
-                            <Empty.Empty>
-                                <Empty.EmptyHeader>
-                                    <Empty.EmptyMedia variant="icon">
-                                        <Icon.Handshake />
-                                    </Empty.EmptyMedia>
-                                    <Empty.EmptyTitle>Códigos Asociados</Empty.EmptyTitle>
-                                    <Empty.EmptyDescription>
-                                        Seleccione un convenio para ver sus códigos de descuento
-                                    </Empty.EmptyDescription>
-                                </Empty.EmptyHeader>
-                            </Empty.Empty>
-                        )}
-                    </Card.CardContent>
-                </Card.Card>
-            </div>
+            <ExportModal
+                open={openExport}
+                onOpenChange={setOpenExport}
+                onExport={handleExport}
+            />
 
             <AddConvenioModal
-                open={openAddConvenioModal}
-                onOpenChange={setOpenAddConvenioModal}
+                open={openAdd}
+                onOpenChange={setOpenAdd}
+                onSuccess={handleConvenioAdded}
+                empresas={empresas}
             />
+
+            <UpdateConvenioModal
+                open={openUpdate}
+                onOpenChange={setOpenUpdate}
+                convenio={selectedConvenio}
+                onSuccess={handleConvenioUpdated}
+                empresas={empresas}
+            />
+
+            <DetailsConvenioModal
+                open={openDetails}
+                onOpenChange={setOpenDetails}
+                convenio={selectedConvenio}
+            />
+
         </div>
     )
 }

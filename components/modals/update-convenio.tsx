@@ -6,14 +6,12 @@ import * as Dialog from "@/components/ui/dialog"
 import * as Form from "@/components/ui/form"
 import * as Icon from "lucide-react"
 import { Input } from "@/components/ui/input"
-import {
-    Combobox,
-    ComboboxInput,
-    ComboboxContent,
-    ComboboxEmpty,
-    ComboboxList,
-    ComboboxItem,
-} from "@/components/ui/combobox"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { ConveniosService, Convenio } from "@/services/convenio.service"
+import { Empresa } from "@/services/empresa.service"
+import { toast } from "sonner"
 import {
     Select,
     SelectContent,
@@ -21,22 +19,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { ConveniosService } from "@/services/convenio.service"
-import { toast } from "sonner"
 
-interface Empresa {
-    id: number
-    nombre: string
-}
-
-interface AddConvenioModalProps {
+interface UpdateConvenioModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
-    onSuccess?: () => void
+    convenio: Convenio | null
     empresas: Empresa[]
+    onSuccess?: () => void
 }
 
 const convenioSchema = z.object({
@@ -45,56 +34,64 @@ const convenioSchema = z.object({
         .min(3, "El nombre debe tener al menos 3 caracteres")
         .max(100, "El nombre es demasiado largo"),
 
-    empresa_id: z.number().nullable(),
+    empresa_id: z
+        .union([z.number(), z.null()])
+        .optional()
+        .refine((val) => val !== undefined, {
+            message: "Debe seleccionar una empresa",
+        }),
 
     status: z.enum(["ACTIVO", "INACTIVO"]),
 })
 
 type ConvenioFormValues = z.infer<typeof convenioSchema>
 
-export default function AddConvenioModal({
+export default function UpdateConvenioModal({
     open,
     onOpenChange,
-    onSuccess,
+    convenio,
     empresas,
-}: AddConvenioModalProps) {
+    onSuccess,
+}: UpdateConvenioModalProps) {
     const [isLoading, setIsLoading] = useState(false)
 
     const form = useForm<ConvenioFormValues>({
         resolver: zodResolver(convenioSchema),
         defaultValues: {
             nombre: "",
-            empresa_id: undefined,
+            empresa_id: null,
             status: "ACTIVO",
         },
     })
 
-    const empresaSeleccionada = form.watch("empresa_id")
-
     useEffect(() => {
-        if (!open) {
-            form.reset()
+        if (convenio) {
+            form.reset({
+                nombre: convenio.nombre,
+                empresa_id: convenio.empresa_id,
+                status: convenio.status,
+            })
         }
-    }, [open, form])
+    }, [convenio, form])
 
     const onSubmit = async (data: ConvenioFormValues) => {
+        if (!convenio) return
+
         setIsLoading(true)
 
         try {
-            await ConveniosService.createConvenio({
+            await ConveniosService.updateConvenio(convenio.id, {
                 nombre: data.nombre,
-                empresa_id: data.empresa_id ?? undefined,
+                empresa_id: data.empresa_id,
                 status: data.status,
             })
 
-            toast.success("Convenio creado correctamente")
-
-            form.reset()
+            toast.success("Convenio actualizado correctamente")
             onSuccess?.()
             onOpenChange(false)
         } catch (error) {
-            console.error("Error creating convenio:", error)
-            toast.error("No se pudo crear el convenio")
+            console.error("Error updating convenio:", error)
+            toast.error("No se pudo actualizar el convenio")
         } finally {
             setIsLoading(false)
         }
@@ -104,22 +101,20 @@ export default function AddConvenioModal({
         <Dialog.Dialog open={open} onOpenChange={onOpenChange}>
             <Dialog.DialogContent>
                 <Dialog.DialogHeader>
-                    <Dialog.DialogTitle>Agregar Nuevo Convenio</Dialog.DialogTitle>
+                    <Dialog.DialogTitle>Editar Convenio</Dialog.DialogTitle>
                     <Dialog.DialogDescription>
-                        Complete los datos del nuevo convenio.
+                        Modifique los datos del convenio.
                     </Dialog.DialogDescription>
                 </Dialog.DialogHeader>
 
                 <Form.Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-
-                        {/* Nombre */}
                         <Form.FormField
                             control={form.control}
                             name="nombre"
                             render={({ field }) => (
                                 <Form.FormItem>
-                                    <Form.FormLabel>Nombre</Form.FormLabel>
+                                    <Form.FormLabel>Nombre del Convenio</Form.FormLabel>
                                     <Form.FormControl>
                                         <Input placeholder="Ingrese el nombre del convenio" {...field} />
                                     </Form.FormControl>
@@ -133,19 +128,18 @@ export default function AddConvenioModal({
                             name="empresa_id"
                             render={({ field }) => (
                                 <Form.FormItem>
-                                    <Form.FormLabel>Empresa</Form.FormLabel>
-
+                                    <Form.FormLabel>Empresa Asociada (Opcional)</Form.FormLabel>
                                     <Select
-                                        value={field.value ? String(field.value) : ""}
-                                        onValueChange={(value) => field.onChange(Number(value))}
+                                        onValueChange={(value) => field.onChange(value === "null" ? null : Number(value))}
+                                        value={field.value === null ? "null" : String(field.value)}
                                     >
                                         <Form.FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Seleccionar empresa" />
+                                                <SelectValue placeholder="Seleccione una empresa" />
                                             </SelectTrigger>
                                         </Form.FormControl>
-
                                         <SelectContent>
+                                            <SelectItem value="null">Sin empresa</SelectItem>
                                             {empresas.map((empresa) => (
                                                 <SelectItem key={empresa.id} value={String(empresa.id)}>
                                                     {empresa.nombre}
@@ -153,13 +147,11 @@ export default function AddConvenioModal({
                                             ))}
                                         </SelectContent>
                                     </Select>
-
                                     <Form.FormMessage />
                                 </Form.FormItem>
                             )}
                         />
 
-                        {/* Estado */}
                         <Form.FormField
                             control={form.control}
                             name="status"
@@ -168,11 +160,11 @@ export default function AddConvenioModal({
                                     <Form.FormLabel>Estado</Form.FormLabel>
                                     <Select
                                         onValueChange={field.onChange}
-                                        defaultValue={field.value}
+                                        value={field.value}
                                     >
                                         <Form.FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Seleccionar estado" />
+                                                <SelectValue placeholder="Seleccione estado" />
                                             </SelectTrigger>
                                         </Form.FormControl>
                                         <SelectContent>
@@ -185,7 +177,6 @@ export default function AddConvenioModal({
                             )}
                         />
 
-                        {/* Acciones */}
                         <div className="flex justify-end space-x-2">
                             <Button
                                 type="button"
@@ -200,12 +191,11 @@ export default function AddConvenioModal({
                                 {isLoading ? (
                                     <Icon.Loader2Icon className="h-4 w-4 animate-spin mr-2" />
                                 ) : (
-                                    <Icon.PlusIcon className="h-4 w-4 mr-2" />
+                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
                                 )}
-                                Crear Convenio
+                                Guardar Cambios
                             </Button>
                         </div>
-
                     </form>
                 </Form.Form>
             </Dialog.DialogContent>
