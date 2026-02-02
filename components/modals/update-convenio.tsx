@@ -6,6 +6,20 @@ import * as Dialog from "@/components/ui/dialog"
 import * as Form from "@/components/ui/form"
 import * as Icon from "lucide-react"
 import { Input } from "@/components/ui/input"
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -34,12 +48,7 @@ const convenioSchema = z.object({
         .min(3, "El nombre debe tener al menos 3 caracteres")
         .max(100, "El nombre es demasiado largo"),
 
-    empresa_id: z
-        .union([z.number(), z.null()])
-        .optional()
-        .refine((val) => val !== undefined, {
-            message: "Debe seleccionar una empresa",
-        }),
+    empresa_id: z.union([z.number(), z.null()]).optional(),
 
     status: z.enum(["ACTIVO", "INACTIVO"]),
 })
@@ -54,6 +63,7 @@ export default function UpdateConvenioModal({
     onSuccess,
 }: UpdateConvenioModalProps) {
     const [isLoading, setIsLoading] = useState(false)
+    const [openEmpresaPopover, setOpenEmpresaPopover] = useState(false)
 
     const form = useForm<ConvenioFormValues>({
         resolver: zodResolver(convenioSchema),
@@ -64,6 +74,12 @@ export default function UpdateConvenioModal({
         },
     })
 
+    const empresaSeleccionadaId = form.watch("empresa_id")
+
+    const empresaSeleccionada = empresas.find(
+        (empresa) => empresa.id === empresaSeleccionadaId
+    )
+
     useEffect(() => {
         if (convenio) {
             form.reset({
@@ -72,7 +88,14 @@ export default function UpdateConvenioModal({
                 status: convenio.status,
             })
         }
+        setOpenEmpresaPopover(false)
     }, [convenio, form])
+
+    useEffect(() => {
+        if (!open) {
+            setOpenEmpresaPopover(false)
+        }
+    }, [open])
 
     const onSubmit = async (data: ConvenioFormValues) => {
         if (!convenio) return
@@ -123,30 +146,82 @@ export default function UpdateConvenioModal({
                             )}
                         />
 
+                        {/* Empresa con Combobox */}
                         <Form.FormField
                             control={form.control}
                             name="empresa_id"
                             render={({ field }) => (
-                                <Form.FormItem>
+                                <Form.FormItem className="flex flex-col">
                                     <Form.FormLabel>Empresa Asociada (Opcional)</Form.FormLabel>
-                                    <Select
-                                        onValueChange={(value) => field.onChange(value === "null" ? null : Number(value))}
-                                        value={field.value === null ? "null" : String(field.value)}
-                                    >
-                                        <Form.FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Seleccione una empresa" />
-                                            </SelectTrigger>
-                                        </Form.FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="null">Sin empresa</SelectItem>
-                                            {empresas.map((empresa) => (
-                                                <SelectItem key={empresa.id} value={String(empresa.id)}>
-                                                    {empresa.nombre}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Popover open={openEmpresaPopover} onOpenChange={setOpenEmpresaPopover}>
+                                        <PopoverTrigger asChild>
+                                            <Form.FormControl>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={openEmpresaPopover}
+                                                    className={cn(
+                                                        "w-full justify-between",
+                                                        !field.value && "text-muted-foreground"
+                                                    )}
+                                                >
+                                                    {empresaSeleccionada
+                                                        ? empresaSeleccionada.nombre
+                                                        : field.value === null
+                                                            ? "Sin empresa"
+                                                            : "Seleccionar empresa"}
+                                                    <Icon.ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </Form.FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-full p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Buscar empresa..." />
+                                                <CommandList>
+                                                    <CommandEmpty>No se encontró la empresa.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        <CommandItem
+                                                            value="null"
+                                                            onSelect={() => {
+                                                                field.onChange(null)
+                                                                setOpenEmpresaPopover(false)
+                                                            }}
+                                                        >
+                                                            <Icon.CheckIcon
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    field.value === null
+                                                                        ? "opacity-100"
+                                                                        : "opacity-0"
+                                                                )}
+                                                            />
+                                                            Sin empresa
+                                                        </CommandItem>
+                                                        {empresas.map((empresa) => (
+                                                            <CommandItem
+                                                                key={empresa.id}
+                                                                value={empresa.nombre}
+                                                                onSelect={() => {
+                                                                    field.onChange(empresa.id)
+                                                                    setOpenEmpresaPopover(false)
+                                                                }}
+                                                            >
+                                                                <Icon.CheckIcon
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        empresa.id === field.value
+                                                                            ? "opacity-100"
+                                                                            : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {empresa.nombre}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
                                     <Form.FormMessage />
                                 </Form.FormItem>
                             )}
