@@ -270,10 +270,10 @@ export default function EventosPage() {
                 </Table.Table>
             </Card.Card>
 
-            <ExportModal
+            {/* <ExportModal
                 open={openExport}
                 onOpenChange={setOpenExport}
-            />
+            /> */}
         </div>
     )
 }

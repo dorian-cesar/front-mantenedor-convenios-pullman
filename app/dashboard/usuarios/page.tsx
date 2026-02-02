@@ -297,10 +297,10 @@ export default function UsuariosPage() {
         onOpenChange={setOpenAddUserModal}
       />
 
-      <ExportModal
+      {/* <ExportModal
         open={openExportModal}
         onOpenChange={setOpenExportModal}
-      />
+      /> */}
     </div>
   )
 }
