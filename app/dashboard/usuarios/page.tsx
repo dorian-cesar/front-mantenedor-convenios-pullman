@@ -340,11 +340,11 @@ export default function UsuariosPage() {
         onExport={handleExport}
       />
 
-      {/* <AddUsuarioModal
+      <AddUsuarioModal
         open={openAdd}
         onOpenChange={setOpenAdd}
         onSuccess={handleUsuarioAdded}
-      /> */}
+      />
 
       {/* <UpdateUsuarioModal
         open={openUpdate}

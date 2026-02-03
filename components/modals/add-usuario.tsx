@@ -1,8 +1,11 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
 import * as Dialog from "@/components/ui/dialog"
-import { Button } from "../ui/button"
-import { Input } from "../ui/input"
+import * as Form from "@/components/ui/form"
+import * as Icon from "lucide-react"
+import { Input } from "@/components/ui/input"
 import {
     Select,
     SelectContent,
@@ -11,187 +14,306 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { useForm } from "react-hook-form"
-import { useEffect, useState } from "react"
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { UsuariosService } from "@/services/usuario.service"
+import { toast } from "sonner"
 
-interface AddUserModalProps {
+interface AddUsuarioModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
+    onSuccess?: () => void
 }
 
-type FormValues = {
-    nombre: string
-    correo: string
-    password: string
-    rol: "ADMIN" | "USUARIO"
-}
+const usuarioSchema = z
+    .object({
+        correo: z
+            .string()
+            .email("Debe ingresar un correo válido"),
 
-export default function AddUserModal({ open, onOpenChange }: AddUserModalProps) {
-    const [loading, setLoading] = useState(false)
+        nombre: z
+            .string()
+            .min(3, "El nombre debe tener al menos 3 caracteres")
+            .max(100, "El nombre es demasiado largo"),
 
-    const {
-        register,
-        handleSubmit,
-        setValue,
-        reset,
-        formState: { errors }
-    } = useForm<FormValues>({
+        rut: z
+            .string()
+            .transform((val) => val.replace(/\./g, ""))
+            .optional()
+            .refine(
+                (val) => {
+                    if (!val || val.trim() === "") return true
+                    return /^[0-9]+-[0-9kK]$/.test(val)
+                },
+                {
+                    message: "Formato de RUT inválido (ej: 12345678-9)",
+                }
+            ),
+
+        telefono: z
+            .string()
+            .min(6, "Teléfono inválido")
+            .max(20, "Teléfono inválido")
+            .optional()
+            .or(z.literal("")),
+
+        password: z
+            .string()
+            .min(6, "La contraseña debe tener al menos 6 caracteres"),
+
+        confirmPassword: z.string(),
+
+        rol: z.enum(["USUARIO", "SUPER_USUARIO"]),
+
+        status: z.enum(["ACTIVO", "INACTIVO"]),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+        path: ["confirmPassword"],
+        message: "Las contraseñas no coinciden",
+    })
+
+type UsuarioFormValues = z.infer<typeof usuarioSchema>
+
+export default function AddUsuarioModal({
+    open,
+    onOpenChange,
+    onSuccess,
+}: AddUsuarioModalProps) {
+    const [isLoading, setIsLoading] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
+
+    const form = useForm<UsuarioFormValues>({
+        resolver: zodResolver(usuarioSchema),
         defaultValues: {
-            nombre: "",
             correo: "",
+            nombre: "",
+            rut: "",
+            telefono: "",
             password: "",
-            rol: "USUARIO"
-        }
+            confirmPassword: "",
+            rol: "USUARIO",
+            status: "ACTIVO",
+        },
     })
 
     useEffect(() => {
-        if (!open) reset()
-    }, [open, reset])
+        if (!open) {
+            form.reset()
+            setShowPassword(false)
+        }
+    }, [open, form])
 
-    const handleClose = () => {
-        onOpenChange(false)
-    }
+    const onSubmit = async (data: UsuarioFormValues) => {
+        setIsLoading(true)
 
-    const onSubmit = async (data: FormValues) => {
         try {
-            setLoading(true)
+            await UsuariosService.createUsuario({
+                correo: data.correo,
+                password: data.password,
+                rol: data.rol,
+                status: data.status,
+                nombre: data.nombre,
+                rut: data.rut || null,
+                telefono: data.telefono || null,
+            } as any)
 
-            const response = await fetch("/api/usuarios", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(data),
-            })
+            toast.success("Usuario creado correctamente")
 
-            if (!response.ok) {
-                throw new Error("Error al crear usuario")
-            }
-
-            console.log("Usuario creado:", data)
+            form.reset()
+            onSuccess?.()
             onOpenChange(false)
         } catch (error) {
-            console.error("Error:", error)
+            console.error("Error creating usuario:", error)
+            toast.error("No se pudo crear el usuario")
         } finally {
-            setLoading(false)
+            setIsLoading(false)
         }
     }
 
     return (
         <Dialog.Dialog open={open} onOpenChange={onOpenChange}>
-            <Dialog.DialogContent>
+            <Dialog.DialogContent className="max-w-lg">
                 <Dialog.DialogHeader>
-                    <Dialog.DialogTitle>Nuevo Usuario</Dialog.DialogTitle>
+                    <Dialog.DialogTitle>Agregar Nuevo Usuario</Dialog.DialogTitle>
                     <Dialog.DialogDescription>
-                        Crea un nuevo usuario en el sistema
+                        Complete los datos del nuevo usuario del sistema.
                     </Dialog.DialogDescription>
                 </Dialog.DialogHeader>
 
-                <form
-                    onSubmit={handleSubmit(onSubmit)}
-                    className="space-y-4"
-                >
-                    <div className="no-scrollbar -mx-4 max-h-[50vh] overflow-y-auto px-4 space-y-4">
+                <Form.Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-                        {/* Nombre */}
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Nombre</label>
-                            <Input
-                                placeholder="Juan Pérez"
-                                {...register("nombre", {
-                                    required: "El nombre es obligatorio",
-                                    minLength: {
-                                        value: 3,
-                                        message: "Debe tener al menos 3 caracteres"
-                                    }
-                                })}
-                            />
-                            {errors.nombre && (
-                                <p className="text-sm text-destructive">
-                                    {errors.nombre.message}
-                                </p>
+                        <Form.FormField
+                            control={form.control}
+                            name="correo"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Correo</Form.FormLabel>
+                                    <Form.FormControl>
+                                        <Input placeholder="usuario@correo.cl" {...field} />
+                                    </Form.FormControl>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
                             )}
-                        </div>
+                        />
 
-                        {/* Correo */}
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Correo</label>
-                            <Input
-                                type="email"
-                                placeholder="usuario@empresa.cl"
-                                {...register("correo", {
-                                    required: "El correo es obligatorio",
-                                    pattern: {
-                                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                                        message: "Correo inválido"
-                                    }
-                                })}
-                            />
-                            {errors.correo && (
-                                <p className="text-sm text-destructive">
-                                    {errors.correo.message}
-                                </p>
+                        <Form.FormField
+                            control={form.control}
+                            name="nombre"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Nombre</Form.FormLabel>
+                                    <Form.FormControl>
+                                        <Input placeholder="Nombre completo" {...field} />
+                                    </Form.FormControl>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
                             )}
-                        </div>
+                        />
 
-                        {/* Password */}
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Contraseña</label>
-                            <Input
-                                type="password"
-                                placeholder="********"
-                                {...register("password", {
-                                    required: "La contraseña es obligatoria",
-                                    minLength: {
-                                        value: 8,
-                                        message: "Debe tener al menos 8 caracteres"
-                                    },
-                                    pattern: {
-                                        value: /^(?=.*[A-Z])(?=.*\d).+$/,
-                                        message: "Debe contener una mayúscula y un número"
-                                    }
-                                })}
-                            />
-                            {errors.password && (
-                                <p className="text-sm text-destructive">
-                                    {errors.password.message}
-                                </p>
+                        <Form.FormField
+                            control={form.control}
+                            name="rut"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>RUT (opcional)</Form.FormLabel>
+                                    <Form.FormControl>
+                                        <Input placeholder="12.345.678-9" {...field} />
+                                    </Form.FormControl>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
                             )}
-                        </div>
+                        />
 
-                        {/* Rol */}
-                        <div className="space-y-1">
-                            <label className="text-sm font-medium">Rol</label>
-                            <Select
-                                defaultValue="USUARIO"
-                                onValueChange={(value) =>
-                                    setValue("rol", value as FormValues["rol"])
-                                }
+                        <Form.FormField
+                            control={form.control}
+                            name="telefono"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Teléfono (opcional)</Form.FormLabel>
+                                    <Form.FormControl>
+                                        <Input placeholder="+56 9 1234 5678" {...field} />
+                                    </Form.FormControl>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+                        <Form.FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Contraseña</Form.FormLabel>
+                                    <Form.FormControl>
+                                        <div className="relative">
+                                            <Input
+                                                type={showPassword ? "text" : "password"}
+                                                placeholder="********"
+                                                {...field}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="absolute right-2 top-2.5 text-muted-foreground"
+                                                onClick={() => setShowPassword((v) => !v)}
+                                            >
+                                                {showPassword ? (
+                                                    <Icon.EyeOffIcon className="h-4 w-4" />
+                                                ) : (
+                                                    <Icon.EyeIcon className="h-4 w-4" />
+                                                )}
+                                            </button>
+                                        </div>
+                                    </Form.FormControl>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+                        <Form.FormField
+                            control={form.control}
+                            name="confirmPassword"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Confirmar contraseña</Form.FormLabel>
+                                    <Form.FormControl>
+                                        <Input
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="********"
+                                            {...field}
+                                        />
+                                    </Form.FormControl>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+                        <Form.FormField
+                            control={form.control}
+                            name="rol"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Rol</Form.FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Form.FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                        </Form.FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="USUARIO">Usuario</SelectItem>
+                                            <SelectItem value="SUPER_USUARIO">Super Usuario</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+                        <Form.FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Estado</Form.FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Form.FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                        </Form.FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="ACTIVO">Activo</SelectItem>
+                                            <SelectItem value="INACTIVO">Inactivo</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                                disabled={isLoading}
                             >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccionar rol" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="ADMIN">Administrador</SelectItem>
-                                    <SelectItem value="USUARIO">Usuario</SelectItem>
-                                </SelectContent>
-                            </Select>
+                                Cancelar
+                            </Button>
+
+                            <Button type="submit" disabled={isLoading}>
+                                {isLoading ? (
+                                    <Icon.Loader2Icon className="h-4 w-4 animate-spin mr-2" />
+                                ) : (
+                                    <Icon.PlusIcon className="h-4 w-4 mr-2" />
+                                )}
+                                Crear Usuario
+                            </Button>
                         </div>
 
-                    </div>
-
-                    <Dialog.DialogFooter>
-                        <Button type="submit" disabled={loading}>
-                            {loading ? "Guardando..." : "Guardar"}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleClose}
-                        >
-                            Cancelar
-                        </Button>
-                    </Dialog.DialogFooter>
-                </form>
+                    </form>
+                </Form.Form>
             </Dialog.DialogContent>
         </Dialog.Dialog>
     )
