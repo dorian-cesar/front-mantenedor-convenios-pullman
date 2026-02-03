@@ -9,5 +9,10 @@
 - [ ] conectar descuentos y codigos de descuento
 - [ ] conectar usuarios y validar roles
 - [ ] conectar pasajeros
-
 - [ ] agregar limite de resultados en page header
+
+---
+
+## Peticiones
+
+- [ ] busqueda por correo en usuarios
