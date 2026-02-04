@@ -256,196 +256,92 @@ export default function ConveniosPage() {
                     </div>
                 }
             />
-            <div className="flex gap-4">
-                <Card.Card className="flex-1">
-                    <Table.Table>
-                        <Table.TableHeader>
+            <Card.Card>
+                <Table.Table>
+                    <Table.TableHeader>
+                        <Table.TableRow>
+                            <Table.TableHead>ID</Table.TableHead>
+                            <Table.TableHead>Nombre</Table.TableHead>
+                            <Table.TableHead>Empresa</Table.TableHead>
+                            <Table.TableHead>Estado</Table.TableHead>
+                            <Table.TableHead className="text-right">Acciones</Table.TableHead>
+                        </Table.TableRow>
+                    </Table.TableHeader>
+                    <Table.TableBody>
+                        {isLoading ? (
                             <Table.TableRow>
-                                <Table.TableHead>ID</Table.TableHead>
-                                <Table.TableHead>Nombre</Table.TableHead>
-                                <Table.TableHead>Empresa</Table.TableHead>
-                                <Table.TableHead>Estado</Table.TableHead>
-                                <Table.TableHead className="text-right">Acciones</Table.TableHead>
-                            </Table.TableRow>
-                        </Table.TableHeader>
-                        <Table.TableBody>
-                            {isLoading ? (
-                                <Table.TableRow>
-                                    <Table.TableCell colSpan={5} className="text-center py-8">
-                                        <div className="flex justify-center">
-                                            <Icon.Loader2Icon className="h-6 w-6 animate-spin" />
-                                        </div>
-                                    </Table.TableCell>
-                                </Table.TableRow>
-                            ) : convenios.length === 0 ? (
-                                <Table.TableRow>
-                                    <Table.TableCell colSpan={5} className="text-center py-8">
-                                        No se encontraron convenios
-                                    </Table.TableCell>
-                                </Table.TableRow>
-                            ) : (
-                                convenios.map((convenio) => (
-                                    <Table.TableRow key={convenio.id}>
-                                        <Table.TableCell>{convenio.id}</Table.TableCell>
-                                        <Table.TableCell className="font-medium">{convenio.nombre}</Table.TableCell>
-                                        <Table.TableCell>
-                                            {convenio.empresa?.nombre || "Sin empresa asignada"}
-                                        </Table.TableCell>
-                                        <Table.TableCell>
-                                            <BadgeStatus status={convenio.status === "ACTIVO" ? "active" : "inactive"}>
-                                                {convenio.status === "ACTIVO" ? "Activo" : "Inactivo"}
-                                            </BadgeStatus>
-                                        </Table.TableCell>
-                                        <Table.TableCell className="text-right">
-                                            <Dropdown.DropdownMenu>
-                                                <Dropdown.DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="size-8">
-                                                        <Icon.MoreHorizontalIcon />
-                                                    </Button>
-                                                </Dropdown.DropdownMenuTrigger>
-                                                <Dropdown.DropdownMenuContent align="end">
-                                                    <Dropdown.DropdownMenuItem
-                                                        onClick={() => handleDetailsConvenio(convenio)}
-                                                    >
-                                                        <Icon.EyeIcon className="h-4 w-4 mr-2" />
-                                                        Ver detalles
-                                                    </Dropdown.DropdownMenuItem>
-                                                    <Dropdown.DropdownMenuItem
-                                                        onClick={() => handleEditConvenio(convenio)}
-                                                    >
-                                                        <Icon.PencilIcon className="h-4 w-4 mr-2" />
-                                                        Editar
-                                                    </Dropdown.DropdownMenuItem>
-                                                    <Dropdown.DropdownMenuSeparator />
-                                                    {convenio.status === "ACTIVO" ? (
-                                                        <Dropdown.DropdownMenuItem
-                                                            variant="destructive"
-                                                            onClick={() => handleToggleStatus(convenio.id, convenio.status)}
-                                                        >
-                                                            <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                            Desactivar
-                                                        </Dropdown.DropdownMenuItem>
-                                                    ) : (
-                                                        <Dropdown.DropdownMenuItem
-                                                            onClick={() => handleToggleStatus(convenio.id, convenio.status)}
-                                                        >
-                                                            <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                            Activar
-                                                        </Dropdown.DropdownMenuItem>
-                                                    )}
-                                                </Dropdown.DropdownMenuContent>
-                                            </Dropdown.DropdownMenu>
-                                        </Table.TableCell>
-                                    </Table.TableRow>
-                                ))
-                            )}
-                        </Table.TableBody>
-                    </Table.Table>
-                </Card.Card>
-                <Card.Card className="flex flex-col flex-1">
-                    <Card.CardHeader>
-                        <Card.CardTitle className="text-xl">Códigos de Descuento {selectedEmpresa !== null && (`${selectedEmpresa}`)}</Card.CardTitle>
-                        <Card.CardDescription>Códigos asociados a cada convenio</Card.CardDescription>
-                        {selectedEmpresa !== null && (
-                            <>
-                                <Card.CardAction>
-                                    <Button size="sm" onClick={() => console.log("Agregar código de descuento")}>
-                                        <Icon.PlusIcon className="h-4 w-4 mr-2" />
-                                        Agregar Código
-                                    </Button>
-                                </Card.CardAction>
-                                <div className="flex items-center space-x-2 max-w-md">
-                                    <div className="relative flex-1">
-                                        <Icon.SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                                        <Input
-                                            placeholder="Buscar código..."
-                                            value={searchValue}
-                                            onChange={(e) => alert(e.target.value)}
-                                            className="pl-10 pr-10"
-                                        />
-                                        {searchValue && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6"
-                                                onClick={() => alert("clear")}
-                                            >
-                                                <Icon.XIcon className="h-4 w-4" />
-                                            </Button>
-                                        )}
+                                <Table.TableCell colSpan={5} className="text-center py-8">
+                                    <div className="flex justify-center">
+                                        <Icon.Loader2Icon className="h-6 w-6 animate-spin" />
                                     </div>
-                                    <Button type="submit">Buscar</Button>
-                                </div>
-                            </>
-                        )}
-                    </Card.CardHeader>
-                    <Card.CardContent className="flex-1 flex items-center justify-center">
-                        {selectedEmpresa !== null ? (
-                            <div className="h-full w-full">
-                                <Card.Card className="mb-3 flex-1">
-                                    <Card.CardHeader>
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <Card.CardTitle className="text-lg">
-                                                    Código: <span className="font-mono">XYZ2025</span>
-                                                </Card.CardTitle>
-                                                <Card.CardDescription>
-                                                    Vigente del 01/01/2025 al 31/03/2025
-                                                </Card.CardDescription>
-                                            </div>
-
-                                            <BadgeStatus status="active">Activo</BadgeStatus>
-                                        </div>
-                                    </Card.CardHeader>
-
-                                    <Card.CardContent className="space-y-3 text-sm">
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Tipo pasajero</span>
-                                            <span>Adulto</span>
-                                        </div>
-
-                                        <div className="flex justify-between items-center">
-                                            <Field className="w-full max-w-sm">
-                                                <FieldLabel>
-                                                    <span>Uso del código</span>
-                                                    <span className="ml-auto">{80}%</span>
-                                                </FieldLabel>
-                                                <Progress value={80} />
-                                            </Field>
-                                            <span>{8} / {10}</span>
-                                        </div>
-                                    </Card.CardContent>
-
-                                    <Card.CardFooter className="flex justify-end gap-2">
-                                        <Button size="sm" variant="outline">
-                                            <Icon.PencilIcon className="h-4 w-4 mr-1" />
-                                            Editar
-                                        </Button>
-
-                                        <Button size="sm" variant="destructive">
-                                            <Icon.BanIcon className="h-4 w-4 mr-1" />
-                                            Desactivar
-                                        </Button>
-                                    </Card.CardFooter>
-                                </Card.Card>
-                            </div>
-
+                                </Table.TableCell>
+                            </Table.TableRow>
+                        ) : convenios.length === 0 ? (
+                            <Table.TableRow>
+                                <Table.TableCell colSpan={5} className="text-center py-8">
+                                    No se encontraron convenios
+                                </Table.TableCell>
+                            </Table.TableRow>
                         ) : (
-                            <Empty.Empty>
-                                <Empty.EmptyHeader>
-                                    <Empty.EmptyMedia variant="icon">
-                                        <Icon.Handshake />
-                                    </Empty.EmptyMedia>
-                                    <Empty.EmptyTitle>Códigos Asociados</Empty.EmptyTitle>
-                                    <Empty.EmptyDescription>
-                                        Seleccione un convenio para ver sus códigos de descuento
-                                    </Empty.EmptyDescription>
-                                </Empty.EmptyHeader>
-                            </Empty.Empty>
+                            convenios.map((convenio) => (
+                                <Table.TableRow key={convenio.id}>
+                                    <Table.TableCell>{convenio.id}</Table.TableCell>
+                                    <Table.TableCell className="font-medium">{convenio.nombre}</Table.TableCell>
+                                    <Table.TableCell>
+                                        {convenio.empresa?.nombre || "Sin empresa asignada"}
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        <BadgeStatus status={convenio.status === "ACTIVO" ? "active" : "inactive"}>
+                                            {convenio.status === "ACTIVO" ? "Activo" : "Inactivo"}
+                                        </BadgeStatus>
+                                    </Table.TableCell>
+                                    <Table.TableCell className="text-right">
+                                        <Dropdown.DropdownMenu>
+                                            <Dropdown.DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="size-8">
+                                                    <Icon.MoreHorizontalIcon />
+                                                </Button>
+                                            </Dropdown.DropdownMenuTrigger>
+                                            <Dropdown.DropdownMenuContent align="end">
+                                                <Dropdown.DropdownMenuItem
+                                                    onClick={() => handleDetailsConvenio(convenio)}
+                                                >
+                                                    <Icon.EyeIcon className="h-4 w-4 mr-2" />
+                                                    Ver detalles
+                                                </Dropdown.DropdownMenuItem>
+                                                <Dropdown.DropdownMenuItem
+                                                    onClick={() => handleEditConvenio(convenio)}
+                                                >
+                                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                                    Editar
+                                                </Dropdown.DropdownMenuItem>
+                                                <Dropdown.DropdownMenuSeparator />
+                                                {convenio.status === "ACTIVO" ? (
+                                                    <Dropdown.DropdownMenuItem
+                                                        variant="destructive"
+                                                        onClick={() => handleToggleStatus(convenio.id, convenio.status)}
+                                                    >
+                                                        <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                        Desactivar
+                                                    </Dropdown.DropdownMenuItem>
+                                                ) : (
+                                                    <Dropdown.DropdownMenuItem
+                                                        onClick={() => handleToggleStatus(convenio.id, convenio.status)}
+                                                    >
+                                                        <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                        Activar
+                                                    </Dropdown.DropdownMenuItem>
+                                                )}
+                                            </Dropdown.DropdownMenuContent>
+                                        </Dropdown.DropdownMenu>
+                                    </Table.TableCell>
+                                </Table.TableRow>
+                            ))
                         )}
-                    </Card.CardContent>
-                </Card.Card>
-            </div>
+                    </Table.TableBody>
+                </Table.Table>
+            </Card.Card>
+
 
 
             <ExportModal
