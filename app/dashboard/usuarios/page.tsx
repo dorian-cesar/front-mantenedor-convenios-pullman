@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
 import ExportModal from "@/components/modals/export"
 import AddUsuarioModal from "@/components/modals/add-usuario"
-// import UpdateUsuarioModal from "@/components/modals/update-usuario"
+import UpdateUsuarioModal from "@/components/modals/update-usuario"
 import DetailsUsuarioModal from "@/components/modals/details-usuario"
 import { UsuariosService, type Usuario, type GetUsuariosParams } from "@/services/usuario.service"
 import { toast } from "sonner"
@@ -346,12 +346,12 @@ export default function UsuariosPage() {
         onSuccess={handleUsuarioAdded}
       />
 
-      {/* <UpdateUsuarioModal
+      <UpdateUsuarioModal
         open={openUpdate}
         onOpenChange={setOpenUpdate}
         usuario={selectedUsuario}
         onSuccess={handleUsuarioUpdated}
-      /> */}
+      />
 
       <DetailsUsuarioModal
         open={openDetails}

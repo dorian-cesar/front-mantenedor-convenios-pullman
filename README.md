@@ -15,4 +15,6 @@
 
 ## Peticiones
 
+### usuarios
 - [ ] busqueda por correo en usuarios
+- [ ] agregar campos a creacion de usuarios (nombre, rut, telefono...)
