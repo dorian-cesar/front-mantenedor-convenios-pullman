@@ -10,3 +10,17 @@ export const formatRut = (rut: string) => {
   const dv = rut.slice(-1)
   return `${rutBody.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${dv}`
 }
+
+export const formatDate = (isoDate: string) => {
+  if (!isoDate) return "-"
+
+  const date = new Date(isoDate)
+
+  if (isNaN(date.getTime())) return "-"
+
+  return date.toLocaleDateString("es-CL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+}

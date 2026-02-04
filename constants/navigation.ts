@@ -6,6 +6,7 @@ import {
     Percent,
     Users,
     IdCard,
+    QrCode,
 } from "lucide-react"
 
 export type NavItem = {
@@ -60,7 +61,16 @@ export const NAVIGATION: NavItem[] = [
         title: "Descuentos",
         href: "/dashboard/descuentos",
         icon: Percent,
-        description: "descuentos · promociones · cupones",
+        description: "codigos · descuentos · promociones · cupones",
+        group: "Convenios y Beneficios",
+        section: "main",
+    },
+    {
+        id: "codigos",
+        title: "Codigos de Descuento",
+        href: "/dashboard/codigos",
+        icon: QrCode,
+        description: "codigos · descuentos · promociones · cupones",
         group: "Convenios y Beneficios",
         section: "main",
     },
