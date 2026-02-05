@@ -318,7 +318,7 @@ export default function ConveniosPage() {
                                     <Table.TableCell>{convenio.id}</Table.TableCell>
                                     <Table.TableCell className="font-medium">{convenio.nombre}</Table.TableCell>
                                     <Table.TableCell>
-                                        {convenio.empresa?.nombre || "Sin empresa asignada"}
+                                        {convenio.empresa?.nombre || "Sin empresa"}
                                     </Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={convenio.status === "ACTIVO" ? "active" : "inactive"}>
