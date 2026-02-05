@@ -19,7 +19,8 @@ import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
 import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
-import { formatDateOnly } from "@/utils/helpers"
+import { AuthService, CurrentUser } from "@/services/auth.service"
+import { formatDateOnly, formatNumber } from "@/utils/helpers"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
@@ -36,6 +37,7 @@ export default function ConveniosPage() {
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedConvenio, setSelectedConvenio] = useState<Convenio | null>(null)
     const [selectedEmpresa, setSelectedEmpresa] = useState<number | null>(null)
+    const [user, setUser] = useState<CurrentUser | null>(null)
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -102,6 +104,10 @@ export default function ConveniosPage() {
         fetchEmpresas()
     }, [pagination.page, pagination.limit, debouncedSearch, selectedEmpresa])
 
+    useEffect(() => {
+        setUser(AuthService.getCurrentUser())
+    }, [])
+
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
     }
@@ -121,6 +127,25 @@ export default function ConveniosPage() {
         } catch (error) {
             console.error('Error toggling status:', error)
             toast.error("No se pudo actualizar el estado")
+        }
+    }
+
+    const handleDelete = async (
+        id: number,
+        currentStatus: "ACTIVO" | "INACTIVO"
+    ) => {
+        try {
+            if (currentStatus === "ACTIVO") {
+                toast.error("No se puede eliminar un convenio activo")
+                return;
+            };
+
+            await ConveniosService.deleteConvenio(id)
+            toast.success("Convenio eliminado correctamente")
+            fetchConvenios()
+        } catch (error) {
+            console.error('Error deleting:', error)
+            toast.error("No se pudo eliminar el convenio")
         }
     }
 
@@ -264,6 +289,11 @@ export default function ConveniosPage() {
                             <Table.TableHead>Nombre</Table.TableHead>
                             <Table.TableHead>Empresa</Table.TableHead>
                             <Table.TableHead>Estado</Table.TableHead>
+                            <Table.TableHead>Tipo Consulta</Table.TableHead>
+                            <Table.TableHead>Vigencia</Table.TableHead>
+                            <Table.TableHead>Monto tope</Table.TableHead>
+                            <Table.TableHead>Cantidad Tickets</Table.TableHead>
+                            <Table.TableHead>Descuento</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
                     </Table.TableHeader>
@@ -283,8 +313,8 @@ export default function ConveniosPage() {
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            convenios.map((convenio) => (
-                                <Table.TableRow key={convenio.id}>
+                            convenios.map((convenio, index) => (
+                                <Table.TableRow key={`${convenio.id}-${index}`}>
                                     <Table.TableCell>{convenio.id}</Table.TableCell>
                                     <Table.TableCell className="font-medium">{convenio.nombre}</Table.TableCell>
                                     <Table.TableCell>
@@ -295,6 +325,19 @@ export default function ConveniosPage() {
                                             {convenio.status === "ACTIVO" ? "Activo" : "Inactivo"}
                                         </BadgeStatus>
                                     </Table.TableCell>
+                                    <Table.TableCell>{convenio.tipo_consulta ? convenio.tipo_consulta === "API_EXTERNA" ? "API" : "Código" : "Sin consulta"}</Table.TableCell>
+                                    <Table.TableCell>
+                                        {convenio.fecha_inicio
+                                            ? formatDateOnly(convenio.fecha_inicio)
+                                            : "Sin inicio"}
+                                        {" - "}
+                                        {convenio.fecha_termino
+                                            ? formatDateOnly(convenio.fecha_termino)
+                                            : "Sin fin"}
+                                    </Table.TableCell>
+                                    <Table.TableCell>{convenio.tope_monto_ventas ? formatNumber(convenio.tope_monto_ventas) : "Sin tope"}</Table.TableCell>
+                                    <Table.TableCell>{convenio.tope_cantidad_tickets ? formatNumber(convenio.tope_cantidad_tickets) : "Sin tope"}</Table.TableCell>
+                                            <Table.TableCell>{convenio.descuento?.porcentaje ? `${formatNumber(convenio.descuento.porcentaje)}%` : "Sin descuento"}</Table.TableCell>
                                     <Table.TableCell className="text-right">
                                         <Dropdown.DropdownMenu>
                                             <Dropdown.DropdownMenuTrigger asChild>
@@ -330,6 +373,16 @@ export default function ConveniosPage() {
                                                     >
                                                         <Icon.CheckIcon className="h-4 w-4 mr-2" />
                                                         Activar
+                                                    </Dropdown.DropdownMenuItem>
+                                                )}
+
+                                                {(convenio.status === "INACTIVO" && user?.rol === "SUPER_USUARIO") && (
+                                                    <Dropdown.DropdownMenuItem
+                                                        variant="destructive"
+                                                        onClick={() => handleDelete(convenio.id, convenio.status)}
+                                                    >
+                                                        <Icon.Trash2 className="h-4 w-4 mr-2" />
+                                                        Eliminar
                                                     </Dropdown.DropdownMenuItem>
                                                 )}
                                             </Dropdown.DropdownMenuContent>

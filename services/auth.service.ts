@@ -27,6 +27,14 @@ export interface TokenValidation {
     };
 }
 
+export type CurrentUser = {
+    id: number
+    correo: string
+    nombre: string | null
+    telefono: string | null
+    rol: string
+}
+
 export class AuthService {
     static async login(credentials: LoginCredentials): Promise<LoginResponse> {
         const response = await api.post<LoginResponse>('/auth/login', credentials);

@@ -10,6 +10,17 @@ export interface Convenio {
         nombre: string;
         rut: string;
     };
+    tipo_consulta?: "API_EXTERNA" | "CODIGO_DESCUENTO";
+    fecha_inicio?: string;
+    fecha_termino?: string;
+    tope_monto_ventas?: number;
+    tope_cantidad_tickets?: number;
+    descuento?: {
+        id: number;
+        porcentaje: number;
+        tipo_pasajero_id: number;
+        status: "ACTIVO" | "INACTIVO";
+    }
     createdAt?: string;
     updatedAt?: string;
 }
@@ -35,6 +46,9 @@ export interface CreateConvenioData {
     nombre: string;
     empresa_id?: number | null;
     status?: "ACTIVO" | "INACTIVO";
+    tipo_consulta?: "API_EXTERNA" | "CODIGO_DESCUENTO";
+    tope_monto_ventas?: number;
+    tope_cantidad_tickets?: number;
 }
 
 export interface UpdateConvenioData {

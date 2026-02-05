@@ -46,18 +46,36 @@ interface AddConvenioModalProps {
     empresas: Empresa[]
 }
 
-const convenioSchema = z.object({
-    nombre: z
-        .string()
+export const convenioSchema = z.object({
+    nombre: z.string()
         .min(3, "El nombre debe tener al menos 3 caracteres")
         .max(100, "El nombre es demasiado largo"),
 
-    empresa_id: z.number().nullable().optional(),
+    empresa_id: z.number()
+        .int("Debe seleccionar una empresa")
+        .positive("Debe seleccionar una empresa"),
 
-    status: z.enum(["ACTIVO", "INACTIVO"]),
+    tipo_consulta: z.enum(
+        ["CODIGO_DESCUENTO", "API_EXTERNA"],
+        { message: "Debe seleccionar un tipo de consulta" }
+    ),
+
+    tope_monto_ventas: z
+        .number()
+        .min(1, "Debe ser mayor a 0")
+        .optional(),
+
+    tope_cantidad_tickets: z
+        .number()
+        .min(1, "Debe ser mayor a 0")
+        .optional(),
+
+    status: z.enum(["ACTIVO", "INACTIVO"], {
+        message: "Debe seleccionar un estado"
+    }),
 })
 
-type ConvenioFormValues = z.infer<typeof convenioSchema>
+export type ConvenioFormValues = z.infer<typeof convenioSchema>
 
 export default function AddConvenioModal({
     open,
@@ -70,12 +88,17 @@ export default function AddConvenioModal({
 
     const form = useForm<ConvenioFormValues>({
         resolver: zodResolver(convenioSchema),
+        mode: "onChange",
         defaultValues: {
             nombre: "",
-            empresa_id: null,
+            empresa_id: undefined,
+            tipo_consulta: undefined,
+            tope_monto_ventas: undefined,
+            tope_cantidad_tickets: undefined,
             status: "ACTIVO",
         },
     })
+
 
     const empresaSeleccionadaId = form.watch("empresa_id")
     const empresaSeleccionada = empresas.find(
@@ -96,21 +119,24 @@ export default function AddConvenioModal({
             await ConveniosService.createConvenio({
                 nombre: data.nombre,
                 empresa_id: data.empresa_id,
+                tipo_consulta: data.tipo_consulta,
+                tope_monto_ventas: data.tope_monto_ventas,
+                tope_cantidad_tickets: data.tope_cantidad_tickets,
                 status: data.status,
             })
 
             toast.success("Convenio creado correctamente")
-
             form.reset()
             onSuccess?.()
             onOpenChange(false)
         } catch (error) {
-            console.error("Error creating convenio:", error)
+            console.error(error)
             toast.error("No se pudo crear el convenio")
         } finally {
             setIsLoading(false)
         }
     }
+
 
     return (
         <Dialog.Dialog open={open} onOpenChange={onOpenChange}>
@@ -144,7 +170,7 @@ export default function AddConvenioModal({
                             name="empresa_id"
                             render={({ field }) => (
                                 <Form.FormItem className="flex flex-col">
-                                    <Form.FormLabel>Empresa (Opcional)</Form.FormLabel>
+                                    <Form.FormLabel>Empresa</Form.FormLabel>
                                     <Popover open={openEmpresaPopover} onOpenChange={setOpenEmpresaPopover}>
                                         <PopoverTrigger asChild>
                                             <Form.FormControl>
@@ -164,29 +190,15 @@ export default function AddConvenioModal({
                                                 </Button>
                                             </Form.FormControl>
                                         </PopoverTrigger>
-                                        <PopoverContent className="w-full p-0">
+                                        <PopoverContent className="w-[462px] p-0">
                                             <Command>
-                                                <CommandInput placeholder="Buscar empresa..." />
+                                                <CommandInput
+                                                    placeholder="Buscar empresa..."
+                                                    className={cn("outline-none")}
+                                                />
                                                 <CommandList>
                                                     <CommandEmpty>No se encontró la empresa.</CommandEmpty>
                                                     <CommandGroup>
-                                                        <CommandItem
-                                                            value="null"
-                                                            onSelect={() => {
-                                                                field.onChange(null)
-                                                                setOpenEmpresaPopover(false)
-                                                            }}
-                                                        >
-                                                            <Icon.CheckIcon
-                                                                className={cn(
-                                                                    "mr-2 h-4 w-4",
-                                                                    field.value === null
-                                                                        ? "opacity-100"
-                                                                        : "opacity-0"
-                                                                )}
-                                                            />
-                                                            Sin empresa
-                                                        </CommandItem>
                                                         {empresas.map((empresa) => (
                                                             <CommandItem
                                                                 key={empresa.id}
@@ -216,6 +228,75 @@ export default function AddConvenioModal({
                                 </Form.FormItem>
                             )}
                         />
+
+                        <Form.FormField
+                            control={form.control}
+                            name="tipo_consulta"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Tipo de consulta</Form.FormLabel>
+                                    <Select onValueChange={field.onChange}>
+                                        <Form.FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Seleccionar tipo de consulta" />
+                                            </SelectTrigger>
+                                        </Form.FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="CODIGO_DESCUENTO">Código descuento</SelectItem>
+                                            <SelectItem value="API_EXTERNA">API</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+                        <Form.FormField
+                            control={form.control}
+                            name="tope_monto_ventas"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Tope monto ventas</Form.FormLabel>
+                                    <Form.FormControl>
+                                        <Input
+                                            type="number"
+                                            placeholder="Ej: 1000000"
+                                            value={field.value ?? ""} // Muestra vacío si es undefined
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                // Convierte a número o undefined
+                                                field.onChange(value === "" ? undefined : Number(value));
+                                            }}
+                                        />
+                                    </Form.FormControl>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+                        <Form.FormField
+                            control={form.control}
+                            name="tope_cantidad_tickets"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Tope cantidad tickets</Form.FormLabel>
+                                    <Form.FormControl>
+                                        <Input
+                                            type="number"
+                                            placeholder="Ej: 50"
+                                            value={field.value ?? ""} // Muestra vacío si es undefined
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                // Convierte a número o undefined
+                                                field.onChange(value === "" ? undefined : Number(value));
+                                            }}
+                                        />
+                                    </Form.FormControl>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
 
                         <Form.FormField
                             control={form.control}
@@ -252,7 +333,7 @@ export default function AddConvenioModal({
                                 Cancelar
                             </Button>
 
-                            <Button type="submit" disabled={isLoading}>
+                            <Button type="submit" disabled={isLoading || !form.formState.isValid}>
                                 {isLoading ? (
                                     <Icon.Loader2Icon className="h-4 w-4 animate-spin mr-2" />
                                 ) : (

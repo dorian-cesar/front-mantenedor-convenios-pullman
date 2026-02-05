@@ -24,3 +24,12 @@ export const formatDate = (isoDate: string) => {
     year: "numeric",
   })
 }
+
+export const formatNumber = (value?: number | string | null) => {
+  if (value === null || value === undefined || value === "") return "-"
+
+  const num = Number(value)
+  if (isNaN(num)) return "-"
+
+  return num.toLocaleString("es-CL")
+}
