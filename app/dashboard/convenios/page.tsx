@@ -89,8 +89,6 @@ export default function ConveniosPage() {
     const fetchEmpresas = async () => {
         try {
             const response = await EmpresasService.getEmpresas({
-                page: 1,
-                limit: 100,
                 status: "ACTIVO"
             })
             setEmpresas(response.rows)
