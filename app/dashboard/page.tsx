@@ -28,14 +28,13 @@ import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    Tooltip,
-    ResponsiveContainer,
-} from "recharts"
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+    type ChartConfig,
+} from "@/components/ui/chart"
 
 const actions = [
     { icon: Plus, label: "Nuevo proyecto", variant: "default" as const },
@@ -55,6 +54,13 @@ const selectOptions = [
     { value: "anual", label: "Anual" },
     { value: "quinquenal", label: "Quinquenal" },
 ]
+
+const chartConfig = {
+    ventas: {
+        label: "Ventas",
+        color: "var(--chart-1)",
+    },
+} satisfies ChartConfig
 
 
 export default function DashboardPage() {
@@ -247,15 +253,44 @@ export default function DashboardPage() {
                         </Card.CardAction>
                     </Card.CardHeader>
                     <Card.CardContent className="flex flex-1">
-                        <div className="h-full w-full flex items-center justify-center rounded-lg bg-secondary/30 border border-dashed border-border">
-                            <div className="text-center space-y-2">
-                                <Activity className="h-12 w-12 mx-auto text-muted-foreground" />
-                                <p className="text-sm text-muted-foreground">
-                                    Área para gráfico de ventas
-                                </p>
+                        {isLoading ? (
+                            <div className="flex items-center justify-center w-full">
+                                Cargando...
                             </div>
-                        </div>
+                        ) : resumen.length === 0 ? (
+                            <div className="flex items-center justify-center w-full text-muted-foreground">
+                                Sin datos para el período seleccionado
+                            </div>
+                        ) : (
+                            <ChartContainer config={chartConfig}>
+                                <AreaChart
+                                    accessibilityLayer
+                                    data={chartData}
+                                    margin={{ left: 12, right: 12 }}
+                                >
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis
+                                        dataKey="periodo"
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickMargin={8}
+                                    />
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={<ChartTooltipContent indicator="dot" hideLabel />}
+                                    />
+                                    <Area
+                                        dataKey="ventas"
+                                        type="linear"
+                                        fill="var(--color-ventas)"
+                                        fillOpacity={0.35}
+                                        stroke="var(--color-ventas)"
+                                    />
+                                </AreaChart>
+                            </ChartContainer>
+                        )}
                     </Card.CardContent>
+                    
                 </Card.Card>
 
                 <Card.Card className="md:col-span-4 row-span-2">
