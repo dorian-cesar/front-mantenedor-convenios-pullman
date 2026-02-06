@@ -7,6 +7,7 @@ import {
     Users,
     IdCard,
     QrCode,
+    Plug
 } from "lucide-react"
 
 export type NavItem = {
@@ -16,7 +17,7 @@ export type NavItem = {
     icon?: React.ElementType
     description?: string
     group: string
-    section: "main" | "secondary"
+    section: "main" | "secondary" | "tertiary"
 }
 
 export const NAVIGATION: NavItem[] = [
@@ -57,15 +58,6 @@ export const NAVIGATION: NavItem[] = [
         section: "main",
     },
     {
-        id: "codigos",
-        title: "Codigos de Descuento",
-        href: "/dashboard/codigos",
-        icon: QrCode,
-        description: "codigos · descuentos · promociones · cupones",
-        group: "Convenios y Beneficios",
-        section: "main",
-    },
-    {
         id: "descuentos",
         title: "Descuentos",
         href: "/dashboard/descuentos",
@@ -75,13 +67,31 @@ export const NAVIGATION: NavItem[] = [
         section: "main",
     },
     {
+        id: "codigos",
+        title: "Codigos de Descuento",
+        href: "/dashboard/codigos",
+        icon: QrCode,
+        description: "codigos · descuentos · promociones · cupones",
+        group: "Convenios y Beneficios",
+        section: "secondary",
+    },
+    {
+        id: "api",
+        title: "API Externa",
+        href: "/dashboard/apis",
+        icon: Plug,
+        description: "endpoints · integraciones · terceros · externos · api",
+        group: "Convenios y Beneficios",
+        section: "secondary",
+    },
+    {
         id: "usuarios",
         title: "Usuarios y Roles",
         href: "/dashboard/usuarios",
         icon: Users,
         description: "usuarios · roles · accesos",
         group: "Seguridad",
-        section: "secondary",
+        section: "tertiary",
     },
     {
         id: "pasajeros",
@@ -90,6 +100,6 @@ export const NAVIGATION: NavItem[] = [
         icon: IdCard,
         description: "pasajeros · clientes · personas · tipos de usuarios",
         group: "Operación",
-        section: "secondary",
+        section: "tertiary",
     },
 ]

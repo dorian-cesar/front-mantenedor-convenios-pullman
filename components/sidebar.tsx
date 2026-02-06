@@ -135,6 +135,14 @@ export function Sidebar({ collapsed, onToggle, onLogout }: SidebarProps) {
                             NAVIGATION.filter((item) => item.section === "secondary")
                         )}
                     </div>
+
+                    <div className="my-4 border-t border-sidebar-border" />
+
+                    <div className="flex flex-col gap-1">
+                        {renderNavItems(
+                            NAVIGATION.filter((item) => item.section === "tertiary")
+                        )}
+                    </div>
                 </nav>
 
                 <div className="border-t border-sidebar-border p-3">
