@@ -86,7 +86,7 @@ export const NAVIGATION: NavItem[] = [
     },
     {
         id: "usuarios",
-        title: "Usuarios y Roles",
+        title: "Usuarios",
         href: "/dashboard/usuarios",
         icon: Users,
         description: "usuarios · roles · accesos",
