@@ -13,19 +13,19 @@
 
 ### Convenios
 - [ ] agregar filtros
-- [ ] agregar vista de códigos de descuento
-- [ ] conectar descuentos y códigos de descuento
+- [x] conectar descuentos y códigos de descuento
 
-### Convenios
+### Codigos de descuento
+- [x] agregar vista de códigos de descuento
 - [ ] corregir fechas de inputs en add codigo descuento
 
 ### Usuarios
-- [ ] conectar usuarios
-- [ ] validar roles
+- [x] conectar usuarios
+- [x] validar roles
 
 ### Pasajeros
-- [ ] conectar pasajeros
-- [ ] modal de pasajeros
+- [x] conectar pasajeros
+- [x] modal de pasajeros
 
 ### UX / UI
 - [ ] agregar límite de resultados en page header
@@ -42,13 +42,13 @@
 - [ ] Agregar campos en creación (post) (nombre, RUT, teléfono)
 
 ### Descuentos
-- [ ] Agregar filtro de búsqueda
+- [x] Agregar filtro de búsqueda
 - [ ] corregir requerimiento de tipo de pasajero
 
 ### Convenios
-- [ ] arreglar api delete convenios
+- [x] arreglar api delete convenios
 - [ ] corregir api listar convenios para no traer IDs duplicados
-- [ ] arreglar api put:
+- [x] arreglar api put:
 ```
 ReferenceError: ValidationError is not defined
     at module.exports (/home/bitnami/backend-convenios-pullman/src/middlewares/error.middleware.js:5:22)
