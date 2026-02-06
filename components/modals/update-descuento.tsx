@@ -14,20 +14,9 @@ import {
     CommandItem,
     CommandList,
 } from "@/components/ui/command"
-
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -45,98 +34,100 @@ interface CodigoDescuento {
     codigo: string
 }
 
-interface AddDescuentoModalProps {
+interface Descuento {
+    id: number
+    // convenio_id: number
+    // codigo_descuento_id: number
+    porcentaje_descuento: number
+    status: "ACTIVO" | "INACTIVO"
+}
+
+interface UpdateDescuentoModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
+    descuento: Descuento | null
+    // convenios: Convenio[]
+    // codigos: CodigoDescuento[]
     onSuccess?: () => void
-    convenios: Convenio[],
-    codigos: CodigoDescuento[],
 }
 
 export const descuentoSchema = z.object({
-    convenio_id: z.number()
-        .int("Debe seleccionar un convenio")
-        .positive("Debe seleccionar un convenio"),
-    codigo_descuento_id: z.number()
-        .int("Debe seleccionar un código de descuento")
-        .positive("Debe seleccionar un código de descuento"),
-    porcentaje_descuento: z.number()
-        .min(1, "Debe ser mayor a 0")
-        .max(100, "Debe ser menor o igual a 100"),
-    status: z.enum(["ACTIVO", "INACTIVO"], {
-        message: "Debe seleccionar un estado"
-    }),
+    // convenio_id: z.number().int().positive(),
+    // codigo_descuento_id: z.number().int().positive(),
+    porcentaje_descuento: z.number().min(1).max(100),
+    status: z.enum(["ACTIVO", "INACTIVO"]),
 })
 
 export type DescuentoFormValues = z.infer<typeof descuentoSchema>
 
-
-const formatPercentageInput = (value: number | undefined): string => {
-    if (value === undefined || isNaN(value)) {
-        return "" // Retorna cadena vacía en lugar de 0
-    }
-    return value.toString()
-}
-
-
-export default function AddDescuentoModal({
+export default function UpdateDescuentoModal({
     open,
     onOpenChange,
+    descuento,
+    // convenios,
+    // codigos,
     onSuccess,
-    convenios,
-    codigos,
-}: AddDescuentoModalProps) {
-
+}: UpdateDescuentoModalProps) {
     const [loading, setLoading] = React.useState(false)
-    const [openConveniosPopover, setOpenConveniosPopover] = React.useState(false)
-    const [openCodigosPopover, setOpenCodigosPopover] = React.useState(false)
+    // const [openConveniosPopover, setOpenConveniosPopover] = React.useState(false)
+    // const [openCodigosPopover, setOpenCodigosPopover] = React.useState(false)
+
+    const [porcentajeInput, setPorcentajeInput] = React.useState("")
 
     const form = useForm<DescuentoFormValues>({
         resolver: zodResolver(descuentoSchema),
         mode: "onChange",
         defaultValues: {
-            convenio_id: undefined,
-            codigo_descuento_id: undefined,
+            // convenio_id: undefined,
+            // codigo_descuento_id: undefined,
             porcentaje_descuento: undefined,
-            status: "ACTIVO"
+            status: "ACTIVO",
         },
     })
 
-    const convenioSeleccionadoId = form.watch("convenio_id")
-    const convenioSeleccionado = convenios.find(
-        (convenio) => convenio.id === convenioSeleccionadoId
-    )
+    // const convenioSeleccionadoId = form.watch("convenio_id")
+    // const convenioSeleccionado = convenios.find(c => c.id === convenioSeleccionadoId)
 
-    const codigoSeleccionadoId = form.watch("codigo_descuento_id")
-    const codigoSeleccionado = codigos.find(
-        (codigo) => codigo.id === codigoSeleccionadoId
-    )
+    // const codigoSeleccionadoId = form.watch("codigo_descuento_id")
+    // const codigoSeleccionado = codigos.find(c => c.id === codigoSeleccionadoId)
 
     React.useEffect(() => {
-        if (open) {
-            form.reset()
-            setOpenConveniosPopover(false)
-            setOpenCodigosPopover(false)
+        if (open && descuento) {
+            form.reset({
+                // convenio_id: descuento.convenio_id,
+                // codigo_descuento_id: descuento.codigo_descuento_id,
+                porcentaje_descuento: descuento.porcentaje_descuento,
+                status: descuento.status,
+            })
+            setPorcentajeInput(descuento.porcentaje_descuento.toString())
         }
-    }, [open])
+    }, [descuento, open, form])
+
+    React.useEffect(() => {
+        const subscription = form.watch((value, { name }) => {
+            if (name === "porcentaje_descuento" && value.porcentaje_descuento !== undefined) {
+                setPorcentajeInput(value.porcentaje_descuento.toString())
+            }
+        })
+        return () => subscription.unsubscribe()
+    }, [form])
 
     const onSubmit = async (data: DescuentoFormValues) => {
+        if (!descuento) return
         setLoading(true)
         try {
-            await DescuentosService.createDescuento({
-                convenio_id: data.convenio_id,
-                codigo_descuento_id: data.codigo_descuento_id,
+            await DescuentosService.updateDescuento(descuento.id, {
+                // convenio_id: data.convenio_id,
+                // codigo_descuento_id: data.codigo_descuento_id,
                 porcentaje_descuento: data.porcentaje_descuento,
-                status: data.status
+                status: data.status,
             })
-
-            toast.success("Descuento creado correctamente")
-            form.reset()
+            toast.success("Descuento actualizado correctamente")
             onSuccess?.()
             onOpenChange(false)
         } catch (error) {
             console.error(error)
-            toast.error("No se pudo crear el descuento")
+            toast.error("No se pudo actualizar el descuento")
         } finally {
             setLoading(false)
         }
@@ -146,17 +137,15 @@ export default function AddDescuentoModal({
         <Dialog.Dialog open={open} onOpenChange={onOpenChange}>
             <Dialog.DialogContent>
                 <Dialog.DialogHeader>
-                    <Dialog.DialogTitle>
-                        Agregar descuento
-                    </Dialog.DialogTitle>
+                    <Dialog.DialogTitle>Editar Descuento</Dialog.DialogTitle>
                     <Dialog.DialogDescription>
-                        Complete los datos para agregar un descuento.
+                        Modifique los datos del descuento.
                     </Dialog.DialogDescription>
                 </Dialog.DialogHeader>
 
                 <Form.Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <Form.FormField
+                        {/* <Form.FormField
                             control={form.control}
                             name="convenio_id"
                             render={({ field }) => (
@@ -183,31 +172,26 @@ export default function AddDescuentoModal({
                                         </PopoverTrigger>
                                         <PopoverContent className="w-[462px] p-0">
                                             <Command>
-                                                <CommandInput
-                                                    placeholder="Buscar convenio..."
-                                                    className={cn("outline-none")}
-                                                />
+                                                <CommandInput placeholder="Buscar convenio..." />
                                                 <CommandList>
                                                     <CommandEmpty>No se encontró el convenio.</CommandEmpty>
                                                     <CommandGroup>
-                                                        {convenios.map((convenio, index) => (
+                                                        {convenios.map((c, idx) => (
                                                             <CommandItem
-                                                                key={`${convenio.id}-${index}`}
-                                                                value={convenio.nombre}
+                                                                key={`${c.id}-${idx}`}
+                                                                value={c.nombre}
                                                                 onSelect={() => {
-                                                                    field.onChange(convenio.id)
+                                                                    field.onChange(c.id)
                                                                     setOpenConveniosPopover(false)
                                                                 }}
                                                             >
                                                                 <Icon.CheckIcon
                                                                     className={cn(
                                                                         "mr-2 h-4 w-4",
-                                                                        convenio.id === field.value
-                                                                            ? "opacity-100"
-                                                                            : "opacity-0"
+                                                                        c.id === field.value ? "opacity-100" : "opacity-0"
                                                                     )}
                                                                 />
-                                                                {convenio.nombre}
+                                                                {c.nombre}
                                                             </CommandItem>
                                                         ))}
                                                     </CommandGroup>
@@ -238,40 +222,33 @@ export default function AddDescuentoModal({
                                                         !field.value && "text-muted-foreground"
                                                     )}
                                                 >
-                                                    {codigoSeleccionado
-                                                        ? codigoSeleccionado.codigo
-                                                        : "Seleccionar código"}
+                                                    {codigoSeleccionado ? codigoSeleccionado.codigo : "Seleccionar código"}
                                                     <Icon.ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                 </Button>
                                             </Form.FormControl>
                                         </PopoverTrigger>
                                         <PopoverContent className="w-[462px] p-0">
                                             <Command>
-                                                <CommandInput
-                                                    placeholder="Buscar código..."
-                                                    className={cn("outline-none")}
-                                                />
+                                                <CommandInput placeholder="Buscar código..." />
                                                 <CommandList>
                                                     <CommandEmpty>No se encontró el código.</CommandEmpty>
                                                     <CommandGroup>
-                                                        {codigos.map((codigo, index) => (
+                                                        {codigos.map((c, idx) => (
                                                             <CommandItem
-                                                                key={`${codigo.id}-${index}`}
-                                                                value={codigo.codigo}
+                                                                key={`${c.id}-${idx}`}
+                                                                value={c.codigo}
                                                                 onSelect={() => {
-                                                                    field.onChange(codigo.id)
+                                                                    field.onChange(c.id)
                                                                     setOpenCodigosPopover(false)
                                                                 }}
                                                             >
                                                                 <Icon.CheckIcon
                                                                     className={cn(
                                                                         "mr-2 h-4 w-4",
-                                                                        codigo.id === field.value
-                                                                            ? "opacity-100"
-                                                                            : "opacity-0"
+                                                                        c.id === field.value ? "opacity-100" : "opacity-0"
                                                                     )}
                                                                 />
-                                                                {codigo.codigo}
+                                                                {c.codigo}
                                                             </CommandItem>
                                                         ))}
                                                     </CommandGroup>
@@ -282,7 +259,7 @@ export default function AddDescuentoModal({
                                     <Form.FormMessage />
                                 </Form.FormItem>
                             )}
-                        />
+                        /> */}
 
                         <Form.FormField
                             control={form.control}
@@ -292,19 +269,35 @@ export default function AddDescuentoModal({
                                     <Form.FormLabel>Porcentaje Descuento</Form.FormLabel>
                                     <Form.FormControl>
                                         <Input
-                                            type="number"
-                                            value={formatPercentageInput(field.value)}
+                                            type="text"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
+                                            value={porcentajeInput}
                                             onChange={(e) => {
-                                                const value = e.target.value
+                                                const val = e.target.value
 
-                                                if (value === "") {
+                                                setPorcentajeInput(val)
+
+                                                if (val === "") {
                                                     field.onChange(undefined)
-                                                    return
+                                                } else {
+                                                    const num = Number(val)
+                                                    if (!isNaN(num) && num >= 0 && num <= 100) {
+                                                        field.onChange(num)
+                                                    }
                                                 }
-
-                                                const numValue = Number(value)
-                                                if (!isNaN(numValue)) {
-                                                    field.onChange(numValue)
+                                            }}
+                                            onBlur={(e) => {
+                                                const val = e.target.value
+                                                if (val === "") {
+                                                    setPorcentajeInput("")
+                                                    field.onChange(undefined)
+                                                } else {
+                                                    const num = Number(val)
+                                                    if (isNaN(num) || num < 1 || num > 100) {
+                                                        const prevValue = field.value
+                                                        setPorcentajeInput(prevValue ? prevValue.toString() : "")
+                                                    }
                                                 }
                                             }}
                                             placeholder="Ej: 10"
@@ -321,13 +314,10 @@ export default function AddDescuentoModal({
                             render={({ field }) => (
                                 <Form.FormItem>
                                     <Form.FormLabel>Estado</Form.FormLabel>
-                                    <Select
-                                        onValueChange={field.onChange}
-                                        defaultValue={field.value}
-                                    >
+                                    <Select onValueChange={field.onChange} value={field.value}>
                                         <Form.FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Seleccionar estado" />
+                                                <SelectValue placeholder="Seleccione estado" />
                                             </SelectTrigger>
                                         </Form.FormControl>
                                         <SelectContent>
@@ -349,14 +339,13 @@ export default function AddDescuentoModal({
                             >
                                 Cancelar
                             </Button>
-
                             <Button type="submit" disabled={loading || !form.formState.isValid}>
                                 {loading ? (
                                     <Icon.Loader2Icon className="h-4 w-4 animate-spin mr-2" />
                                 ) : (
-                                    <Icon.PlusIcon className="h-4 w-4 mr-2" />
+                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
                                 )}
-                                Crear Descuento
+                                Guardar Cambios
                             </Button>
                         </div>
                     </form>

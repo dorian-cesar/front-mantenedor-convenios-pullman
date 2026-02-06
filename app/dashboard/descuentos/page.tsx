@@ -1,4 +1,3 @@
-// app/dashboard/descuentos/page.tsx
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -12,7 +11,7 @@ import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
 import ExportModal from "@/components/modals/export"
 import AddDescuentoModal from "@/components/modals/add-descuento"
-// import UpdateDescuentoModal from "@/components/modals/update-descuento"
+import UpdateDescuentoModal from "@/components/modals/update-descuento"
 // import DetailsDescuentoModal from "@/components/modals/details-descuento"
 import { DescuentosService, type Descuento, type GetDescuentosParams } from "@/services/descuento.service"
 import { ConveniosService, type Convenio } from "@/services/convenio.service"
@@ -277,8 +276,8 @@ export default function DescuentosPage() {
                             onChange={(e) => setSelectedConvenio(e.target.value ? Number(e.target.value) : null)}
                         >
                             <option value="">Todos los convenios</option>
-                            {convenios.map((convenio) => (
-                                <option key={convenio.id} value={convenio.id}>
+                            {convenios.map((convenio, index) => (
+                                <option key={`${convenio.id}-${index}`} value={convenio.id}>
                                     {convenio.nombre} {convenio.empresa ? `(${convenio.empresa.nombre})` : ''}
                                 </option>
                             ))}
@@ -415,15 +414,16 @@ export default function DescuentosPage() {
                 codigos={codigos}
             />
 
-            {/* <UpdateDescuentoModal
+            <UpdateDescuentoModal
                 open={openUpdate}
                 onOpenChange={setOpenUpdate}
                 descuento={selectedDescuento}
                 onSuccess={handleDescuentoUpdated}
-                convenios={convenios}
+                // convenios={convenios}
+                // codigos={codigos}
             />
 
-            <DetailsDescuentoModal
+            {/* <DetailsDescuentoModal
                 open={openDetails}
                 onOpenChange={setOpenDetails}
                 descuento={selectedDescuento}

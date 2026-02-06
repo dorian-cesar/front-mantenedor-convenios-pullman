@@ -53,8 +53,7 @@ export interface CreateDescuentoData {
 export interface UpdateDescuentoData {
     convenio_id?: number;
     codigo_descuento_id?: number;
-    tipo_pasajero_id?: number;
-    pasajero_id?: number;
+    // tipo_pasajero_id?: number;
     porcentaje_descuento?: number;
     status?: "ACTIVO" | "INACTIVO";
 }
