@@ -1,226 +1,366 @@
-import { useState, useEffect } from "react"
+"use client"
+
+import * as React from "react"
 import { Button } from "@/components/ui/button"
 import * as Dialog from "@/components/ui/dialog"
+import * as Form from "@/components/ui/form"
+import * as Icon from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command"
+
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
+
 import { DescuentosService } from "@/services/descuento.service"
-import type { Convenio } from "@/services/convenio.service"
+
+interface Convenio {
+    id: number
+    nombre: string
+}
+
+interface CodigoDescuento {
+    id: number
+    codigo: string
+}
 
 interface AddDescuentoModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     onSuccess?: () => void
-    convenios: Convenio[]
+    convenios: Convenio[],
+    codigos: CodigoDescuento[],
 }
 
-export default function AddDescuentoModal({ open, onOpenChange, onSuccess, convenios }: AddDescuentoModalProps) {
-    const [isLoading, setIsLoading] = useState(false)
-    const [formData, setFormData] = useState({
-        convenio_id: 0,
-        codigo_descuento_id: 0,
-        tipo_pasajero_id: 1, // Default
-        pasajero_id: 0,
-        porcentaje_descuento: 10,
-        status: "ACTIVO" as "ACTIVO" | "INACTIVO"
+export const descuentoSchema = z.object({
+    convenio_id: z.number()
+        .int("Debe seleccionar un convenio")
+        .positive("Debe seleccionar un convenio"),
+    codigo_descuento_id: z.number()
+        .int("Debe seleccionar un código de descuento")
+        .positive("Debe seleccionar un código de descuento"),
+    porcentaje_descuento: z.number()
+        .min(1, "Debe ser mayor a 0")
+        .max(100, "Debe ser menor o igual a 100"),
+    status: z.enum(["ACTIVO", "INACTIVO"], {
+        message: "Debe seleccionar un estado"
+    }),
+})
+
+export type DescuentoFormValues = z.infer<typeof descuentoSchema>
+
+
+const formatPercentageInput = (value: number | undefined): string => {
+    if (value === undefined || isNaN(value)) {
+        return "" // Retorna cadena vacía en lugar de 0
+    }
+    return value.toString()
+}
+
+
+export default function AddDescuentoModal({
+    open,
+    onOpenChange,
+    onSuccess,
+    convenios,
+    codigos,
+}: AddDescuentoModalProps) {
+
+    const [loading, setLoading] = React.useState(false)
+    const [openConveniosPopover, setOpenConveniosPopover] = React.useState(false)
+    const [openCodigosPopover, setOpenCodigosPopover] = React.useState(false)
+
+    const form = useForm<DescuentoFormValues>({
+        resolver: zodResolver(descuentoSchema),
+        mode: "onChange",
+        defaultValues: {
+            convenio_id: undefined,
+            codigo_descuento_id: undefined,
+            porcentaje_descuento: undefined,
+            status: "ACTIVO"
+        },
     })
 
-    // Simular opciones de tipos de pasajero (deberías obtener esto de la API)
-    const tiposPasajero = [
-        { id: 1, nombre: "ESTUDIANTE" },
-        { id: 2, nombre: "ADULTO" },
-        { id: 3, nombre: "ADULTO_MAYOR" }
-    ]
+    const convenioSeleccionadoId = form.watch("convenio_id")
+    const convenioSeleccionado = convenios.find(
+        (convenio) => convenio.id === convenioSeleccionadoId
+    )
 
-    // Simular códigos de descuento (deberías obtener esto de la API)
-    const codigosDescuento = [
-        { id: 1, codigo: "DESC2024" },
-        { id: 2, codigo: "DESC2025" },
-        { id: 3, codigo: "DESC2026" }
-    ]
+    const codigoSeleccionadoId = form.watch("codigo_descuento_id")
+    const codigoSeleccionado = codigos.find(
+        (codigo) => codigo.id === codigoSeleccionadoId
+    )
 
-    // Simular pasajeros (deberías obtener esto de la API)
-    const pasajeros = [
-        { id: 1, rut: "11111111-1", nombres: "Juan", apellidos: "Pérez" },
-        { id: 2, rut: "22222222-2", nombres: "María", apellidos: "González" },
-        { id: 3, rut: "33333333-3", nombres: "Carlos", apellidos: "Rodríguez" }
-    ]
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        
-        // Validaciones básicas
-        if (formData.convenio_id === 0) {
-            toast.error("Seleccione un convenio")
-            return
+    React.useEffect(() => {
+        if (open) {
+            form.reset()
+            setOpenConveniosPopover(false)
+            setOpenCodigosPopover(false)
         }
-        
-        if (formData.pasajero_id === 0) {
-            toast.error("Seleccione un pasajero")
-            return
-        }
+    }, [open])
 
-        setIsLoading(true)
-
+    const onSubmit = async (data: DescuentoFormValues) => {
+        setLoading(true)
         try {
-            await DescuentosService.createDescuento(formData)
+            await DescuentosService.createDescuento({
+                convenio_id: data.convenio_id,
+                codigo_descuento_id: data.codigo_descuento_id,
+                porcentaje_descuento: data.porcentaje_descuento,
+                status: data.status
+            })
+
             toast.success("Descuento creado correctamente")
+            form.reset()
             onSuccess?.()
             onOpenChange(false)
-            setFormData({
-                convenio_id: 0,
-                codigo_descuento_id: 0,
-                tipo_pasajero_id: 1,
-                pasajero_id: 0,
-                porcentaje_descuento: 10,
-                status: "ACTIVO"
-            })
         } catch (error) {
-            console.error('Error creating descuento:', error)
-            toast.error("Error al crear el descuento")
+            console.error(error)
+            toast.error("No se pudo crear el descuento")
         } finally {
-            setIsLoading(false)
+            setLoading(false)
         }
-    }
-
-    const handleChange = (field: string, value: string | number) => {
-        setFormData(prev => ({ ...prev, [field]: value }))
     }
 
     return (
         <Dialog.Dialog open={open} onOpenChange={onOpenChange}>
-            <Dialog.DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+            <Dialog.DialogContent>
                 <Dialog.DialogHeader>
-                    <Dialog.DialogTitle>Nuevo Descuento</Dialog.DialogTitle>
+                    <Dialog.DialogTitle>
+                        Agregar descuento
+                    </Dialog.DialogTitle>
                     <Dialog.DialogDescription>
-                        Complete los datos para crear un nuevo descuento.
+                        Complete los datos para agregar un descuento.
                     </Dialog.DialogDescription>
                 </Dialog.DialogHeader>
 
-                <form onSubmit={handleSubmit}>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="convenio_id">Convenio *</Label>
-                            <Select
-                                value={formData.convenio_id.toString()}
-                                onValueChange={(value) => handleChange("convenio_id", Number(value))}
+                <Form.Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <Form.FormField
+                            control={form.control}
+                            name="convenio_id"
+                            render={({ field }) => (
+                                <Form.FormItem className="flex flex-col">
+                                    <Form.FormLabel>Convenio</Form.FormLabel>
+                                    <Popover open={openConveniosPopover} onOpenChange={setOpenConveniosPopover}>
+                                        <PopoverTrigger asChild>
+                                            <Form.FormControl>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={openConveniosPopover}
+                                                    className={cn(
+                                                        "w-full justify-between",
+                                                        !field.value && "text-muted-foreground"
+                                                    )}
+                                                >
+                                                    {convenioSeleccionado
+                                                        ? convenioSeleccionado.nombre
+                                                        : "Seleccionar convenio"}
+                                                    <Icon.ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </Form.FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[462px] p-0">
+                                            <Command>
+                                                <CommandInput
+                                                    placeholder="Buscar convenio..."
+                                                    className={cn("outline-none")}
+                                                />
+                                                <CommandList>
+                                                    <CommandEmpty>No se encontró el convenio.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {convenios.map((convenio) => (
+                                                            <CommandItem
+                                                                key={convenio.id}
+                                                                value={convenio.nombre}
+                                                                onSelect={() => {
+                                                                    field.onChange(convenio.id)
+                                                                    setOpenConveniosPopover(false)
+                                                                }}
+                                                            >
+                                                                <Icon.CheckIcon
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        convenio.id === field.value
+                                                                            ? "opacity-100"
+                                                                            : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {convenio.nombre}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+                        <Form.FormField
+                            control={form.control}
+                            name="codigo_descuento_id"
+                            render={({ field }) => (
+                                <Form.FormItem className="flex flex-col">
+                                    <Form.FormLabel>Código Descuento</Form.FormLabel>
+                                    <Popover open={openCodigosPopover} onOpenChange={setOpenCodigosPopover}>
+                                        <PopoverTrigger asChild>
+                                            <Form.FormControl>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={openCodigosPopover}
+                                                    className={cn(
+                                                        "w-full justify-between",
+                                                        !field.value && "text-muted-foreground"
+                                                    )}
+                                                >
+                                                    {codigoSeleccionado
+                                                        ? codigoSeleccionado.codigo
+                                                        : "Seleccionar código"}
+                                                    <Icon.ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </Form.FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[462px] p-0">
+                                            <Command>
+                                                <CommandInput
+                                                    placeholder="Buscar código..."
+                                                    className={cn("outline-none")}
+                                                />
+                                                <CommandList>
+                                                    <CommandEmpty>No se encontró el código.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {codigos.map((codigo) => (
+                                                            <CommandItem
+                                                                key={codigo.id}
+                                                                value={codigo.codigo}
+                                                                onSelect={() => {
+                                                                    field.onChange(codigo.id)
+                                                                    setOpenCodigosPopover(false)
+                                                                }}
+                                                            >
+                                                                <Icon.CheckIcon
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        codigo.id === field.value
+                                                                            ? "opacity-100"
+                                                                            : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {codigo.codigo}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+                        <Form.FormField
+                            control={form.control}
+                            name="porcentaje_descuento"
+                            render={({ field }) => (
+                                <Form.FormItem className="flex flex-col">
+                                    <Form.FormLabel>Porcentaje Descuento</Form.FormLabel>
+                                    <Form.FormControl>
+                                        <Input
+                                            type="number"
+                                            value={formatPercentageInput(field.value)}
+                                            onChange={(e) => {
+                                                const value = e.target.value
+
+                                                if (value === "") {
+                                                    field.onChange(undefined)
+                                                    return
+                                                }
+
+                                                const numValue = Number(value)
+                                                if (!isNaN(numValue)) {
+                                                    field.onChange(numValue)
+                                                }
+                                            }}
+                                            placeholder="Ej: 10"
+                                        />
+                                    </Form.FormControl>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+                        <Form.FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Estado</Form.FormLabel>
+                                    <Select
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                    >
+                                        <Form.FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Seleccionar estado" />
+                                            </SelectTrigger>
+                                        </Form.FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="ACTIVO">Activo</SelectItem>
+                                            <SelectItem value="INACTIVO">Inactivo</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+                        <div className="flex justify-end space-x-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                                disabled={loading}
                             >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccionar convenio" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {convenios.map((convenio) => (
-                                        <SelectItem key={convenio.id} value={convenio.id.toString()}>
-                                            {convenio.nombre} {convenio.empresa ? `(${convenio.empresa.nombre})` : ''}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                                Cancelar
+                            </Button>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="pasajero_id">Pasajero *</Label>
-                            <Select
-                                value={formData.pasajero_id.toString()}
-                                onValueChange={(value) => handleChange("pasajero_id", Number(value))}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccionar pasajero" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {pasajeros.map((pasajero) => (
-                                        <SelectItem key={pasajero.id} value={pasajero.id.toString()}>
-                                            {pasajero.nombres} {pasajero.apellidos} ({pasajero.rut})
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <Button type="submit" disabled={loading || !form.formState.isValid}>
+                                {loading ? (
+                                    <Icon.Loader2Icon className="h-4 w-4 animate-spin mr-2" />
+                                ) : (
+                                    <Icon.PlusIcon className="h-4 w-4 mr-2" />
+                                )}
+                                Crear Descuento
+                            </Button>
                         </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="codigo_descuento_id">Código de Descuento *</Label>
-                            <Select
-                                value={formData.codigo_descuento_id.toString()}
-                                onValueChange={(value) => handleChange("codigo_descuento_id", Number(value))}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccionar código" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {codigosDescuento.map((codigo) => (
-                                        <SelectItem key={codigo.id} value={codigo.id.toString()}>
-                                            {codigo.codigo}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="tipo_pasajero_id">Tipo de Pasajero</Label>
-                            <Select
-                                value={formData.tipo_pasajero_id.toString()}
-                                onValueChange={(value) => handleChange("tipo_pasajero_id", Number(value))}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccionar tipo" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {tiposPasajero.map((tipo) => (
-                                        <SelectItem key={tipo.id} value={tipo.id.toString()}>
-                                            {tipo.nombre}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="porcentaje_descuento">Porcentaje de Descuento *</Label>
-                            <Input
-                                id="porcentaje_descuento"
-                                type="number"
-                                min="1"
-                                max="100"
-                                value={formData.porcentaje_descuento}
-                                onChange={(e) => handleChange("porcentaje_descuento", Number(e.target.value))}
-                                placeholder="Ej: 15"
-                                required
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="status">Estado</Label>
-                            <Select
-                                value={formData.status}
-                                onValueChange={(value: "ACTIVO" | "INACTIVO") => handleChange("status", value)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Seleccionar estado" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="ACTIVO">Activo</SelectItem>
-                                    <SelectItem value="INACTIVO">Inactivo</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    <Dialog.DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={isLoading}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button type="submit" disabled={isLoading}>
-                            {isLoading ? "Creando..." : "Crear Descuento"}
-                        </Button>
-                    </Dialog.DialogFooter>
-                </form>
+                    </form>
+                </Form.Form>
             </Dialog.DialogContent>
         </Dialog.Dialog>
     )

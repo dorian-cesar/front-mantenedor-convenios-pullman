@@ -11,11 +11,12 @@ import { useState, useEffect } from "react"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
 import ExportModal from "@/components/modals/export"
-// import AddDescuentoModal from "@/components/modals/add-descuento"
+import AddDescuentoModal from "@/components/modals/add-descuento"
 // import UpdateDescuentoModal from "@/components/modals/update-descuento"
 // import DetailsDescuentoModal from "@/components/modals/details-descuento"
 import { DescuentosService, type Descuento, type GetDescuentosParams } from "@/services/descuento.service"
 import { ConveniosService, type Convenio } from "@/services/convenio.service"
+import { CodigosDescuentoService, type CodigoDescuento } from "@/services/codigo-descuento.service"
 import { EmpresasService, type Empresa } from "@/services/empresa.service"
 import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
@@ -27,6 +28,7 @@ export default function DescuentosPage() {
     const [searchValue, setSearchValue] = useState("")
     const [descuentos, setDescuentos] = useState<Descuento[]>([])
     const [convenios, setConvenios] = useState<Convenio[]>([])
+    const [codigos, setCodigos] = useState<CodigoDescuento[]>([])
     const [empresas, setEmpresas] = useState<Empresa[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [openExport, setOpenExport] = useState(false)
@@ -88,13 +90,22 @@ export default function DescuentosPage() {
     const fetchConvenios = async () => {
         try {
             const response = await ConveniosService.getConvenios({
-                page: 1,
-                limit: 100,
                 status: "ACTIVO"
             })
             setConvenios(response.rows)
         } catch (error) {
             console.error('Error fetching convenios:', error)
+        }
+    }
+
+    const fetchCodigos = async () => {
+        try {
+            const response = await CodigosDescuentoService.getCodigosDescuento({
+                status: "ACTIVO"
+            })
+            setCodigos(response.rows)
+        } catch (error) {
+            console.error('Error fetching codigos:', error)
         }
     }
 
@@ -114,6 +125,7 @@ export default function DescuentosPage() {
     useEffect(() => {
         fetchDescuentos()
         fetchConvenios()
+        fetchCodigos()
         fetchEmpresas()
     }, [pagination.page, pagination.limit, debouncedSearch, selectedConvenio])
 
@@ -213,15 +225,6 @@ export default function DescuentosPage() {
             console.error("Error exporting descuentos:", error)
             toast.error("Error al exportar datos", { id: "export" })
         }
-    }
-
-    // Función para obtener nombre de empresa basado en convenio_id
-    const getEmpresaNombre = (convenioId: number): string => {
-        const convenio = convenios.find(c => c.id === convenioId)
-        if (convenio && convenio.empresa) {
-            return convenio.empresa.nombre
-        }
-        return "Sin empresa"
     }
 
     const actionButtons = [
@@ -404,14 +407,15 @@ export default function DescuentosPage() {
                 onExport={handleExport}
             />
 
-            {/* <AddDescuentoModal
+            <AddDescuentoModal
                 open={openAdd}
                 onOpenChange={setOpenAdd}
                 onSuccess={handleDescuentoAdded}
                 convenios={convenios}
+                codigos={codigos}
             />
 
-            <UpdateDescuentoModal
+            {/* <UpdateDescuentoModal
                 open={openUpdate}
                 onOpenChange={setOpenUpdate}
                 descuento={selectedDescuento}
