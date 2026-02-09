@@ -312,10 +312,10 @@ export default function ConveniosPage() {
                             <Table.TableHead>Empresa</Table.TableHead>
                             <Table.TableHead>Estado</Table.TableHead>
                             <Table.TableHead>Tipo Consulta</Table.TableHead>
-                            <Table.TableHead>Vigencia</Table.TableHead>
-                            <Table.TableHead>Monto tope</Table.TableHead>
-                            <Table.TableHead>Cantidad Tickets</Table.TableHead>
                             <Table.TableHead>Descuento</Table.TableHead>
+                            <Table.TableHead>Endpoint</Table.TableHead>
+                            <Table.TableHead>Tope Monto</Table.TableHead>
+                            <Table.TableHead>Tope Cantidad Tickets</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
                     </Table.TableHeader>
@@ -347,15 +347,24 @@ export default function ConveniosPage() {
                                             {convenio.status === "ACTIVO" ? "Activo" : "Inactivo"}
                                         </BadgeStatus>
                                     </Table.TableCell>
-                                    <Table.TableCell>{convenio.tipo_consulta ? convenio.tipo_consulta === "API_EXTERNA" ? "API" : "Código" : "Sin consulta"}</Table.TableCell>
                                     <Table.TableCell>
-                                        {convenio.fecha_inicio
-                                            ? formatDateOnly(convenio.fecha_inicio)
-                                            : "Sin inicio"}
-                                        {" - "}
-                                        {convenio.fecha_termino
-                                            ? formatDateOnly(convenio.fecha_termino)
-                                            : "Sin fin"}
+                                        {convenio.tipo_consulta ? (
+                                            convenio.tipo_consulta === "CODIGO_DESCUENTO" ? (
+                                                <>
+                                                    <span>Código</span>
+                                                    <br />
+                                                    <span className="text-sm text-gray-500">{convenio.codigo}</span>
+                                                </>
+                                            ) : (
+                                                "API"
+                                            )
+                                        ) : (
+                                            "Sin consulta"
+                                        )}
+                                    </Table.TableCell>
+                                    <Table.TableCell>{convenio.porcentaje_descuento ? `${formatNumber(convenio.porcentaje_descuento)}%` : "Sin descuento"}</Table.TableCell>
+                                    <Table.TableCell>
+                                        {convenio.endpoint || "Sin endpoint"}
                                     </Table.TableCell>
                                     <Table.TableCell>{convenio.tope_monto_ventas ? formatNumber(convenio.tope_monto_ventas) : "Sin tope"}</Table.TableCell>
                                     <Table.TableCell>{convenio.tope_cantidad_tickets ? formatNumber(convenio.tope_cantidad_tickets) : "Sin tope"}</Table.TableCell>
