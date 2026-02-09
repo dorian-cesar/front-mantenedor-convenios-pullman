@@ -7,7 +7,7 @@ function validateTokenInMiddleware(token: string): boolean {
     try {
         const payloadBase64 = token.split('.')[1];
         const payload = JSON.parse(atob(payloadBase64));
-        
+
         if (!payload.exp) {
             return true;
         }
@@ -23,22 +23,10 @@ function validateTokenInMiddleware(token: string): boolean {
 export function middleware(request: NextRequest) {
     if (request.nextUrl.pathname.startsWith("/dashboard")) {
         const token = request.cookies.get("token")?.value;
-        
         if (!token) {
-            console.log("Redirigiendo a login - sin cookie token");
             return NextResponse.redirect(new URL("/", request.url));
         }
-
-        const isValid = validateTokenInMiddleware(token);
-        
-        if (!isValid) {
-            console.log("Token inválido o expirado");
-            const response = NextResponse.redirect(new URL("/?session=expired", request.url));
-            response.cookies.delete("token");
-            return response;
-        }
     }
-
     return NextResponse.next();
 }
 
