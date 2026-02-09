@@ -5,24 +5,24 @@ export interface Convenio {
     nombre: string;
     empresa_id: number | null;
     status: "ACTIVO" | "INACTIVO";
+    tipo_consulta?: "API_EXTERNA" | "CODIGO_DESCUENTO";
+    endpoint?: string;
+    fecha_inicio?: string;
+    fecha_termino?: string;
+    tope_monto_ventas?: number;
+    tope_cantidad_tickets?: number;
+    porcentaje_descuento?: number;
+    codigo?: string;
+    limitar_por_stock?: boolean;
+    limitar_por_monto?: boolean;
     empresa?: {
         id: number;
         nombre: string;
         rut: string;
     };
-    tipo_consulta?: "API_EXTERNA" | "CODIGO_DESCUENTO";
-    fecha_inicio?: string;
-    fecha_termino?: string;
-    tope_monto_ventas?: number;
-    tope_cantidad_tickets?: number;
-    descuento?: {
-        id: number;
-        porcentaje: number;
-        tipo_pasajero_id: number;
-        status: "ACTIVO" | "INACTIVO";
-    }
     createdAt?: string;
     updatedAt?: string;
+    api_consulta_id?: number;
 }
 
 export interface GetConveniosParams {
@@ -45,16 +45,28 @@ export interface ConveniosResponse {
 export interface CreateConvenioData {
     nombre: string;
     empresa_id?: number | null;
-    status?: "ACTIVO" | "INACTIVO";
-    tipo_consulta?: "API_EXTERNA" | "CODIGO_DESCUENTO";
+    tipo_consulta: "API_EXTERNA" | "CODIGO_DESCUENTO";
+    codigo?: string;
+    porcentaje_descuento?: number;
     tope_monto_ventas?: number;
     tope_cantidad_tickets?: number;
+    api_consulta_id?: number;
+    limitar_por_stock?: boolean;
+    limitar_por_monto?: boolean;
 }
 
 export interface UpdateConvenioData {
     nombre?: string;
     empresa_id?: number | null;
     status?: "ACTIVO" | "INACTIVO";
+    tipo_consulta?: "API_EXTERNA" | "CODIGO_DESCUENTO";
+    codigo?: string;
+    porcentaje_descuento?: number;
+    tope_monto_ventas?: number;
+    tope_cantidad_tickets?: number;
+    api_consulta_id?: number;
+    limitar_por_stock?: boolean | null;
+    limitar_por_monto?: boolean | null;
 }
 
 export class ConveniosService {

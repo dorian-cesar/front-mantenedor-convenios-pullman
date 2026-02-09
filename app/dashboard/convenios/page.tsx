@@ -15,6 +15,7 @@ import UpdateConvenioModal from "@/components/modals/update-convenio"
 import DetailsConvenioModal from "@/components/modals/details-convenio"
 import { ConveniosService, type Convenio, type GetConveniosParams } from "@/services/convenio.service"
 import { EmpresasService, type Empresa } from "@/services/empresa.service"
+import { ApisService, type Api } from "@/services/api.service"
 import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
 import { exportToCSV } from "@/utils/exportCSV"
@@ -30,6 +31,7 @@ export default function ConveniosPage() {
     const [searchValue, setSearchValue] = useState("")
     const [convenios, setConvenios] = useState<Convenio[]>([])
     const [empresas, setEmpresas] = useState<Empresa[]>([])
+    const [apis, setApis] = useState<Api[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [openExport, setOpenExport] = useState(false)
     const [openAdd, setOpenAdd] = useState(false)
@@ -97,9 +99,21 @@ export default function ConveniosPage() {
         }
     }
 
+    const fetchApis = async () => {
+        try {
+            const response = await ApisService.getApis({
+                status: "ACTIVO"
+            })
+            setApis(response.rows)
+        } catch (error) {
+            console.error('Error fetching apis:', error)
+        }
+    }
+
     useEffect(() => {
         fetchConvenios()
         fetchEmpresas()
+        fetchApis()
     }, [pagination.page, pagination.limit, debouncedSearch, selectedEmpresa])
 
     useEffect(() => {
@@ -345,7 +359,7 @@ export default function ConveniosPage() {
                                     </Table.TableCell>
                                     <Table.TableCell>{convenio.tope_monto_ventas ? formatNumber(convenio.tope_monto_ventas) : "Sin tope"}</Table.TableCell>
                                     <Table.TableCell>{convenio.tope_cantidad_tickets ? formatNumber(convenio.tope_cantidad_tickets) : "Sin tope"}</Table.TableCell>
-                                    <Table.TableCell>{convenio.descuento?.porcentaje ? `${formatNumber(convenio.descuento.porcentaje)}%` : "Sin descuento"}</Table.TableCell>
+                                    {/* <Table.TableCell>{convenio.descuento?.porcentaje ? `${formatNumber(convenio.descuento.porcentaje)}%` : "Sin descuento"}</Table.TableCell> */}
                                     <Table.TableCell className="text-right">
                                         <Dropdown.DropdownMenu>
                                             <Dropdown.DropdownMenuTrigger asChild>
@@ -416,6 +430,7 @@ export default function ConveniosPage() {
                 onOpenChange={setOpenAdd}
                 onSuccess={handleConvenioAdded}
                 empresas={empresas}
+                apis={apis}
             />
 
             <UpdateConvenioModal
@@ -424,6 +439,7 @@ export default function ConveniosPage() {
                 convenio={selectedConvenio}
                 onSuccess={handleConvenioUpdated}
                 empresas={empresas}
+                apis={apis}
             />
 
             <DetailsConvenioModal

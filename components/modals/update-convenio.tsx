@@ -39,18 +39,36 @@ interface UpdateConvenioModalProps {
     onOpenChange: (open: boolean) => void
     convenio: Convenio | null
     empresas: Empresa[]
+    apis: Array<{ id: number; nombre: string }>
     onSuccess?: () => void
 }
 
-const convenioSchema = z.object({
-    nombre: z
-        .string()
+export const convenioSchema = z.object({
+    nombre: z.string()
         .min(3, "El nombre debe tener al menos 3 caracteres")
         .max(100, "El nombre es demasiado largo"),
 
     empresa_id: z.union([z.number(), z.null()]).optional(),
 
     status: z.enum(["ACTIVO", "INACTIVO"]),
+
+    tipo_consulta: z.enum(
+        ["CODIGO_DESCUENTO", "API_EXTERNA"],
+        { message: "Debe seleccionar un tipo de consulta" }
+    ),
+
+    codigo: z.string().optional(),
+    porcentaje_descuento: z.number().optional(),
+
+    limitar_por_stock: z
+        .boolean()
+        .nullable()
+        .optional(),
+
+    limitar_por_monto: z
+        .boolean()
+        .nullable()
+        .optional(),
 })
 
 type ConvenioFormValues = z.infer<typeof convenioSchema>
@@ -60,40 +78,60 @@ export default function UpdateConvenioModal({
     onOpenChange,
     convenio,
     empresas,
+    apis,
     onSuccess,
 }: UpdateConvenioModalProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [openEmpresaPopover, setOpenEmpresaPopover] = useState(false)
+    const [openApiPopover, setOpenApiPopover] = useState(false)
 
     const form = useForm<ConvenioFormValues>({
         resolver: zodResolver(convenioSchema),
+        mode: "onChange",
         defaultValues: {
             nombre: "",
             empresa_id: null,
             status: "ACTIVO",
+            tipo_consulta: "CODIGO_DESCUENTO",
+            codigo: "",
+            porcentaje_descuento: undefined,
+
+            limitar_por_stock: undefined,
+            limitar_por_monto: undefined,
         },
     })
 
+    const tipoConsulta = form.watch("tipo_consulta")
     const empresaSeleccionadaId = form.watch("empresa_id")
-
     const empresaSeleccionada = empresas.find(
         (empresa) => empresa.id === empresaSeleccionadaId
     )
 
+
+    const limitarPorStock = form.watch("limitar_por_stock")
+    const limitarPorMonto = form.watch("limitar_por_monto")
+
     useEffect(() => {
         if (convenio) {
             form.reset({
-                nombre: convenio.nombre,
-                empresa_id: convenio.empresa_id,
-                status: convenio.status,
+                nombre: convenio.nombre || "",
+                empresa_id: convenio.empresa_id || null,
+                status: convenio.status || "ACTIVO",
+                tipo_consulta: convenio.tipo_consulta || "CODIGO_DESCUENTO",
+                codigo: convenio.codigo || "",
+                porcentaje_descuento: convenio.porcentaje_descuento || undefined,
+                limitar_por_stock: convenio.limitar_por_stock || undefined,
+                limitar_por_monto: convenio.limitar_por_monto || undefined,
             })
         }
         setOpenEmpresaPopover(false)
+        setOpenApiPopover(false)
     }, [convenio, form])
 
     useEffect(() => {
         if (!open) {
             setOpenEmpresaPopover(false)
+            setOpenApiPopover(false)
         }
     }, [open])
 
@@ -103,11 +141,17 @@ export default function UpdateConvenioModal({
         setIsLoading(true)
 
         try {
-            await ConveniosService.updateConvenio(convenio.id, {
+            const updateData = {
                 nombre: data.nombre,
                 empresa_id: data.empresa_id,
                 status: data.status,
-            })
+                codigo: data.codigo,
+                porcentaje_descuento: data.porcentaje_descuento,
+                limitar_por_stock: data.limitar_por_stock,
+                limitar_por_monto: data.limitar_por_monto,
+            }
+
+            await ConveniosService.updateConvenio(convenio.id, updateData)
 
             toast.success("Convenio actualizado correctamente")
             onSuccess?.()
@@ -122,7 +166,7 @@ export default function UpdateConvenioModal({
 
     return (
         <Dialog.Dialog open={open} onOpenChange={onOpenChange}>
-            <Dialog.DialogContent>
+            <Dialog.DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <Dialog.DialogHeader>
                     <Dialog.DialogTitle>Editar Convenio</Dialog.DialogTitle>
                     <Dialog.DialogDescription>
@@ -146,7 +190,6 @@ export default function UpdateConvenioModal({
                             )}
                         />
 
-                        {/* Empresa con Combobox */}
                         <Form.FormField
                             control={form.control}
                             name="empresa_id"
@@ -252,7 +295,130 @@ export default function UpdateConvenioModal({
                             )}
                         />
 
-                        <div className="flex justify-end space-x-2">
+
+
+                        {tipoConsulta === "CODIGO_DESCUENTO" && (
+                            <>
+                                <Form.FormField
+                                    control={form.control}
+                                    name="codigo"
+                                    render={({ field }) => (
+                                        <Form.FormItem>
+                                            <Form.FormLabel>Código de descuento</Form.FormLabel>
+                                            <Form.FormControl>
+                                                <Input
+                                                    placeholder="Ingrese el código de descuento"
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                />
+                                            </Form.FormControl>
+                                            <Form.FormMessage />
+                                        </Form.FormItem>
+                                    )}
+                                />
+
+                            </>
+                        )}
+
+                        <Form.FormField
+                            control={form.control}
+                            name="porcentaje_descuento"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Porcentaje de descuento</Form.FormLabel>
+                                    <Form.FormControl>
+                                        <Input
+                                            type="number"
+                                            placeholder="Ej: 15"
+                                            value={field.value ?? ""}
+                                            onChange={(e) => {
+                                                const value = e.target.value
+                                                field.onChange(value === "" ? undefined : Number(value))
+                                            }}
+                                        />
+                                    </Form.FormControl>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+                        <Form.FormField
+                            control={form.control}
+                            name="limitar_por_stock"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Limitar por stock</Form.FormLabel>
+                                    <Select
+                                        value={
+                                            field.value === null || field.value === undefined
+                                                ? ""
+                                                : field.value
+                                                    ? "true"
+                                                    : "false"
+                                        }
+                                        onValueChange={(value) => {
+                                            if (value === "") {
+                                                field.onChange(null);
+                                            } else {
+                                                field.onChange(value === "true");
+                                            }
+                                        }}
+                                    >
+                                        <Form.FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Seleccionar" />
+                                            </SelectTrigger>
+                                        </Form.FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="true">Limitar</SelectItem>
+                                            <SelectItem value="false">No limitar</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+
+                        <Form.FormField
+                            control={form.control}
+                            name="limitar_por_monto"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Limitar por monto</Form.FormLabel>
+                                    <Select
+                                        value={
+                                            field.value === null || field.value === undefined
+                                                ? ""
+                                                : field.value
+                                                    ? "true"
+                                                    : "false"
+                                        }
+                                        onValueChange={(value) => {
+                                            if (value === "") {
+                                                field.onChange(null);
+                                            } else {
+                                                field.onChange(value === "true");
+                                            }
+                                        }}
+                                    >
+                                        <Form.FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Seleccionar" />
+                                            </SelectTrigger>
+                                        </Form.FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="true">Limitar</SelectItem>
+                                            <SelectItem value="false">No limitar</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+
+                        <div className="flex justify-end space-x-2 pt-4">
                             <Button
                                 type="button"
                                 variant="outline"
@@ -262,7 +428,7 @@ export default function UpdateConvenioModal({
                                 Cancelar
                             </Button>
 
-                            <Button type="submit" disabled={isLoading}>
+                            <Button type="submit" disabled={isLoading || !form.formState.isValid}>
                                 {isLoading ? (
                                     <Icon.Loader2Icon className="h-4 w-4 animate-spin mr-2" />
                                 ) : (

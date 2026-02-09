@@ -68,7 +68,8 @@
   "nombre": "Convenio Verano 2026",
   "empresa_id": 1,
   "tipo_consulta": "API_EXTERNA",
-  "endpoint": 1,
+  "api_consulta_id":1,
+  "codigo": "VERANO2026",
   "porcentaje_descuento": 10,
   "tope_monto_ventas": 1000000,
   "tope_cantidad_tickets": 50

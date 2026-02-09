@@ -29,7 +29,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { refine, z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ConveniosService } from "@/services/convenio.service"
 import { toast } from "sonner"
@@ -39,11 +39,17 @@ interface Empresa {
     nombre: string
 }
 
+interface Api {
+    id: number
+    nombre: string
+}
+
 interface AddConvenioModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     onSuccess?: () => void
     empresas: Empresa[]
+    apis: Api[]
 }
 
 export const convenioSchema = z.object({
@@ -60,6 +66,10 @@ export const convenioSchema = z.object({
         { message: "Debe seleccionar un tipo de consulta" }
     ),
 
+    codigo: z.string().optional(),
+    porcentaje_descuento: z.number().min(0).max(100).optional(),
+    api_consulta_id: z.number().optional().nullable(),
+
     tope_monto_ventas: z
         .number()
         .min(1, "Debe ser mayor a 0")
@@ -70,10 +80,55 @@ export const convenioSchema = z.object({
         .min(1, "Debe ser mayor a 0")
         .optional(),
 
-    status: z.enum(["ACTIVO", "INACTIVO"], {
-        message: "Debe seleccionar un estado"
-    }),
+    limitar_por_stock: z
+        .boolean()
+        .nullable()
+        .optional(),
+
+    limitar_por_monto: z
+        .boolean()
+        .nullable()
+        .optional(),
+
 })
+    .refine((data) => {
+        if (data.tipo_consulta === "CODIGO_DESCUENTO") {
+            return data.codigo && data.codigo.length >= 3;
+        }
+        return true;
+    }, {
+        message: "El código debe tener al menos 3 caracteres",
+        path: ["codigo"],
+    })
+    .refine((data) => {
+        if (data.tipo_consulta === "CODIGO_DESCUENTO") {
+            return data.codigo && /^[A-Z0-9]+$/.test(data.codigo);
+        }
+        return true;
+    }, {
+        message: "El código debe estar en mayúsculas y sin espacios",
+        path: ["codigo"],
+    })
+    .refine((data) => {
+        if (data.tipo_consulta === "API_EXTERNA") {
+            return data.api_consulta_id && data.api_consulta_id > 0;
+        }
+        return true;
+    }, {
+        message: "Debe seleccionar una API",
+        path: ["api_consulta_id"],
+    })
+    .refine((data) => {
+        if (data.porcentaje_descuento !== undefined) {
+            return data.porcentaje_descuento >= 0 && data.porcentaje_descuento <= 100;
+        }
+        return true;
+    }, {
+        message: "Debe ingresar un porcentaje de descuento válido (0-100)",
+        path: ["porcentaje_descuento"],
+    });
+
+
 
 export type ConvenioFormValues = z.infer<typeof convenioSchema>
 
@@ -82,20 +137,26 @@ export default function AddConvenioModal({
     onOpenChange,
     onSuccess,
     empresas,
+    apis
 }: AddConvenioModalProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [openEmpresaPopover, setOpenEmpresaPopover] = useState(false)
+    const [openApiPopover, setOpenApiPopover] = useState(false)
 
     const form = useForm<ConvenioFormValues>({
         resolver: zodResolver(convenioSchema),
         mode: "onChange",
         defaultValues: {
-            nombre: "",
-            empresa_id: undefined,
-            tipo_consulta: undefined,
-            tope_monto_ventas: undefined,
-            tope_cantidad_tickets: undefined,
-            status: "ACTIVO",
+            nombre: "",                       // texto
+            empresa_id: undefined,            // number | undefined
+            tipo_consulta: undefined,         // enum | undefined
+            codigo: "",                        // texto opcional
+            porcentaje_descuento: undefined,   // number opcional
+            tope_monto_ventas: undefined,      // number opcional
+            tope_cantidad_tickets: undefined,  // number opcional
+            api_consulta_id: undefined,        // number | undefined
+            limitar_por_stock: undefined,      // boolean | undefined
+            limitar_por_monto: undefined,      // boolean | undefined
         },
     })
 
@@ -104,6 +165,12 @@ export default function AddConvenioModal({
     const empresaSeleccionada = empresas.find(
         (empresa) => empresa.id === empresaSeleccionadaId
     )
+
+    const apiSeleccionadaId = form.watch("api_consulta_id")
+    const apiSeleccionada = apis.find(
+        (api) => api.id === apiSeleccionadaId
+    )
+
 
     useEffect(() => {
         if (!open) {
@@ -120,9 +187,13 @@ export default function AddConvenioModal({
                 nombre: data.nombre,
                 empresa_id: data.empresa_id,
                 tipo_consulta: data.tipo_consulta,
+                codigo: data.codigo || undefined,
+                porcentaje_descuento: data.porcentaje_descuento,
                 tope_monto_ventas: data.tope_monto_ventas,
                 tope_cantidad_tickets: data.tope_cantidad_tickets,
-                status: data.status,
+                api_consulta_id: data.api_consulta_id || undefined,
+                limitar_por_stock: data.limitar_por_stock || undefined,
+                limitar_por_monto: data.limitar_por_monto || undefined,
             })
 
             toast.success("Convenio creado correctamente")
@@ -250,22 +321,101 @@ export default function AddConvenioModal({
                                 </Form.FormItem>
                             )}
                         />
+                        {(form.watch("tipo_consulta") === "API_EXTERNA" ? (
+                            <Form.FormField
+                                control={form.control}
+                                name="api_consulta_id"
+                                render={({ field }) => (
+                                    <Form.FormItem className="flex flex-col">
+                                        <Form.FormLabel>API</Form.FormLabel>
+                                        <Popover open={openApiPopover} onOpenChange={setOpenApiPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Form.FormControl>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        aria-expanded={openApiPopover}
+                                                        className={cn(
+                                                            "w-full justify-between",
+                                                            !field.value && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        {apiSeleccionada
+                                                            ? apiSeleccionada.nombre
+                                                            : "Seleccionar API"}
+                                                        <Icon.ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </Form.FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[462px] p-0">
+                                                <Command>
+                                                    <CommandInput
+                                                        placeholder="Buscar API..."
+                                                        className={cn("outline-none")}
+                                                    />
+                                                    <CommandList>
+                                                        <CommandEmpty>No se encontró la API.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {apis.map((api) => (
+                                                                <CommandItem
+                                                                    key={api.id}
+                                                                    value={api.nombre}
+                                                                    onSelect={() => {
+                                                                        field.onChange(api.id)
+                                                                        setOpenApiPopover(false)
+                                                                    }}
+                                                                >
+                                                                    <Icon.CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            api.id === field.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {api.nombre}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
+
+                        ) : form.watch("tipo_consulta") === "CODIGO_DESCUENTO" ? (
+                            <Form.FormField
+                                control={form.control}
+                                name="codigo"
+                                render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel>Código de descuento</Form.FormLabel>
+                                        <Form.FormControl>
+                                            <Input placeholder="Ingrese el código de descuento" {...field} />
+                                        </Form.FormControl>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
+                        ) : null)}
 
                         <Form.FormField
                             control={form.control}
-                            name="tope_monto_ventas"
+                            name="porcentaje_descuento"
                             render={({ field }) => (
                                 <Form.FormItem>
-                                    <Form.FormLabel>Tope monto ventas</Form.FormLabel>
+                                    <Form.FormLabel>Porcentaje de descuento</Form.FormLabel>
                                     <Form.FormControl>
                                         <Input
                                             type="number"
-                                            placeholder="Ej: 1000000"
-                                            value={field.value ?? ""} // Muestra vacío si es undefined
+                                            placeholder="Ej: 10"
+                                            value={field.value ?? ""}
                                             onChange={(e) => {
-                                                const value = e.target.value;
-                                                // Convierte a número o undefined
-                                                field.onChange(value === "" ? undefined : Number(value));
+                                                const value = e.target.value
+                                                field.onChange(value === "" ? undefined : Number(value))
                                             }}
                                         />
                                     </Form.FormControl>
@@ -276,52 +426,130 @@ export default function AddConvenioModal({
 
                         <Form.FormField
                             control={form.control}
-                            name="tope_cantidad_tickets"
+                            name="limitar_por_stock"
                             render={({ field }) => (
                                 <Form.FormItem>
-                                    <Form.FormLabel>Tope cantidad tickets</Form.FormLabel>
-                                    <Form.FormControl>
-                                        <Input
-                                            type="number"
-                                            placeholder="Ej: 50"
-                                            value={field.value ?? ""} // Muestra vacío si es undefined
-                                            onChange={(e) => {
-                                                const value = e.target.value;
-                                                // Convierte a número o undefined
-                                                field.onChange(value === "" ? undefined : Number(value));
-                                            }}
-                                        />
-                                    </Form.FormControl>
-                                    <Form.FormMessage />
-                                </Form.FormItem>
-                            )}
-                        />
-
-
-                        <Form.FormField
-                            control={form.control}
-                            name="status"
-                            render={({ field }) => (
-                                <Form.FormItem>
-                                    <Form.FormLabel>Estado</Form.FormLabel>
+                                    <Form.FormLabel>Limitar por stock</Form.FormLabel>
                                     <Select
-                                        onValueChange={field.onChange}
-                                        defaultValue={field.value}
+                                        value={
+                                            field.value === null || field.value === undefined
+                                                ? ""
+                                                : field.value
+                                                    ? "true"
+                                                    : "false"
+                                        }
+                                        onValueChange={(value) => {
+                                            // Convierte string a boolean o null
+                                            if (value === "") {
+                                                field.onChange(null);
+                                            } else {
+                                                field.onChange(value === "true");
+                                            }
+                                        }}
                                     >
                                         <Form.FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Seleccionar estado" />
+                                                <SelectValue placeholder="Seleccionar" />
                                             </SelectTrigger>
                                         </Form.FormControl>
                                         <SelectContent>
-                                            <SelectItem value="ACTIVO">Activo</SelectItem>
-                                            <SelectItem value="INACTIVO">Inactivo</SelectItem>
+                                            <SelectItem value="true">Limitar</SelectItem>
+                                            <SelectItem value="false">No limitar</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <Form.FormMessage />
                                 </Form.FormItem>
                             )}
                         />
+
+
+                        {form.watch("limitar_por_stock") === true && (
+                            <Form.FormField
+                                control={form.control}
+                                name="tope_monto_ventas"
+                                render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel>Tope monto ventas</Form.FormLabel>
+                                        <Form.FormControl>
+                                            <Input
+                                                type="number"
+                                                placeholder="Ej: 1000000"
+                                                value={field.value ?? ""}
+                                                onChange={(e) => {
+                                                    const value = e.target.value
+                                                    field.onChange(value === "" ? undefined : Number(value))
+                                                }}
+                                            />
+                                        </Form.FormControl>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
+                        )}
+
+                        <Form.FormField
+                            control={form.control}
+                            name="limitar_por_monto"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Limitar por monto</Form.FormLabel>
+                                    <Select
+                                        value={
+                                            field.value === null || field.value === undefined
+                                                ? ""
+                                                : field.value
+                                                    ? "true"
+                                                    : "false"
+                                        }
+                                        onValueChange={(value) => {
+                                            // Convierte string a boolean o null
+                                            if (value === "") {
+                                                field.onChange(null);
+                                            } else {
+                                                field.onChange(value === "true");
+                                            }
+                                        }}
+                                    >
+                                        <Form.FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Seleccionar" />
+                                            </SelectTrigger>
+                                        </Form.FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="true">Limitar</SelectItem>
+                                            <SelectItem value="false">No limitar</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
+
+
+                        {form.watch("limitar_por_monto") === true && (
+                            <Form.FormField
+                                control={form.control}
+                                name="tope_cantidad_tickets"
+                                render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel>Tope cantidad tickets</Form.FormLabel>
+                                        <Form.FormControl>
+                                            <Input
+                                                type="number"
+                                                placeholder="Ej: 50"
+                                                value={field.value ?? ""} // Muestra vacío si es undefined
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    // Convierte a número o undefined
+                                                    field.onChange(value === "" ? undefined : Number(value));
+                                                }}
+                                            />
+                                        </Form.FormControl>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
+                        )}
 
                         <div className="flex justify-end space-x-2">
                             <Button
