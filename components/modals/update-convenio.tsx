@@ -58,7 +58,16 @@ export const convenioSchema = z.object({
     ),
 
     codigo: z.string().optional(),
-    porcentaje_descuento: z.number().optional(),
+
+    // Changed to string for input handling
+    porcentaje_descuento: z.string().optional(),
+    api_consulta_id: z.number().optional().nullable(),
+
+    // Changed to string for input handling
+    tope_monto_ventas: z.string().optional(),
+
+    // Changed to string for input handling
+    tope_cantidad_tickets: z.string().optional(),
 
     limitar_por_stock: z
         .boolean()
@@ -70,7 +79,75 @@ export const convenioSchema = z.object({
         .nullable()
         .optional(),
 })
+    .refine((data) => {
+        if (data.tipo_consulta === "CODIGO_DESCUENTO") {
+            return data.codigo && data.codigo.length >= 3;
+        }
+        return true;
+    }, {
+        message: "El código debe tener al menos 3 caracteres",
+        path: ["codigo"],
+    })
+    .refine((data) => {
+        if (data.tipo_consulta === "CODIGO_DESCUENTO") {
+            return data.codigo && /^[A-Z0-9]+$/.test(data.codigo);
+        }
+        return true;
+    }, {
+        message: "El código debe estar en mayúsculas y sin espacios",
+        path: ["codigo"],
+    })
+    .refine((data) => {
+        if (data.tipo_consulta === "API_EXTERNA") {
+            return data.api_consulta_id && data.api_consulta_id > 0;
+        }
+        return true;
+    }, {
+        message: "Debe seleccionar una API",
+        path: ["api_consulta_id"],
+    })
+    .refine((data) => {
+        if (data.porcentaje_descuento) {
+            const val = Number(data.porcentaje_descuento);
+            return !isNaN(val) && val >= 0 && val <= 100;
+        }
+        return true;
+    }, {
+        message: "Debe ingresar un porcentaje de descuento válido (0-100)",
+        path: ["porcentaje_descuento"],
+    })
+    .refine((data) => {
+        if (data.tope_monto_ventas) {
+            const val = Number(data.tope_monto_ventas);
+            return !isNaN(val) && val > 0;
+        }
+        return true;
+    }, {
+        message: "El monto debe ser mayor a 0",
+        path: ["tope_monto_ventas"],
+    })
+    .refine((data) => {
+        if (data.tope_cantidad_tickets) {
+            const val = Number(data.tope_cantidad_tickets);
+            return !isNaN(val) && val > 0;
+        }
+        return true;
+    }, {
+        message: "La cantidad debe ser mayor a 0",
+        path: ["tope_cantidad_tickets"],
+    });
 
+export const descuentoSchema = z.object({
+    porcentaje_descuento: z.string()
+        .min(1, "El porcentaje es requerido")
+        .refine((val) => {
+            const num = Number(val)
+            return !isNaN(num) && num >= 1 && num <= 100
+        }, "El porcentaje debe ser entre 1 y 100"),
+    status: z.enum(["ACTIVO", "INACTIVO"]),
+})
+
+export type DescuentoFormValues = z.infer<typeof descuentoSchema>
 type ConvenioFormValues = z.infer<typeof convenioSchema>
 
 export default function UpdateConvenioModal({
@@ -94,8 +171,10 @@ export default function UpdateConvenioModal({
             status: "ACTIVO",
             tipo_consulta: "CODIGO_DESCUENTO",
             codigo: "",
-            porcentaje_descuento: undefined,
-
+            porcentaje_descuento: "",
+            tope_monto_ventas: "",
+            tope_cantidad_tickets: "",
+            api_consulta_id: undefined,
             limitar_por_stock: undefined,
             limitar_por_monto: undefined,
         },
@@ -107,9 +186,10 @@ export default function UpdateConvenioModal({
         (empresa) => empresa.id === empresaSeleccionadaId
     )
 
-
-    const limitarPorStock = form.watch("limitar_por_stock")
-    const limitarPorMonto = form.watch("limitar_por_monto")
+    const apiSeleccionadaId = form.watch("api_consulta_id")
+    const apiSeleccionada = apis.find(
+        (api) => api.id === apiSeleccionadaId
+    )
 
     useEffect(() => {
         if (convenio) {
@@ -119,9 +199,14 @@ export default function UpdateConvenioModal({
                 status: convenio.status || "ACTIVO",
                 tipo_consulta: convenio.tipo_consulta || "CODIGO_DESCUENTO",
                 codigo: convenio.codigo || "",
-                porcentaje_descuento: convenio.porcentaje_descuento || undefined,
-                limitar_por_stock: convenio.limitar_por_stock || undefined,
-                limitar_por_monto: convenio.limitar_por_monto || undefined,
+                // Convert numbers to strings for input handling
+                porcentaje_descuento: convenio.porcentaje_descuento?.toString() || "",
+                tope_monto_ventas: convenio.tope_monto_ventas?.toString() || "",
+                tope_cantidad_tickets: convenio.tope_cantidad_tickets?.toString() || "",
+
+                api_consulta_id: convenio.api_consulta_id ?? undefined,
+                limitar_por_stock: convenio.limitar_por_stock ?? undefined,
+                limitar_por_monto: convenio.limitar_por_monto ?? undefined,
             })
         }
         setOpenEmpresaPopover(false)
@@ -145,8 +230,14 @@ export default function UpdateConvenioModal({
                 nombre: data.nombre,
                 empresa_id: data.empresa_id,
                 status: data.status,
+                tipo_consulta: data.tipo_consulta,
                 codigo: data.codigo,
-                porcentaje_descuento: data.porcentaje_descuento,
+                // Convert strings back to numbers (or undefined if empty)
+                porcentaje_descuento: data.porcentaje_descuento ? Number(data.porcentaje_descuento) : undefined,
+                tope_monto_ventas: data.tope_monto_ventas ? Number(data.tope_monto_ventas) : undefined,
+                tope_cantidad_tickets: data.tope_cantidad_tickets ? Number(data.tope_cantidad_tickets) : undefined,
+
+                api_consulta_id: data.api_consulta_id,
                 limitar_por_stock: data.limitar_por_stock,
                 limitar_por_monto: data.limitar_por_monto,
             }
@@ -295,30 +386,108 @@ export default function UpdateConvenioModal({
                             )}
                         />
 
+                        <Form.FormField
+                            control={form.control}
+                            name="tipo_consulta"
+                            render={({ field }) => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Tipo de consulta</Form.FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <Form.FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Seleccionar tipo de consulta" />
+                                            </SelectTrigger>
+                                        </Form.FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="CODIGO_DESCUENTO">Código descuento</SelectItem>
+                                            <SelectItem value="API_EXTERNA">API</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
 
+                        {(form.watch("tipo_consulta") === "API_EXTERNA" ? (
+                            <Form.FormField
+                                control={form.control}
+                                name="api_consulta_id"
+                                render={({ field }) => (
+                                    <Form.FormItem className="flex flex-col">
+                                        <Form.FormLabel>API</Form.FormLabel>
+                                        <Popover open={openApiPopover} onOpenChange={setOpenApiPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Form.FormControl>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        aria-expanded={openApiPopover}
+                                                        className={cn(
+                                                            "w-full justify-between",
+                                                            !field.value && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        {apiSeleccionada
+                                                            ? apiSeleccionada.nombre
+                                                            : "Seleccionar API"}
+                                                        <Icon.ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </Form.FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[462px] p-0">
+                                                <Command>
+                                                    <CommandInput
+                                                        placeholder="Buscar API..."
+                                                        className={cn("outline-none")}
+                                                    />
+                                                    <CommandList>
+                                                        <CommandEmpty>No se encontró la API.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {apis.map((api) => (
+                                                                <CommandItem
+                                                                    key={api.id}
+                                                                    value={api.nombre}
+                                                                    onSelect={() => {
+                                                                        field.onChange(api.id)
+                                                                        setOpenApiPopover(false)
+                                                                    }}
+                                                                >
+                                                                    <Icon.CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            api.id === field.value
+                                                                                ? "opacity-100"
+                                                                                : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {api.nombre}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
 
-                        {tipoConsulta === "CODIGO_DESCUENTO" && (
-                            <>
-                                <Form.FormField
-                                    control={form.control}
-                                    name="codigo"
-                                    render={({ field }) => (
-                                        <Form.FormItem>
-                                            <Form.FormLabel>Código de descuento</Form.FormLabel>
-                                            <Form.FormControl>
-                                                <Input
-                                                    placeholder="Ingrese el código de descuento"
-                                                    {...field}
-                                                    value={field.value || ""}
-                                                />
-                                            </Form.FormControl>
-                                            <Form.FormMessage />
-                                        </Form.FormItem>
-                                    )}
-                                />
-
-                            </>
-                        )}
+                        ) : form.watch("tipo_consulta") === "CODIGO_DESCUENTO" ? (
+                            <Form.FormField
+                                control={form.control}
+                                name="codigo"
+                                render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel>Código de descuento</Form.FormLabel>
+                                        <Form.FormControl>
+                                            <Input placeholder="Ingrese el código de descuento" {...field} value={field.value || ""} />
+                                        </Form.FormControl>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
+                        ) : null)}
 
                         <Form.FormField
                             control={form.control}
@@ -328,19 +497,19 @@ export default function UpdateConvenioModal({
                                     <Form.FormLabel>Porcentaje de descuento</Form.FormLabel>
                                     <Form.FormControl>
                                         <Input
-                                            type="number"
+                                            {...field}
+                                            type="text"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
                                             placeholder="Ej: 15"
-                                            value={field.value ?? ""}
-                                            onChange={(e) => {
-                                                const value = e.target.value
-                                                field.onChange(value === "" ? undefined : Number(value))
-                                            }}
+                                            value={field.value || ""}
                                         />
                                     </Form.FormControl>
                                     <Form.FormMessage />
                                 </Form.FormItem>
                             )}
                         />
+
 
                         <Form.FormField
                             control={form.control}
@@ -378,6 +547,29 @@ export default function UpdateConvenioModal({
                                 </Form.FormItem>
                             )}
                         />
+
+                        {form.watch("limitar_por_stock") === true && (
+                            <Form.FormField
+                                control={form.control}
+                                name="tope_cantidad_tickets"
+                                render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel>Tope cantidad tickets</Form.FormLabel>
+                                        <Form.FormControl>
+                                            <Input
+                                                {...field}
+                                                type="text"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                placeholder="Ej: 50"
+                                                value={field.value || ""}
+                                            />
+                                        </Form.FormControl>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
+                        )}
 
 
                         <Form.FormField
@@ -417,6 +609,28 @@ export default function UpdateConvenioModal({
                             )}
                         />
 
+                        {form.watch("limitar_por_monto") === true && (
+                            <Form.FormField
+                                control={form.control}
+                                name="tope_monto_ventas"
+                                render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel>Tope monto ventas</Form.FormLabel>
+                                        <Form.FormControl>
+                                            <Input
+                                                {...field}
+                                                type="text"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                placeholder="Ej: 1000000"
+                                                value={field.value || ""}
+                                            />
+                                        </Form.FormControl>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
+                        )}
 
                         <div className="flex justify-end space-x-2 pt-4">
                             <Button

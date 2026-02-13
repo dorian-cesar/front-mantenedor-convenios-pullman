@@ -60,11 +60,11 @@ export interface UpdateConvenioData {
     empresa_id?: number | null;
     status?: "ACTIVO" | "INACTIVO";
     tipo_consulta?: "API_EXTERNA" | "CODIGO_DESCUENTO";
-    codigo?: string;
-    porcentaje_descuento?: number;
-    tope_monto_ventas?: number;
-    tope_cantidad_tickets?: number;
-    api_consulta_id?: number;
+    codigo?: string | null;
+    porcentaje_descuento?: number | null;
+    tope_monto_ventas?: number | null;
+    tope_cantidad_tickets?: number | null;
+    api_consulta_id?: number | null;
     limitar_por_stock?: boolean | null;
     limitar_por_monto?: boolean | null;
 }
