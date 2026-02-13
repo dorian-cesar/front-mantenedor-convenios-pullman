@@ -366,8 +366,8 @@ export default function ConveniosPage() {
                                     <Table.TableCell>
                                         {convenio.endpoint || "Sin endpoint"}
                                     </Table.TableCell>
-                                    <Table.TableCell>{convenio.tope_monto_ventas ? formatNumber(convenio.tope_monto_ventas) : "Sin tope"}</Table.TableCell>
-                                    <Table.TableCell>{convenio.tope_cantidad_tickets ? formatNumber(convenio.tope_cantidad_tickets) : "Sin tope"}</Table.TableCell>
+                                    <Table.TableCell>{(convenio.limitar_por_monto && convenio.tope_monto_ventas) ? formatNumber(convenio.tope_monto_ventas) : "Sin tope"}</Table.TableCell>
+                                    <Table.TableCell>{(convenio.limitar_por_stock && convenio.tope_cantidad_tickets) ? formatNumber(convenio.tope_cantidad_tickets) : "Sin tope"}</Table.TableCell>
                                     {/* <Table.TableCell>{convenio.descuento?.porcentaje ? `${formatNumber(convenio.descuento.porcentaje)}%` : "Sin descuento"}</Table.TableCell> */}
                                     <Table.TableCell className="text-right">
                                         <Dropdown.DropdownMenu>
