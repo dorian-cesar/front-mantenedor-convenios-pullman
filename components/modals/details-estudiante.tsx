@@ -3,6 +3,8 @@
 import * as Dialog from "@/components/ui/dialog"
 import { Estudiante } from "@/services/estudiante.service"
 import { formatDateOnly } from "@/utils/helpers"
+import { getImageSrc } from "@/utils/helpers"
+
 
 interface DetailsEstudianteModalProps {
     open: boolean
@@ -24,6 +26,20 @@ export default function DetailsEstudianteModal({
                         Detalles del estudiante {estudiante?.nombre}
                     </Dialog.DialogDescription>
                 </Dialog.DialogHeader>
+
+                <div className="flex justify-center mb-4">
+                    {estudiante?.imagen_base64 ? (
+                        <img
+                            src={getImageSrc(estudiante.imagen_base64) || ""}
+                            alt="Imagen estudiante"
+                            className="max-h-48 rounded-lg object-contain border"
+                        />
+                    ) : (
+                        <div className="h-40 w-40 flex items-center justify-center border rounded-lg text-muted-foreground">
+                            Sin imagen
+                        </div>
+                    )}
+                </div>
 
                 <div className="grid gap-4 grid-cols-2">
                     <div>

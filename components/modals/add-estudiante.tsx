@@ -11,6 +11,7 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { EstudiantesService } from "@/services/estudiante.service"
 import { toast } from "sonner"
+import { fileToBase64 } from "@/utils/helpers"
 
 interface AddEstudianteModalProps {
     open: boolean
@@ -47,6 +48,7 @@ export default function AddEstudianteModal({
     onSuccess,
 }: AddEstudianteModalProps) {
     const [isLoading, setIsLoading] = useState(false)
+    const [preview, setPreview] = useState<string | null>(null)
 
     const form = useForm<EstudianteFormValues>({
         resolver: zodResolver(estudianteSchema),
@@ -62,6 +64,25 @@ export default function AddEstudianteModal({
         },
     })
 
+    const handleImageChange = async (file: File) => {
+        if (!file) return
+
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error("La imagen no puede superar 2MB")
+            return
+        }
+
+        try {
+            const base64 = await fileToBase64(file)
+
+            form.setValue("imagen_base64", base64)
+            setPreview(base64)
+        } catch (error) {
+            toast.error("Error al procesar la imagen")
+        }
+    }
+
+
     const onSubmit = async (data: EstudianteFormValues) => {
         setIsLoading(true)
 
@@ -71,6 +92,7 @@ export default function AddEstudianteModal({
             toast.success("Estudiante creado correctamente")
 
             form.reset()
+            setPreview(null)
             onSuccess?.()
         } catch (error) {
             console.error("Error creating estudiante:", error)
@@ -191,6 +213,48 @@ export default function AddEstudianteModal({
                                 )}
                             />
                         </div>
+
+                        <Form.FormField
+                            control={form.control}
+                            name="imagen_base64"
+                            render={() => (
+                                <Form.FormItem>
+                                    <Form.FormLabel>Imagen del Estudiante</Form.FormLabel>
+                                    <Form.FormControl>
+                                        <div
+                                            className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition"
+                                            onClick={() => document.getElementById("fileInput")?.click()}
+                                        >
+                                            <input
+                                                id="fileInput"
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0]
+                                                    if (file) handleImageChange(file)
+                                                }}
+                                            />
+
+                                            {preview ? (
+                                                <img
+                                                    src={preview}
+                                                    alt="Preview"
+                                                    className="mx-auto max-h-40 rounded-md object-contain"
+                                                />
+                                            ) : (
+                                                <div className="flex flex-col items-center text-muted-foreground">
+                                                    <Icon.UploadIcon className="h-8 w-8 mb-2" />
+                                                    <p>Haz click o arrastra una imagen aquí</p>
+                                                    <p className="text-xs">Máximo 2MB</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </Form.FormControl>
+                                    <Form.FormMessage />
+                                </Form.FormItem>
+                            )}
+                        />
 
                         <div className="flex justify-end space-x-2 pt-4">
                             <Button

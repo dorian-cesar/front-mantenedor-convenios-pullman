@@ -33,3 +33,31 @@ export const formatNumber = (value?: number | string | null) => {
 
   return num.toLocaleString("es-CL")
 }
+
+export const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.readAsDataURL(file)
+
+    reader.onload = () => {
+      resolve(reader.result as string)
+    }
+
+    reader.onerror = (error) => {
+      reject(error)
+    }
+  })
+}
+
+export const getImageSrc = (base64?: string | null) => {
+  if (!base64) return null
+
+  // Si ya viene con data:image
+  if (base64.startsWith("data:image")) {
+    return base64
+  }
+
+  // Si viene puro
+  return `data:image/jpeg;base64,${base64}`
+}
