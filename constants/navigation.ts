@@ -7,17 +7,22 @@ import {
     Users,
     IdCard,
     QrCode,
-    Plug
+    Plug,
+    Gift,
+    HeartHandshake,
+    BadgeCheck,
+    GraduationCap,
 } from "lucide-react"
 
 export type NavItem = {
     id: string
     title: string
-    href: string
+    href?: string
     icon?: React.ElementType
     description?: string
     group: string
-    section: "main" | "secondary" | "tertiary"
+    section: "main" | "secondary" | "tertiary" | "sub"
+    children?: NavItem[]
 }
 
 export const NAVIGATION: NavItem[] = [
@@ -57,24 +62,6 @@ export const NAVIGATION: NavItem[] = [
         group: "Convenios y Beneficios",
         section: "main",
     },
-    // {
-    //     id: "descuentos",
-    //     title: "Descuentos",
-    //     href: "/dashboard/descuentos",
-    //     icon: Percent,
-    //     description: "codigos · descuentos · promociones · cupones",
-    //     group: "Convenios y Beneficios",
-    //     section: "main",
-    // },
-    // {
-    //     id: "codigos",
-    //     title: "Codigos de Descuento",
-    //     href: "/dashboard/codigos",
-    //     icon: QrCode,
-    //     description: "codigos · descuentos · promociones · cupones",
-    //     group: "Convenios y Beneficios",
-    //     section: "secondary",
-    // },
     {
         id: "api",
         title: "API Externa",
@@ -83,6 +70,43 @@ export const NAVIGATION: NavItem[] = [
         description: "endpoints · integraciones · terceros · externos · api · url",
         group: "Convenios y Beneficios",
         section: "secondary",
+    },
+    {
+        id: "beneficios",
+        title: "Beneficios",
+        icon: Gift,
+        description: "gestión de beneficios y convenios",
+        group: "Convenios y Beneficios",
+        section: "secondary",
+        children: [
+            {
+                id: "mayores",
+                title: "Adultos Mayores",
+                href: "/dashboard/beneficios/adultos-mayores",
+                icon: HeartHandshake,
+                description: "beneficios · alianzas · adultos mayores · descuentos",
+                group: "Convenios y Beneficios",
+                section: "sub",
+            },
+            {
+                id: "estudiantes",
+                title: "Estudiantes",
+                href: "/dashboard/beneficios/estudiantes",
+                icon: GraduationCap,
+                description: "beneficios · alianzas · estudiantes · descuentos",
+                group: "Convenios y Beneficios",
+                section: "sub",
+            },
+            {
+                id: "frecuentes",
+                title: "Usuarios Frecuentes",
+                href: "/dashboard/beneficios/usuarios-frecuentes",
+                icon: BadgeCheck,
+                description: "beneficios · alianzas · usuarios frecuentes · descuentos",
+                group: "Convenios y Beneficios",
+                section: "sub",
+            },
+        ],
     },
     {
         id: "usuarios",

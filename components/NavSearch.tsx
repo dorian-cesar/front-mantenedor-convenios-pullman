@@ -30,17 +30,32 @@ export function GlobalSearch() {
     const [open, setOpen] = useState(false)
     const [inputValue, setInputValue] = useState("")
 
-    // Adaptar NAVIGATION → SearchItem
+    // Extraer solo items que tienen href (hojas del árbol de navegación)
+    const extractLeafItems = (items: typeof NAVIGATION): SearchItem[] => {
+        let leafItems: SearchItem[] = [];
+
+        items.forEach(item => {
+            if (item.children) {
+                // Si tiene hijos, extraer las hojas de los hijos
+                leafItems = [...leafItems, ...extractLeafItems(item.children)];
+            } else if (item.href) {
+                // Si no tiene hijos y tiene href, es una hoja
+                leafItems.push({
+                    label: item.title,
+                    description: item.description,
+                    href: item.href,
+                    group: item.group,
+                });
+            }
+        });
+
+        return leafItems;
+    };
+
     const navigation: SearchItem[] = useMemo(
-        () =>
-            NAVIGATION.map((item) => ({
-                label: item.title,
-                description: item.description,
-                href: item.href,
-                group: item.group,
-            })),
+        () => extractLeafItems(NAVIGATION),
         []
-    )
+    );
 
     // Agrupar por grupo
     const groupedItems = useMemo(() => {
