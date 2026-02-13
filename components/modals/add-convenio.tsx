@@ -461,23 +461,22 @@ export default function AddConvenioModal({
                                 </Form.FormItem>
                             )}
                         />
-
-
                         {form.watch("limitar_por_stock") === true && (
                             <Form.FormField
                                 control={form.control}
-                                name="tope_monto_ventas"
+                                name="tope_cantidad_tickets"
                                 render={({ field }) => (
                                     <Form.FormItem>
-                                        <Form.FormLabel>Tope monto ventas</Form.FormLabel>
+                                        <Form.FormLabel>Tope cantidad tickets</Form.FormLabel>
                                         <Form.FormControl>
                                             <Input
                                                 type="number"
-                                                placeholder="Ej: 1000000"
-                                                value={field.value ?? ""}
+                                                placeholder="Ej: 50"
+                                                value={field.value ?? ""} // Muestra vacío si es undefined
                                                 onChange={(e) => {
-                                                    const value = e.target.value
-                                                    field.onChange(value === "" ? undefined : Number(value))
+                                                    const value = e.target.value;
+                                                    // Convierte a número o undefined
+                                                    field.onChange(value === "" ? undefined : Number(value));
                                                 }}
                                             />
                                         </Form.FormControl>
@@ -486,6 +485,8 @@ export default function AddConvenioModal({
                                 )}
                             />
                         )}
+
+
 
                         <Form.FormField
                             control={form.control}
@@ -525,23 +526,21 @@ export default function AddConvenioModal({
                             )}
                         />
 
-
                         {form.watch("limitar_por_monto") === true && (
                             <Form.FormField
                                 control={form.control}
-                                name="tope_cantidad_tickets"
+                                name="tope_monto_ventas"
                                 render={({ field }) => (
                                     <Form.FormItem>
-                                        <Form.FormLabel>Tope cantidad tickets</Form.FormLabel>
+                                        <Form.FormLabel>Tope monto ventas</Form.FormLabel>
                                         <Form.FormControl>
                                             <Input
                                                 type="number"
-                                                placeholder="Ej: 50"
-                                                value={field.value ?? ""} // Muestra vacío si es undefined
+                                                placeholder="Ej: 1000000"
+                                                value={field.value ?? ""}
                                                 onChange={(e) => {
-                                                    const value = e.target.value;
-                                                    // Convierte a número o undefined
-                                                    field.onChange(value === "" ? undefined : Number(value));
+                                                    const value = e.target.value
+                                                    field.onChange(value === "" ? undefined : Number(value))
                                                 }}
                                             />
                                         </Form.FormControl>
@@ -550,6 +549,7 @@ export default function AddConvenioModal({
                                 )}
                             />
                         )}
+
 
                         <div className="flex justify-end space-x-2">
                             <Button
