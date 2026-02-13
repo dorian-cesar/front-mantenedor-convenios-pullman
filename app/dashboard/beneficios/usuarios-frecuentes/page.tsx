@@ -47,8 +47,8 @@ export default function AdultosMayoresPage() {
     return (
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
-                title="Adultos Mayores"
-                description="Gestione los atultos mayores beneficiados"
+                title="Usuarios Frecuentes"
+                description="Gestione los usuarios frecuentes beneficiados"
                 actionButtons={actionButtons}
                 actionMenu={{
                     title: "Detalles",
