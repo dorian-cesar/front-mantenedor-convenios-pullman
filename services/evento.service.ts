@@ -3,23 +3,30 @@ import { api } from '@/lib/api';
 export interface Evento {
     id: number;
     tipo_evento: "COMPRA" | "CAMBIO" | "DEVOLUCION";
+    evento_origen_id: number | null;
+    pasajero_id: number;
+    empresa_id: number;
+    convenio_id: number;
     ciudad_origen: string;
     ciudad_destino: string;
     fecha_viaje: string;
+    numero_asiento: string;
+    numero_ticket: string;
+    pnr: string;
+    hora_salida: string;
+    terminal_origen: string;
+    terminal_destino: string;
     tarifa_base: number;
-    monto_pagado: number;
     porcentaje_descuento_aplicado: number;
-    usuario_id: number;
-    pasajero_id: number;
-    empresa_id: number;
+    monto_pagado: number;
+    monto_devolucion?: number;
+    is_deleted?: boolean;
+    fecha_evento: string;
+    codigo_autorizacion?: string;
+    token?: string;
+    estado?: "CONFIRMADO" | "ANULADO" | "REVERTIDO";
     created_at?: string;
     updated_at?: string;
-
-    usuario?: {
-        id: number;
-        nombre: string;
-        email: string;
-    };
     pasajero?: {
         id: number;
         rut: string;

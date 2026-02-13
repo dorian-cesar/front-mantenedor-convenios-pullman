@@ -178,25 +178,13 @@ export default function EventosPage() {
                 order: "DESC",
             }
 
-            // Aplicar los mismos filtros que en la tabla
-            if (tipoEventoFilter) {
-                params.tipo_evento = tipoEventoFilter
-            }
-            if (empresaFilter) {
-                params.empresa_id = empresaFilter
-            }
-            if (pasajeroFilter) {
-                params.pasajero_id = pasajeroFilter
-            }
-            if (convenioFilter) {
-                params.convenio_id = convenioFilter
-            }
-            if (dateRange?.from) {
-                params.fecha_inicio = format(dateRange.from, 'yyyy-MM-dd')
-            }
-            if (dateRange?.to) {
-                params.fecha_fin = format(dateRange.to, 'yyyy-MM-dd')
-            }
+            // Aplicar mismos filtros que la tabla
+            if (tipoEventoFilter) params.tipo_evento = tipoEventoFilter
+            if (empresaFilter) params.empresa_id = empresaFilter
+            if (pasajeroFilter) params.pasajero_id = pasajeroFilter
+            if (convenioFilter) params.convenio_id = convenioFilter
+            if (dateRange?.from) params.fecha_inicio = format(dateRange.from, "yyyy-MM-dd")
+            if (dateRange?.to) params.fecha_fin = format(dateRange.to, "yyyy-MM-dd")
 
             const response = await EventosService.getEventos(params)
 
@@ -205,19 +193,26 @@ export default function EventosPage() {
                 return
             }
 
-            const formattedData = response.rows.map(evento => ({
+            const formattedData = response.rows.map((evento) => ({
                 ID: evento.id,
-                Tipo_Evento: evento.tipo_evento,
-                Ciudad_Origen: evento.ciudad_origen,
-                Ciudad_Destino: evento.ciudad_destino,
-                Fecha_Viaje: formatDateOnly(evento.fecha_viaje),
-                Tarifa_Base: formatNumber(evento.tarifa_base),
-                Monto_Pagado: formatNumber(evento.monto_pagado),
-                Descuento_Aplicado: `${evento.porcentaje_descuento_aplicado}%`,
+                Tipo: getTipoEventoLabel(evento.tipo_evento),
+                "Origen - Destino": `${evento.terminal_origen} → ${evento.terminal_destino}`,
+                "Fecha Viaje": formatDateOnly(evento.fecha_viaje),
+                "Tarifa Base": `$${formatNumber(evento.tarifa_base)}`,
+                "Monto Pagado": `$${formatNumber(evento.monto_pagado)}`,
+                Descuento: `${evento.porcentaje_descuento_aplicado}%`,
+                "Código Autorización": evento.codigo_autorizacion ?? "N/A",
                 Empresa: evento.empresa?.nombre || "N/A",
-                Pasajero: evento.pasajero ? `${evento.pasajero.nombres} ${evento.pasajero.apellidos}` : "N/A",
+                Pasajero: evento.pasajero
+                    ? `${evento.pasajero.nombres} ${evento.pasajero.apellidos}`
+                    : "N/A",
                 Convenio: evento.convenio?.nombre || "N/A",
-                Creado: evento.created_at ? formatDateOnly(evento.created_at) : "N/A",
+                Estado:
+                    evento.estado === "ANULADO"
+                        ? "Anulado"
+                        : evento.estado === "REVERTIDO"
+                            ? "Revertido"
+                            : "Confirmado",
             }))
 
             if (type === "csv") {
@@ -235,6 +230,7 @@ export default function EventosPage() {
             toast.error("Error al exportar datos", { id: "export" })
         }
     }
+
 
     const actionButtons = [
         {
@@ -400,10 +396,11 @@ export default function EventosPage() {
                             <Table.TableHead>Tarifa Base</Table.TableHead>
                             <Table.TableHead>Monto Pagado</Table.TableHead>
                             <Table.TableHead>Descuento</Table.TableHead>
+                            <Table.TableHead>Código Autorización</Table.TableHead>
                             <Table.TableHead>Empresa</Table.TableHead>
                             <Table.TableHead>Pasajero</Table.TableHead>
                             <Table.TableHead>Convenio</Table.TableHead>
-                            <Table.TableHead>Creado</Table.TableHead>
+                            <Table.TableHead>Estado</Table.TableHead>
                         </Table.TableRow>
                     </Table.TableHeader>
                     <Table.TableBody>
@@ -436,12 +433,13 @@ export default function EventosPage() {
                                         </BadgeStatus>
                                     </Table.TableCell>
                                     <Table.TableCell>
-                                        {evento.ciudad_origen} → {evento.ciudad_destino}
+                                        {evento.terminal_origen} → {evento.terminal_destino}
                                     </Table.TableCell>
                                     <Table.TableCell>{formatDateOnly(evento.fecha_viaje)}</Table.TableCell>
                                     <Table.TableCell>${formatNumber(evento.tarifa_base)}</Table.TableCell>
                                     <Table.TableCell>${formatNumber(evento.monto_pagado)}</Table.TableCell>
                                     <Table.TableCell>{evento.porcentaje_descuento_aplicado}%</Table.TableCell>
+                                    <Table.TableCell>{evento.codigo_autorizacion ?? "N/A"}</Table.TableCell>
                                     <Table.TableCell>
                                         {evento.empresa?.nombre || "N/A"}
                                     </Table.TableCell>
@@ -455,7 +453,13 @@ export default function EventosPage() {
                                         {evento.convenio?.nombre || "N/A"}
                                     </Table.TableCell>
                                     <Table.TableCell>
-                                        {evento.created_at ? formatDateOnly(evento.created_at) : "N/A"}
+                                        {
+                                            evento.estado === "ANULADO"
+                                                ? "Anulado"
+                                                : evento.estado === "REVERTIDO"
+                                                    ? "Revertido"
+                                                    : "Confirmado"
+                                        }
                                     </Table.TableCell>
                                 </Table.TableRow>
                             ))
