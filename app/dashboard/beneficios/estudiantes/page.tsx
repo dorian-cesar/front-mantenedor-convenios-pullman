@@ -125,9 +125,15 @@ export default function EstudiantesPage() {
         fetchEstudiantes()
     }
 
-    const handleDetailsEstudiante = (estudiante: Estudiante) => {
-        setSelectedEstudiante(estudiante)
-        setOpenDetails(true)
+    const handleDetailsEstudiante = async (estudiante: Estudiante) => {
+        try {
+            const usuario = await EstudiantesService.getEstudianteById(estudiante.id)
+            setSelectedEstudiante(usuario)
+            setOpenDetails(true)
+        } catch (error) {
+            console.error('Error fetching estudiante details:', error)
+            toast.error("No se pudieron cargar los detalles del estudiante")
+        }
     }
 
     const handleRefresh = () => {
@@ -246,7 +252,7 @@ export default function EstudiantesPage() {
                     <Table.TableBody>
                         {isLoading ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={7} className="text-center py-8">
+                                <Table.TableCell colSpan={9} className="text-center py-8">
                                     <div className="flex justify-center">
                                         <Icon.Loader2Icon className="h-6 w-6 animate-spin" />
                                     </div>
