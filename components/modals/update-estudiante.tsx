@@ -44,7 +44,7 @@ const estudianteSchema = z.object({
     direccion: z.string().min(1, "La dirección es requerida"),
     carnet_estudiante: z.string().min(1, "El carnet de estudiante es requerido"),
     fecha_vencimiento: z.string().min(1, "La fecha de vencimiento es requerida"),
-    imagen_base64: z.string().optional(),
+    // imagen_base64: z.string().optional(),
     status: z.enum(["ACTIVO", "INACTIVO"]),
 })
 
@@ -68,7 +68,7 @@ export default function UpdateEstudianteModal({
             direccion: "",
             carnet_estudiante: "",
             fecha_vencimiento: "",
-            imagen_base64: "",
+            // imagen_base64: "",
             status: "ACTIVO",
         },
     })
@@ -83,7 +83,7 @@ export default function UpdateEstudianteModal({
                 direccion: estudiante.direccion,
                 carnet_estudiante: estudiante.carnet_estudiante,
                 fecha_vencimiento: estudiante.fecha_vencimiento,
-                imagen_base64: estudiante.imagen_base64 || "",
+                // imagen_base64: estudiante.imagen_base64 || "",
                 status: estudiante.status,
             })
         }
