@@ -65,15 +65,15 @@ Estructura principal:
 3. Selecciona una sección desde el menú de navegación.
 4. La página carga los datos utilizando el servicio correspondiente.
 5. El usuario realiza una acción:
-  - Crear
-  - Actualizar
-  - Ver detalles
-  - Exportar información
+   - Crear
+   - Actualizar
+   - Ver detalles
+   - Exportar información
 
 6. Cada acción se gestiona mediante un modal específico que:
-  - Recibe los datos necesarios
-  - Valida la información (cuando aplica)
-  - Ejecuta la operación contra el backend
+   - Recibe los datos necesarios
+   - Valida la información (cuando aplica)
+   - Ejecuta la operación contra el backend
 
 ## cómo levantar
 1. Clonar el repositorio.
