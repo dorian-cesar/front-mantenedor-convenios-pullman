@@ -166,9 +166,6 @@ export default function UsuariosFrecuentesPage() {
                 RUT: formatRut(uf.rut),
                 Teléfono: uf.telefono,
                 Correo: uf.correo,
-                "Código Frecuente": uf.codigo_frecuente,
-                Nivel: uf.nivel,
-                Puntos: uf.puntos,
                 Estado: uf.status,
                 Creado: new Date(uf.createdAt || "").toLocaleDateString(),
                 Actualizado: new Date(uf.updatedAt || "").toLocaleDateString(),
@@ -245,9 +242,6 @@ export default function UsuariosFrecuentesPage() {
                             <Table.TableHead>RUT</Table.TableHead>
                             <Table.TableHead>Correo</Table.TableHead>
                             <Table.TableHead>Teléfono</Table.TableHead>
-                            <Table.TableHead>Código</Table.TableHead>
-                            <Table.TableHead>Nivel</Table.TableHead>
-                            <Table.TableHead>Puntos</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
@@ -275,9 +269,6 @@ export default function UsuariosFrecuentesPage() {
                                     <Table.TableCell>{formatRut(usuarioFrecuente.rut)}</Table.TableCell>
                                     <Table.TableCell>{usuarioFrecuente.correo}</Table.TableCell>
                                     <Table.TableCell>{usuarioFrecuente.telefono}</Table.TableCell>
-                                    <Table.TableCell>{usuarioFrecuente.codigo_frecuente}</Table.TableCell>
-                                    <Table.TableCell>{usuarioFrecuente.nivel}</Table.TableCell>
-                                    <Table.TableCell>{usuarioFrecuente.puntos}</Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={usuarioFrecuente.status === "ACTIVO" ? "active" : "inactive"}>
                                             {usuarioFrecuente.status === "ACTIVO" ? "Activo" : "Inactivo"}

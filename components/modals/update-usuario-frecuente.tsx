@@ -42,9 +42,6 @@ const usuarioFrecuenteSchema = z.object({
     telefono: z.string().min(1, "El teléfono es requerido"),
     correo: z.string().email("Correo electrónico inválido"),
     direccion: z.string().min(1, "La dirección es requerida"),
-    codigo_frecuente: z.string().min(1, "El código frecuente es requerido"),
-    nivel: z.string().min(1, "El nivel es requerido"),
-    puntos: z.number().min(0, "Los puntos no pueden ser negativos"),
     status: z.enum(["ACTIVO", "INACTIVO"]),
 })
 
@@ -66,9 +63,6 @@ export default function UpdateUsuarioFrecuenteModal({
             telefono: "",
             correo: "",
             direccion: "",
-            codigo_frecuente: "",
-            nivel: "GOLD",
-            puntos: 0,
             status: "ACTIVO",
         },
     })
@@ -81,9 +75,6 @@ export default function UpdateUsuarioFrecuenteModal({
                 telefono: usuarioFrecuente.telefono,
                 correo: usuarioFrecuente.correo,
                 direccion: usuarioFrecuente.direccion,
-                codigo_frecuente: usuarioFrecuente.codigo_frecuente,
-                nivel: usuarioFrecuente.nivel,
-                puntos: usuarioFrecuente.puntos,
                 status: usuarioFrecuente.status,
             })
         }
@@ -186,61 +177,6 @@ export default function UpdateUsuarioFrecuenteModal({
                                         <Form.FormLabel>Dirección</Form.FormLabel>
                                         <Form.FormControl>
                                             <Input placeholder="Dirección completa" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
-                                )}
-                            />
-
-                            <Form.FormField
-                                control={form.control}
-                                name="codigo_frecuente"
-                                render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Código Frecuente</Form.FormLabel>
-                                        <Form.FormControl>
-                                            <Input placeholder="Código" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
-                                )}
-                            />
-
-                            <Form.FormField
-                                control={form.control}
-                                name="nivel"
-                                render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Nivel</Form.FormLabel>
-                                        <Select
-                                            onValueChange={field.onChange}
-                                            value={field.value}
-                                        >
-                                            <Form.FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Seleccione nivel" />
-                                                </SelectTrigger>
-                                            </Form.FormControl>
-
-                                            <SelectContent>
-                                                <SelectItem value="GOLD">GOLD</SelectItem>
-                                                <SelectItem value="SILVER">SILVER</SelectItem>
-                                                <SelectItem value="PLATINUM">PLATINUM</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
-                                )}
-                            />
-
-                            <Form.FormField
-                                control={form.control}
-                                name="puntos"
-                                render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Puntos</Form.FormLabel>
-                                        <Form.FormControl>
-                                            <Input type="number" placeholder="0" {...field} />
                                         </Form.FormControl>
                                         <Form.FormMessage />
                                     </Form.FormItem>

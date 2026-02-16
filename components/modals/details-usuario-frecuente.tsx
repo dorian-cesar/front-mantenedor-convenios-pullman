@@ -3,11 +3,7 @@
 import * as Dialog from "@/components/ui/dialog"
 import { UsuarioFrecuente } from "@/services/usuario-frecuente.service"
 import { formatDateOnly } from "@/utils/helpers"
-import { getImageSrc } from "@/utils/helpers"
 import { useState } from "react"
-import ImageViewerModal from "./image-viewer-modal"
-import { Button } from "@/components/ui/button"
-import { Maximize2Icon } from "lucide-react"
 
 interface DetailsUsuarioFrecuenteModalProps {
     open: boolean
@@ -20,13 +16,6 @@ export default function DetailsUsuarioFrecuenteModal({
     onOpenChange,
     usuarioFrecuente,
 }: DetailsUsuarioFrecuenteModalProps) {
-    const [openImageViewer, setOpenImageViewer] = useState(false)
-
-    const handleImageClick = () => {
-        if (usuarioFrecuente?.imagen_base64) {
-            setOpenImageViewer(true)
-        }
-    }
 
     return (
         <>
@@ -38,32 +27,6 @@ export default function DetailsUsuarioFrecuenteModal({
                             Información de {usuarioFrecuente?.nombre}
                         </Dialog.DialogDescription>
                     </Dialog.DialogHeader>
-
-                    <div className="relative flex justify-center mb-4 group">
-                        {usuarioFrecuente?.imagen_base64 ? (
-                            <div className="relative">
-                                <img
-                                    src={getImageSrc(usuarioFrecuente.imagen_base64) || ""}
-                                    alt="Imagen usuario frecuente"
-                                    className="max-h-48 rounded-lg object-contain border cursor-pointer hover:opacity-90 transition-opacity"
-                                    onClick={handleImageClick}
-                                />
-                                <Button
-                                    variant="secondary"
-                                    size="icon"
-                                    className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={handleImageClick}
-                                    title="Ver imagen completa"
-                                >
-                                    <Maximize2Icon className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className="h-40 w-40 flex items-center justify-center border rounded-lg text-muted-foreground">
-                                Sin imagen
-                            </div>
-                        )}
-                    </div>
 
                     <div className="grid gap-4 grid-cols-2">
                         <div>
@@ -87,18 +50,6 @@ export default function DetailsUsuarioFrecuenteModal({
                             <p className="text-sm">{usuarioFrecuente?.direccion}</p>
                         </div>
                         <div>
-                            <p className="text-sm font-medium leading-none text-muted-foreground">Código Frecuente</p>
-                            <p className="text-sm">{usuarioFrecuente?.codigo_frecuente}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium leading-none text-muted-foreground">Nivel</p>
-                            <p className="text-sm">{usuarioFrecuente?.nivel}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium leading-none text-muted-foreground">Puntos</p>
-                            <p className="text-sm">{usuarioFrecuente?.puntos}</p>
-                        </div>
-                        <div>
                             <p className="text-sm font-medium leading-none text-muted-foreground">Estado</p>
                             <p className="text-sm">{usuarioFrecuente?.status}</p>
                         </div>
@@ -111,13 +62,6 @@ export default function DetailsUsuarioFrecuenteModal({
                     </div>
                 </Dialog.DialogContent>
             </Dialog.Dialog>
-
-            <ImageViewerModal
-                open={openImageViewer}
-                onOpenChange={setOpenImageViewer}
-                imageSrc={usuarioFrecuente?.imagen_base64 || null}
-                title={`Documento de ${usuarioFrecuente?.nombre}`}
-            />
         </>
     )
 }

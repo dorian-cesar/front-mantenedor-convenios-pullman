@@ -7,10 +7,6 @@ export interface UsuarioFrecuente {
     telefono: string;
     correo: string;
     direccion: string;
-    codigo_frecuente: string;
-    nivel: string;
-    puntos: number;
-    imagen_base64?: string;
     status: "ACTIVO" | "INACTIVO";
     createdAt?: string;
     updatedAt?: string;
@@ -24,7 +20,6 @@ export interface GetUsuariosFrecuentesParams {
     status?: "ACTIVO" | "INACTIVO";
     nombre?: string;
     rut?: string;
-    codigo_frecuente?: string;
 }
 
 export interface UsuariosFrecuentesResponse {
@@ -40,10 +35,6 @@ export interface CreateUsuarioFrecuenteData {
     telefono: string;
     correo: string;
     direccion: string;
-    codigo_frecuente: string;
-    nivel: string;
-    puntos: number;
-    imagen_base64?: string;
     status?: "ACTIVO" | "INACTIVO";
 }
 
@@ -53,10 +44,6 @@ export interface UpdateUsuarioFrecuenteData {
     telefono?: string;
     correo?: string;
     direccion?: string;
-    codigo_frecuente?: string;
-    nivel?: string;
-    puntos?: number;
-    imagen_base64?: string;
     status?: "ACTIVO" | "INACTIVO";
 }
 
