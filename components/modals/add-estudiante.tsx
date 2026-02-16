@@ -37,7 +37,9 @@ const estudianteSchema = z.object({
     direccion: z.string().min(1, "La dirección es requerida"),
     carnet_estudiante: z.string().min(1, "El carnet de estudiante es requerido"),
     fecha_vencimiento: z.string().min(1, "La fecha de vencimiento es requerida"),
-    imagen_base64: z.string().optional(),
+    imagen_base64: z
+        .string()
+        .nonempty("La imagen es requerida"),
 })
 
 type EstudianteFormValues = z.infer<typeof estudianteSchema>
@@ -64,19 +66,53 @@ export default function AddEstudianteModal({
         },
     })
 
+    // Limpiar el formulario cuando se abre el modal
+    const handleOpenChange = (open: boolean) => {
+        if (!open) {
+            // Si se está cerrando el modal, limpiar todo
+            handleCancel()
+        }
+        onOpenChange(open)
+    }
+
+    const handleCancel = () => {
+        form.reset()
+        setPreview(null)
+        onOpenChange(false)
+    }
+
     const handleImageChange = async (file: File) => {
         if (!file) return
 
-        if (file.size > 2 * 1024 * 1024) {
-            toast.error("La imagen no puede superar 2MB")
+        // Calcular el tamaño del archivo original
+        const fileSizeInMB = file.size / (1024 * 1024)
+
+        // Verificar si el archivo original ya excede el límite
+        if (fileSizeInMB > 50) {
+            toast.error(`La imagen no puede superar 50MB. Esta imagen pesa ${fileSizeInMB.toFixed(2)}MB`)
             return
         }
 
         try {
             const base64 = await fileToBase64(file)
 
+            // Calcular el tamaño aproximado en base64
+            // El base64 aumenta el tamaño aproximadamente un 33%
+            const base64SizeInMB = (base64.length * 3 / 4) / (1024 * 1024)
+
+            console.log(`Tamaño original: ${fileSizeInMB.toFixed(2)}MB`)
+            console.log(`Tamaño base64: ${base64SizeInMB.toFixed(2)}MB`)
+
+            if (base64SizeInMB > 50) {
+                toast.error(`La imagen en base64 excede el límite de 50MB (${base64SizeInMB.toFixed(2)}MB)`)
+                return
+            }
+
             form.setValue("imagen_base64", base64)
             setPreview(base64)
+
+            // Mostrar mensaje informativo
+            toast.info(`Imagen cargada: ${fileSizeInMB.toFixed(2)}MB (${base64SizeInMB.toFixed(2)}MB en base64)`)
         } catch (error) {
             toast.error("Error al procesar la imagen")
         }
@@ -84,6 +120,14 @@ export default function AddEstudianteModal({
 
 
     const onSubmit = async (data: EstudianteFormValues) => {
+
+        const base64SizeInMB = (data.imagen_base64.length * 3 / 4) / (1024 * 1024)
+
+        if (base64SizeInMB > 50) {
+            toast.error(`La imagen excede el límite de 50MB (${base64SizeInMB.toFixed(2)}MB). Por favor, selecciona una imagen más pequeña.`)
+            return
+        }
+
         setIsLoading(true)
 
         try {
@@ -94,6 +138,7 @@ export default function AddEstudianteModal({
             form.reset()
             setPreview(null)
             onSuccess?.()
+            onOpenChange(false)
         } catch (error) {
             console.error("Error creating estudiante:", error)
             toast.error("No se pudo crear el estudiante")
@@ -103,7 +148,7 @@ export default function AddEstudianteModal({
     }
 
     return (
-        <Dialog.Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog.Dialog open={open} onOpenChange={handleOpenChange}>
             <Dialog.DialogContent className="max-w-2xl">
                 <Dialog.DialogHeader>
                     <Dialog.DialogTitle>Agregar Nuevo Estudiante</Dialog.DialogTitle>
@@ -245,7 +290,7 @@ export default function AddEstudianteModal({
                                             ) : (
                                                 <div className="flex flex-col items-center text-muted-foreground">
                                                     <Icon.UploadIcon className="h-8 w-8 mb-2" />
-                                                    <p>Haz click o arrastra una imagen aquí</p>
+                                                    <p>Haz click para subir una imagen aquí</p>
                                                     <p className="text-xs">Máximo 2MB</p>
                                                 </div>
                                             )}
@@ -260,7 +305,7 @@ export default function AddEstudianteModal({
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => onOpenChange(false)}
+                                onClick={handleCancel}
                                 disabled={isLoading}
                             >
                                 Cancelar
