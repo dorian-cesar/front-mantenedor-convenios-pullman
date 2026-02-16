@@ -1,15 +1,35 @@
 "use client"
-import { PageHeader } from "@/components/dashboard/page-header"
-import { Pagination } from "@/components/dashboard/Pagination"
-import * as Icon from "lucide-react"
+
+import { Button } from "@/components/ui/button"
 import * as Dropdown from "@/components/ui/dropdown-menu"
 import * as Table from "@/components/ui/table"
+import * as Icon from "lucide-react"
+import { BadgeStatus } from "@/components/ui/badge-status"
 import * as Card from "@/components/ui/card"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { PageHeader } from "@/components/dashboard/page-header"
+import { Pagination } from "@/components/dashboard/Pagination"
+import ExportModal from "@/components/modals/export"
+import AddAdultoMayorModal from "@/components/modals/add-adulto-mayor"
+import UpdateAdultoMayorModal from "@/components/modals/update-adulto-mayor"
+import DetailsAdultoMayorModal from "@/components/modals/details-adulto-mayor"
+import { AdultosMayoresService, type AdultoMayor, type GetAdultosMayoresParams } from "@/services/adulto-mayor.service"
+import { toast } from "sonner"
+import { useDebounce } from "@/hooks/use-debounce"
+import { formatRut } from "@/utils/helpers"
+import { exportToCSV } from "@/utils/exportCSV"
+import { exportToExcel } from "@/utils/exportXLSX"
+
 
 export default function AdultosMayoresPage() {
     const [searchValue, setSearchValue] = useState("")
+    const [adultosMayores, setAdultosMayores] = useState<AdultoMayor[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [openExport, setOpenExport] = useState(false)
+    const [openAdd, setOpenAdd] = useState(false)
+    const [openUpdate, setOpenUpdate] = useState(false)
+    const [openDetails, setOpenDetails] = useState(false)
+    const [selectedAdultoMayor, setSelectedAdultoMayor] = useState<AdultoMayor | null>(null)
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -19,6 +39,45 @@ export default function AdultosMayoresPage() {
         hasNextPage: false,
         hasPrevPage: false,
     })
+
+    const debouncedSearch = useDebounce(searchValue, 500)
+
+    const fetchAdultosMayores = async () => {
+        setIsLoading(true)
+        try {
+            const params: GetAdultosMayoresParams = {
+                page: pagination.page,
+                limit: pagination.limit,
+                sortBy: 'id',
+                order: 'DESC',
+            }
+
+            if (debouncedSearch.trim()) {
+                params.nombre = debouncedSearch.trim()
+            }
+
+            const response = await AdultosMayoresService.getAdultosMayores(params)
+
+            setAdultosMayores(response.rows)
+
+            setPagination(prev => ({
+                ...prev,
+                total: response.totalItems,
+                totalPages: response.totalPages || 1,
+                hasPrevPage: (response.currentPage || 1) > 1,
+                hasNextPage: (response.currentPage || 1) < (response.totalPages || 1)
+            }))
+        } catch (error) {
+            console.error('Error fetching adultos mayores:', error)
+            toast.error("No se pudieron cargar los adultos mayores")
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchAdultosMayores()
+    }, [pagination.page, pagination.limit, debouncedSearch])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -32,14 +91,108 @@ export default function AdultosMayoresPage() {
         }))
     }
 
+    const handleToggleStatus = async (
+        id: number,
+        currentStatus: "ACTIVO" | "INACTIVO"
+    ) => {
+        try {
+            await AdultosMayoresService.toggleStatus(id, currentStatus)
+
+            toast.success(
+                currentStatus === "ACTIVO"
+                    ? "Adulto Mayor desactivado correctamente"
+                    : "Adulto Mayor activado correctamente"
+            )
+
+            fetchAdultosMayores()
+        } catch (error) {
+            console.error('Error toggling status:', error)
+            toast.error("No se pudo actualizar el estado")
+        }
+    }
+
+    const handleAdultoMayorAdded = () => {
+        fetchAdultosMayores()
+        setOpenAdd(false)
+    }
+
+    const handleEditAdultoMayor = (adultoMayor: AdultoMayor) => {
+        setSelectedAdultoMayor(adultoMayor)
+        setOpenUpdate(true)
+    }
+
+    const handleAdultoMayorUpdated = () => {
+        fetchAdultosMayores()
+    }
+
+    const handleDetailsAdultoMayor = async (adultoMayor: AdultoMayor) => {
+        try {
+            const usuario = await AdultosMayoresService.getAdultoMayorById(adultoMayor.id)
+            setSelectedAdultoMayor(usuario)
+            setOpenDetails(true)
+        } catch (error) {
+            console.error('Error fetching adulto mayor details:', error)
+            toast.error("No se pudieron cargar los detalles del adulto mayor")
+        }
+    }
+
     const handleRefresh = () => {
-        alert("refresh")
+        fetchAdultosMayores();
+    }
+
+    const handleExport = async (type: "csv" | "excel") => {
+        try {
+            toast.loading("Preparando exportación...", { id: "export" })
+
+            const params: GetAdultosMayoresParams = {
+                sortBy: "id",
+                order: "DESC",
+            }
+
+            if (debouncedSearch.trim()) {
+                params.nombre = debouncedSearch.trim()
+            }
+
+            const response = await AdultosMayoresService.getAdultosMayores(params)
+
+            if (!response.rows.length) {
+                toast.error("No hay datos para exportar", { id: "export" })
+                return
+            }
+
+            const formattedData = response.rows.map(am => ({
+                ID: am.id,
+                Nombre: am.nombre,
+                RUT: formatRut(am.rut),
+                Teléfono: am.telefono,
+                Correo: am.correo,
+                Certificado: am.certificado,
+                "Fecha Emisión": am.fecha_emision,
+                Estado: am.status,
+                Creado: new Date(am.createdAt || "").toLocaleDateString(),
+                Actualizado: new Date(am.updatedAt || "").toLocaleDateString(),
+            }))
+
+            if (type === "csv") {
+                exportToCSV(formattedData, "adultos_mayores.csv")
+                toast.success("CSV exportado correctamente", { id: "export" })
+            }
+
+            if (type === "excel") {
+                exportToExcel(formattedData, "adultos_mayores.xlsx")
+                toast.success("Excel exportado correctamente", { id: "export" })
+            }
+
+        } catch (error) {
+            console.error("Error exporting adultos mayores:", error)
+            toast.error("Error al exportar datos", { id: "export" })
+        }
     }
 
     const actionButtons = [
         {
-            label: "Nuevo Registro",
-            onClick: () => alert("nuevo registro"),
+            label: "Nuevo Adulto Mayor",
+            onClick: () => setOpenAdd(true),
             icon: <Icon.PlusIcon className="h-4 w-4" />
         },
     ]
@@ -48,14 +201,14 @@ export default function AdultosMayoresPage() {
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
                 title="Adultos Mayores"
-                description="Gestione los atultos mayores beneficiados"
+                description="Listado de adultos mayores registrados."
                 actionButtons={actionButtons}
                 actionMenu={{
                     title: "Detalles",
                     items: [
                         {
                             label: "Exportar",
-                            onClick: () => alert("exportar"),
+                            onClick: () => setOpenExport(true),
                             icon: <Icon.DownloadIcon className="h-4 w-4" />
                         }
                     ]
@@ -80,11 +233,6 @@ export default function AdultosMayoresPage() {
                 }
                 showRefreshButton={true}
                 onRefresh={handleRefresh}
-                filters={
-                    <div className="flex items-center space-x-2">
-                        filtros acá
-                    </div>
-                }
             />
 
             <Card.Card>
@@ -93,127 +241,117 @@ export default function AdultosMayoresPage() {
                         <Table.TableRow>
                             <Table.TableHead>ID</Table.TableHead>
                             <Table.TableHead>Nombre</Table.TableHead>
-                            <Table.TableHead>Empresa</Table.TableHead>
-                            <Table.TableHead>Estado</Table.TableHead>
-                            <Table.TableHead>Tipo Consulta</Table.TableHead>
-                            <Table.TableHead>Descuento</Table.TableHead>
-                            <Table.TableHead>Endpoint</Table.TableHead>
-                            <Table.TableHead>Tope Monto</Table.TableHead>
-                            <Table.TableHead>Tope Cantidad Tickets</Table.TableHead>
+                            <Table.TableHead>RUT</Table.TableHead>
+                            <Table.TableHead>Correo</Table.TableHead>
+                            <Table.TableHead>Teléfono</Table.TableHead>
+                            <Table.TableHead>Certificado</Table.TableHead>
+                            <Table.TableHead>Fecha Emisión</Table.TableHead>
+                            <Table.TableHead>Status</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
                     </Table.TableHeader>
                     <Table.TableBody>
                         {isLoading ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={5} className="text-center py-8">
+                                <Table.TableCell colSpan={9} className="text-center py-8">
                                     <div className="flex justify-center">
                                         <Icon.Loader2Icon className="h-6 w-6 animate-spin" />
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        )
-                            // : convenios.length === 0 ? (
-                            //     <Table.TableRow>
-                            //         <Table.TableCell colSpan={5} className="text-center py-8">
-                            //             No se encontraron convenios
-                            //         </Table.TableCell>
-                            //     </Table.TableRow>
-                            // )
-                            : (
-                                // convenios.map((convenio, index) => (
-                                //     <Table.TableRow key={`${convenio.id}-${index}`}>
-                                //         <Table.TableCell>{convenio.id}</Table.TableCell>
-                                //         <Table.TableCell className="font-medium">{convenio.nombre}</Table.TableCell>
-                                //         <Table.TableCell>
-                                //             {convenio.empresa?.nombre || "Sin empresa"}
-                                //         </Table.TableCell>
-                                //         <Table.TableCell>
-                                //             <BadgeStatus status={convenio.status === "ACTIVO" ? "active" : "inactive"}>
-                                //                 {convenio.status === "ACTIVO" ? "Activo" : "Inactivo"}
-                                //             </BadgeStatus>
-                                //         </Table.TableCell>
-                                //         <Table.TableCell>
-                                //             {convenio.tipo_consulta ? (
-                                //                 convenio.tipo_consulta === "CODIGO_DESCUENTO" ? (
-                                //                     <>
-                                //                         <span>Código</span>
-                                //                         <br />
-                                //                         <span className="text-sm text-gray-500">{convenio.codigo}</span>
-                                //                     </>
-                                //                 ) : (
-                                //                     "API"
-                                //                 )
-                                //             ) : (
-                                //                 "Sin consulta"
-                                //             )}
-                                //         </Table.TableCell>
-                                //         <Table.TableCell>{convenio.porcentaje_descuento ? `${formatNumber(convenio.porcentaje_descuento)}%` : "Sin descuento"}</Table.TableCell>
-                                //         <Table.TableCell>
-                                //             {convenio.endpoint || "Sin endpoint"}
-                                //         </Table.TableCell>
-                                //         <Table.TableCell>{convenio.tope_monto_ventas ? formatNumber(convenio.tope_monto_ventas) : "Sin tope"}</Table.TableCell>
-                                //         <Table.TableCell>{convenio.tope_cantidad_tickets ? formatNumber(convenio.tope_cantidad_tickets) : "Sin tope"}</Table.TableCell>
-                                //         {/* <Table.TableCell>{convenio.descuento?.porcentaje ? `${formatNumber(convenio.descuento.porcentaje)}%` : "Sin descuento"}</Table.TableCell> */}
-                                //         <Table.TableCell className="text-right">
-                                //             <Dropdown.DropdownMenu>
-                                //                 <Dropdown.DropdownMenuTrigger asChild>
-                                //                     <Button variant="ghost" size="icon" className="size-8">
-                                //                         <Icon.MoreHorizontalIcon />
-                                //                     </Button>
-                                //                 </Dropdown.DropdownMenuTrigger>
-                                //                 <Dropdown.DropdownMenuContent align="end">
-                                //                     <Dropdown.DropdownMenuItem
-                                //                         onClick={() => handleDetailsConvenio(convenio)}
-                                //                     >
-                                //                         <Icon.EyeIcon className="h-4 w-4 mr-2" />
-                                //                         Ver detalles
-                                //                     </Dropdown.DropdownMenuItem>
-                                //                     <Dropdown.DropdownMenuItem
-                                //                         onClick={() => handleEditConvenio(convenio)}
-                                //                     >
-                                //                         <Icon.PencilIcon className="h-4 w-4 mr-2" />
-                                //                         Editar
-                                //                     </Dropdown.DropdownMenuItem>
-                                //                     <Dropdown.DropdownMenuSeparator />
-                                //                     {convenio.status === "ACTIVO" ? (
-                                //                         <Dropdown.DropdownMenuItem
-                                //                             variant="destructive"
-                                //                             onClick={() => handleToggleStatus(convenio.id, convenio.status)}
-                                //                         >
-                                //                             <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                //                             Desactivar
-                                //                         </Dropdown.DropdownMenuItem>
-                                //                     ) : (
-                                //                         <Dropdown.DropdownMenuItem
-                                //                             onClick={() => handleToggleStatus(convenio.id, convenio.status)}
-                                //                         >
-                                //                             <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                //                             Activar
-                                //                         </Dropdown.DropdownMenuItem>
-                                //                     )}
-
-                                //                     {(convenio.status === "INACTIVO" && user?.rol === "SUPER_USUARIO") && (
-                                //                         <Dropdown.DropdownMenuItem
-                                //                             variant="destructive"
-                                //                             onClick={() => handleDelete(convenio.id, convenio.status)}
-                                //                         >
-                                //                             <Icon.Trash2 className="h-4 w-4 mr-2" />
-                                //                             Eliminar
-                                //                         </Dropdown.DropdownMenuItem>
-                                //                     )}
-                                //                 </Dropdown.DropdownMenuContent>
-                                //             </Dropdown.DropdownMenu>
-                                //         </Table.TableCell>
-                                //     </Table.TableRow>
-                                // ))
-                                <div>
-                                    tabla aca
-                                </div>
-                            )}
+                        ) : adultosMayores.length === 0 ? (
+                            <Table.TableRow>
+                                <Table.TableCell colSpan={7} className="text-center py-8">
+                                    No se encontraron adultos mayores
+                                </Table.TableCell>
+                            </Table.TableRow>
+                        ) : (
+                            adultosMayores.map((adultoMayor) => (
+                                <Table.TableRow key={adultoMayor.id}>
+                                    <Table.TableCell>{adultoMayor.id}</Table.TableCell>
+                                    <Table.TableCell className="font-medium">{adultoMayor.nombre}</Table.TableCell>
+                                    <Table.TableCell>{formatRut(adultoMayor.rut)}</Table.TableCell>
+                                    <Table.TableCell>{adultoMayor.correo}</Table.TableCell>
+                                    <Table.TableCell>{adultoMayor.telefono}</Table.TableCell>
+                                    <Table.TableCell>{adultoMayor.certificado}</Table.TableCell>
+                                    <Table.TableCell>{adultoMayor.fecha_emision}</Table.TableCell>
+                                    <Table.TableCell>
+                                        <BadgeStatus status={adultoMayor.status === "ACTIVO" ? "active" : "inactive"}>
+                                            {adultoMayor.status === "ACTIVO" ? "Activo" : "Inactivo"}
+                                        </BadgeStatus>
+                                    </Table.TableCell>
+                                    <Table.TableCell className="text-right">
+                                        <Dropdown.DropdownMenu>
+                                            <Dropdown.DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="size-8">
+                                                    <Icon.MoreHorizontalIcon />
+                                                </Button>
+                                            </Dropdown.DropdownMenuTrigger>
+                                            <Dropdown.DropdownMenuContent align="end">
+                                                <Dropdown.DropdownMenuItem
+                                                    onClick={() => handleDetailsAdultoMayor(adultoMayor)}
+                                                >
+                                                    <Icon.EyeIcon className="h-4 w-4 mr-2" />
+                                                    Ver detalles
+                                                </Dropdown.DropdownMenuItem>
+                                                <Dropdown.DropdownMenuItem
+                                                    onClick={() => handleEditAdultoMayor(adultoMayor)}
+                                                >
+                                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                                    Editar
+                                                </Dropdown.DropdownMenuItem>
+                                                <Dropdown.DropdownMenuSeparator />
+                                                {adultoMayor.status === "ACTIVO" ? (
+                                                    <Dropdown.DropdownMenuItem
+                                                        variant="destructive"
+                                                        onClick={() => handleToggleStatus(adultoMayor.id, adultoMayor.status)}
+                                                    >
+                                                        <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                        Desactivar
+                                                    </Dropdown.DropdownMenuItem>
+                                                ) : (
+                                                    <Dropdown.DropdownMenuItem
+                                                        onClick={() => handleToggleStatus(adultoMayor.id, adultoMayor.status)}
+                                                    >
+                                                        <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                        Activar
+                                                    </Dropdown.DropdownMenuItem>
+                                                )}
+                                            </Dropdown.DropdownMenuContent>
+                                        </Dropdown.DropdownMenu>
+                                    </Table.TableCell>
+                                </Table.TableRow>
+                            ))
+                        )}
                     </Table.TableBody>
                 </Table.Table>
             </Card.Card>
+
+            <ExportModal
+                open={openExport}
+                onOpenChange={setOpenExport}
+                onExport={handleExport}
+            />
+
+            <AddAdultoMayorModal
+                open={openAdd}
+                onOpenChange={setOpenAdd}
+                onSuccess={handleAdultoMayorAdded}
+            />
+
+            <UpdateAdultoMayorModal
+                open={openUpdate}
+                onOpenChange={setOpenUpdate}
+                adultoMayor={selectedAdultoMayor}
+                onSuccess={handleAdultoMayorUpdated}
+            />
+
+            <DetailsAdultoMayorModal
+                open={openDetails}
+                onOpenChange={setOpenDetails}
+                adultoMayor={selectedAdultoMayor}
+            />
+
         </div>
     )
 }
