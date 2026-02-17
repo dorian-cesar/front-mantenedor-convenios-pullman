@@ -10,7 +10,8 @@ import * as Table from "@/components/ui/table"
 import { BadgeStatus } from "@/components/ui/badge-status"
 import * as Dropdown from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-
+import AddRoleModal from "../modals/add-role";
+import UpdateRoleModal from "../modals/update-role";
 
 export default function Roles() {
     const [roles, setRoles] = useState<Role[]>([])
@@ -134,12 +135,12 @@ export default function Roles() {
                         className="w-full"
                         limit={pagination.limit}
                         onLimitChange={handleLimitChange}
-                        limitOptions = {[5, 10, 30]}
+                        limitOptions={[5, 10, 30]}
                         showResults={false}
                     />
                 }
                 showRefreshButton={true}
-            // onRefresh={fetchUsuarios}
+                onRefresh={fetchRoles}
             />
 
             <Card.Card>
@@ -218,6 +219,9 @@ export default function Roles() {
                     </Table.TableBody>
                 </Table.Table>
             </Card.Card>
+
+            <AddRoleModal open={openAdd} onOpenChange={setOpenAdd} onSuccess={handleRoleAdded} />
+            <UpdateRoleModal open={openUpdate} onOpenChange={setOpenUpdate} role={selectedRole} onSuccess={handleRoleUpdated} />
         </div>
     )
 }
