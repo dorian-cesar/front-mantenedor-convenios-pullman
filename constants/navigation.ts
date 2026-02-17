@@ -12,6 +12,7 @@ import {
     HeartHandshake,
     BadgeCheck,
     GraduationCap,
+    ShieldUser
 } from "lucide-react"
 
 export type NavItem = {
@@ -103,6 +104,15 @@ export const NAVIGATION: NavItem[] = [
                 href: "/dashboard/beneficios/usuarios-frecuentes",
                 icon: BadgeCheck,
                 description: "beneficios · alianzas · usuarios frecuentes · descuentos",
+                group: "Convenios y Beneficios",
+                section: "sub",
+            },
+            {
+                id: "carabineros",
+                title: "Carabineros",
+                href: "/dashboard/beneficios/carabineros",
+                icon: ShieldUser,
+                description: "beneficios · alianzas · carabineros · descuentos",
                 group: "Convenios y Beneficios",
                 section: "sub",
             },
