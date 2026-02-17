@@ -20,6 +20,7 @@ interface PaginationProps {
     limit?: number
     limitOptions?: number[]
     onLimitChange?: (limit: number) => void
+    showResults?: boolean
 }
 
 export function Pagination({
@@ -33,6 +34,7 @@ export function Pagination({
     limit,
     limitOptions = [10, 20, 50, 100],
     onLimitChange,
+    showResults = true
 }: PaginationProps) {
     const getPageNumbers = () => {
         const pages = []
@@ -62,9 +64,11 @@ export function Pagination({
 
     return (
         <div className={`flex items-center justify-between ${className}`}>
-            <div className="text-sm text-muted-foreground">
-                {totalItems} resultado{totalItems !== 1 ? 's' : ''} • Página {currentPage} de {totalPages}
-            </div>
+            {showResults && (
+                <div className="text-sm text-muted-foreground">
+                    {totalItems} resultado{totalItems !== 1 ? 's' : ''} • Página {currentPage} de {totalPages}
+                </div>
+            )}
 
             <div className="flex items-center gap-1">
                 {onLimitChange && (

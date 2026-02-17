@@ -19,10 +19,13 @@ import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
 import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
+import Roles from "@/components/users/roles"
+import { AuthService, CurrentUser } from "@/services/auth.service"
 
 export default function UsuariosPage() {
   const [searchValue, setSearchValue] = useState("")
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const [user, setUser] = useState<CurrentUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [openExport, setOpenExport] = useState(false)
   const [openAdd, setOpenAdd] = useState(false)
@@ -77,6 +80,10 @@ export default function UsuariosPage() {
   useEffect(() => {
     fetchUsuarios()
   }, [pagination.page, pagination.limit, debouncedSearch])
+
+  useEffect(() => {
+    setUser(AuthService.getCurrentUser())
+  }, [])
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }))
@@ -228,7 +235,7 @@ export default function UsuariosPage() {
       />
 
       <div className="flex gap-4">
-        <Card.Card className="flex-[2]">
+        <Card.Card className="flex-[1]">
           <Table.Table>
             <Table.TableHeader>
               <Table.TableRow>
@@ -315,33 +322,36 @@ export default function UsuariosPage() {
             </Table.TableBody>
           </Table.Table>
         </Card.Card>
-
-        <Card.Card className="flex flex-col flex-[1]">
-          <Card.CardHeader>
-            <Card.CardTitle className="text-xl">Roles del Sistema</Card.CardTitle>
-            <Card.CardDescription>
-              Los usuarios pueden tener uno de estos roles:
-            </Card.CardDescription>
-          </Card.CardHeader>
-          <Card.CardContent className="flex-1 overflow-y-auto">
-            <div className="space-y-4">
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-medium text-lg">Super Usuario</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Acceso completo a todas las funcionalidades del sistema.
-                  Puede gestionar usuarios, empresas, convenios y configuración.
-                </p>
+        {user?.rol === "SUPER_USUARIO" ? (
+          <Roles />
+        ) : (
+          <Card.Card className="flex flex-col flex-[1]">
+            <Card.CardHeader>
+              <Card.CardTitle className="text-xl">Roles del Sistema</Card.CardTitle>
+              <Card.CardDescription>
+                Los usuarios pueden tener uno de estos roles:
+              </Card.CardDescription>
+            </Card.CardHeader>
+            <Card.CardContent className="flex-1 overflow-y-auto">
+              <div className="space-y-4">
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium text-lg">Super Usuario</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Acceso completo a todas las funcionalidades del sistema.
+                    Puede gestionar usuarios, empresas, convenios y configuración.
+                  </p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium text-lg">Usuario</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Acceso limitado a funcionalidades específicas.
+                    Generalmente para visualización y operaciones básicas.
+                  </p>
+                </div>
               </div>
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-medium text-lg">Usuario</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Acceso limitado a funcionalidades específicas.
-                  Generalmente para visualización y operaciones básicas.
-                </p>
-              </div>
-            </div>
-          </Card.CardContent>
-        </Card.Card>
+            </Card.CardContent>
+          </Card.Card>
+        )}
       </div>
 
       <ExportModal
