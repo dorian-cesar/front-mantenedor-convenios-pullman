@@ -2,7 +2,7 @@ import { api } from '@/lib/api';
 
 export interface Carabinero {
     id: number;
-    nombre: string;
+    nombre_completo: string;
     rut: string;
     status: "ACTIVO" | "INACTIVO";
 }
@@ -14,7 +14,7 @@ export interface GetCarabinerosParams {
     order?: "ASC" | "DESC";
     status?: "ACTIVO" | "INACTIVO";
     rut?: string;
-    nombre?: string;
+    nombre_completo?: string;
 }
 
 export interface CarabinerosResponse {
@@ -25,13 +25,13 @@ export interface CarabinerosResponse {
 }
 
 export interface CreateCarabineroParams {
-    nombre: string;
+    nombre_completo: string;
     rut: string;
     status?: "ACTIVO" | "INACTIVO";
 }
 
 export interface UpdateCarabineroParams {
-    nombre?: string;
+    nombre_completo?: string;
     rut?: string;
     status?: "ACTIVO" | "INACTIVO";
 }
