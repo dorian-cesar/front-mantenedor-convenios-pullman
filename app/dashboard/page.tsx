@@ -146,43 +146,43 @@ export default function DashboardPage() {
             <PageHeader
                 title="Dashboard"
                 description="Resumen de la actividad."
-                actionButtons={actionButtons}
+                // actionButtons={actionButtons}
                 showRefreshButton={true}
                 onRefresh={handleRefresh}
             />
             <div className="grid grid-cols-1 md:grid-cols-12 auto-rows-[140px] gap-4">
 
-                <Card.Card className="md:col-span-3 row-span-1">
+                <Card.Card className="md:col-span-4 row-span-1">
                     <Card.CardHeader>
                         <Card.CardTitle>Ventas</Card.CardTitle>
                         <Card.CardAction><DollarSign className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
                     </Card.CardHeader>
                     <Card.CardContent>
-                        <p>123456789</p>
+                        {isLoading ? "Cargando..." : <p>{resumen[0].total_ventas}</p>}
                     </Card.CardContent>
                 </Card.Card>
 
-                <Card.Card className="md:col-span-3 row-span-1">
+                <Card.Card className="md:col-span-4 row-span-1">
                     <Card.CardHeader>
                         <Card.CardTitle>Devoluciones</Card.CardTitle>
                         <Card.CardAction><Undo2 className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
                     </Card.CardHeader>
                     <Card.CardContent>
-                        <p>123456789</p>
+                        {isLoading ? "Cargando..." : <p>{resumen[0].total_devoluciones}</p>}
                     </Card.CardContent>
                 </Card.Card>
 
-                <Card.Card className="md:col-span-3 row-span-1">
+                <Card.Card className="md:col-span-4 row-span-1">
                     <Card.CardHeader>
-                        <Card.CardTitle>Descuentos</Card.CardTitle>
+                        <Card.CardTitle>total_descuento</Card.CardTitle>
                         <Card.CardAction><Percent className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
                     </Card.CardHeader>
                     <Card.CardContent>
-                        <p>123456789</p>
+                        {isLoading ? "Cargando..." : <p>{resumen[0].total_devoluciones}</p>}
                     </Card.CardContent>
                 </Card.Card>
 
-                <Card.Card className="md:col-span-3 row-span-1">
+                {/* <Card.Card className="md:col-span-3 row-span-1">
                     <Card.CardHeader>
                         <Card.CardTitle>Pasajeros</Card.CardTitle>
                         <Card.CardAction><IdCard className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
@@ -190,9 +190,9 @@ export default function DashboardPage() {
                     <Card.CardContent>
                         <p>123456789</p>
                     </Card.CardContent>
-                </Card.Card>
+                </Card.Card> */}
 
-                <Card.Card className="md:col-span-8 row-span-2 flex">
+                <Card.Card className="md:col-span-12 row-span-2 flex">
                     <Card.CardHeader>
                         <Card.CardTitle>Resumen de Ventas</Card.CardTitle>
                         <Card.CardAction>
@@ -290,10 +290,10 @@ export default function DashboardPage() {
                             </ChartContainer>
                         )}
                     </Card.CardContent>
-                    
+
                 </Card.Card>
 
-                <Card.Card className="md:col-span-4 row-span-2">
+                {/* <Card.Card className="md:col-span-4 row-span-2">
                     <Card.CardHeader>
                         <Card.CardTitle className="text-card-foreground">Acciones rápidas</Card.CardTitle>
                     </Card.CardHeader>
@@ -311,7 +311,7 @@ export default function DashboardPage() {
                             ))}
                         </div>
                     </Card.CardContent>
-                </Card.Card>
+                </Card.Card> */}
             </div>
 
             {/* <ExportModal

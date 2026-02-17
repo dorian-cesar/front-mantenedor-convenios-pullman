@@ -23,6 +23,7 @@ import { useDebounce } from "@/hooks/use-debounce"
 import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
 import { formatRut, formatDate, formatDateOnly } from "@/utils/helpers"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function PasajerosPage() {
     const [searchValue, setSearchValue] = useState("")
@@ -40,6 +41,7 @@ export default function PasajerosPage() {
     const [selectedEmpresa, setSelectedEmpresa] = useState<number | null>(null)
     const [selectedConvenio, setSelectedConvenio] = useState<number | null>(null)
     const [selectedTipoPasajero, setSelectedTipoPasajero] = useState<number | null>(null)
+    const { user } = useAuth()
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -287,12 +289,12 @@ export default function PasajerosPage() {
             onClick: () => setOpenAdd(true),
             icon: <Icon.PlusIcon className="h-4 w-4" />
         },
-        {
-            label: "Asociar Pasajero",
-            onClick: () => setOpenAsociar(true),
-            variant: "outline" as const,
-            icon: <Icon.LinkIcon className="h-4 w-4" />
-        }
+        // {
+        //     label: "Asociar Pasajero",
+        //     onClick: () => setOpenAsociar(true),
+        //     variant: "outline" as const,
+        //     icon: <Icon.LinkIcon className="h-4 w-4" />
+        // }
     ]
 
     return (
@@ -300,7 +302,7 @@ export default function PasajerosPage() {
             <PageHeader
                 title="Pasajeros"
                 description="Listado de los pasajeros disponibles"
-                actionButtons={actionButtons}
+                actionButtons={user?.rol === "SUPER_USUARIO" ? actionButtons : undefined}
                 actionMenu={{
                     title: "Detalles",
                     items: [
@@ -358,19 +360,6 @@ export default function PasajerosPage() {
                                 </option>
                             ))}
                         </select>
-
-                        <select
-                            className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                            value={selectedTipoPasajero || ""}
-                            onChange={(e) => setSelectedTipoPasajero(e.target.value ? Number(e.target.value) : null)}
-                        >
-                            <option value="">Todos los tipos</option>
-                            {tiposPasajero.map((tipo) => (
-                                <option key={tipo.id} value={tipo.id}>
-                                    {tipo.nombre}
-                                </option>
-                            ))}
-                        </select>
                     </div>
                 }
             />
@@ -387,7 +376,7 @@ export default function PasajerosPage() {
                             <Table.TableHead>Empresa</Table.TableHead>
                             <Table.TableHead>Convenio</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
-                            <Table.TableHead className="text-right">Acciones</Table.TableHead>
+                            {user?.rol === "SUPER_USUARIO" && <Table.TableHead className="text-right">Acciones</Table.TableHead>}
                         </Table.TableRow>
                     </Table.TableHeader>
 
@@ -427,46 +416,48 @@ export default function PasajerosPage() {
                                             {pasajero.status === "ACTIVO" ? "Activo" : "Inactivo"}
                                         </BadgeStatus>
                                     </Table.TableCell>
-                                    <Table.TableCell className="text-right">
-                                        <Dropdown.DropdownMenu>
-                                            <Dropdown.DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="size-8">
-                                                    <Icon.MoreHorizontalIcon />
-                                                </Button>
-                                            </Dropdown.DropdownMenuTrigger>
-                                            <Dropdown.DropdownMenuContent align="end">
-                                                <Dropdown.DropdownMenuItem
-                                                    onClick={() => handleDetailsPasajero(pasajero)}
-                                                >
-                                                    <Icon.EyeIcon className="h-4 w-4 mr-2" />
-                                                    Ver detalles
-                                                </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuItem
-                                                    onClick={() => handleEditPasajero(pasajero)}
-                                                >
-                                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
-                                                    Editar
-                                                </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuSeparator />
-                                                {pasajero.status === "ACTIVO" ? (
+                                    {user?.rol === "SUPER_USUARIO" && (
+                                        <Table.TableCell className="text-right">
+                                            <Dropdown.DropdownMenu>
+                                                <Dropdown.DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="size-8">
+                                                        <Icon.MoreHorizontalIcon />
+                                                    </Button>
+                                                </Dropdown.DropdownMenuTrigger>
+                                                <Dropdown.DropdownMenuContent align="end">
                                                     <Dropdown.DropdownMenuItem
-                                                        variant="destructive"
-                                                        onClick={() => handleToggleStatus(pasajero.id, pasajero.status)}
+                                                        onClick={() => handleDetailsPasajero(pasajero)}
                                                     >
-                                                        <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                        Desactivar
+                                                        <Icon.EyeIcon className="h-4 w-4 mr-2" />
+                                                        Ver detalles
                                                     </Dropdown.DropdownMenuItem>
-                                                ) : (
                                                     <Dropdown.DropdownMenuItem
-                                                        onClick={() => handleToggleStatus(pasajero.id, pasajero.status)}
+                                                        onClick={() => handleEditPasajero(pasajero)}
                                                     >
-                                                        <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                        Activar
+                                                        <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                                        Editar
                                                     </Dropdown.DropdownMenuItem>
-                                                )}
-                                            </Dropdown.DropdownMenuContent>
-                                        </Dropdown.DropdownMenu>
-                                    </Table.TableCell>
+                                                    <Dropdown.DropdownMenuSeparator />
+                                                    {pasajero.status === "ACTIVO" ? (
+                                                        <Dropdown.DropdownMenuItem
+                                                            variant="destructive"
+                                                            onClick={() => handleToggleStatus(pasajero.id, pasajero.status)}
+                                                        >
+                                                            <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                            Desactivar
+                                                        </Dropdown.DropdownMenuItem>
+                                                    ) : (
+                                                        <Dropdown.DropdownMenuItem
+                                                            onClick={() => handleToggleStatus(pasajero.id, pasajero.status)}
+                                                        >
+                                                            <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                            Activar
+                                                        </Dropdown.DropdownMenuItem>
+                                                    )}
+                                                </Dropdown.DropdownMenuContent>
+                                            </Dropdown.DropdownMenu>
+                                        </Table.TableCell>
+                                    )}
                                 </Table.TableRow>
                             ))
                         )}
