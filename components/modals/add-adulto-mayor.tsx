@@ -66,10 +66,8 @@ export default function AddAdultoMayorModal({
         },
     })
 
-    // Limpiar el formulario cuando se abre el modal
     const handleOpenChange = (open: boolean) => {
         if (!open) {
-            // Si se está cerrando el modal, limpiar todo
             handleCancel()
         }
         onOpenChange(open)

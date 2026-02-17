@@ -10,6 +10,7 @@ import { useState, useEffect } from "react"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
 import ExportModal from "@/components/modals/export"
+import AddCarabineroModal from "@/components/modals/add-carabinero"
 
 import { CarabinerosService, type Carabinero, GetCarabinerosParams } from "@/services/carabineros.service"
 import { toast } from "sonner"
@@ -89,11 +90,11 @@ export default function CarabinerosPage() {
     }
 
     const handleToggleStatus = async (
-        id: number,
+        rut: string,
         currentStatus: "ACTIVO" | "INACTIVO"
     ) => {
         try {
-            await CarabinerosService.toggleStatus(id, currentStatus)
+            await CarabinerosService.toggleStatus(rut, currentStatus)
 
             toast.success(
                 currentStatus === "ACTIVO"
@@ -152,7 +153,6 @@ export default function CarabinerosPage() {
             }
 
             const formattedData = response.rows.map(ca => ({
-                ID: ca.id,
                 Nombre: ca.nombre_completo,
                 RUT: formatRut(ca.rut),
                 Estado: ca.status,
@@ -222,7 +222,6 @@ export default function CarabinerosPage() {
                 <Table.Table>
                     <Table.TableHeader>
                         <Table.TableRow>
-                            <Table.TableHead>ID</Table.TableHead>
                             <Table.TableHead>Nombre</Table.TableHead>
                             <Table.TableHead>RUT</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
@@ -232,7 +231,7 @@ export default function CarabinerosPage() {
                     <Table.TableBody>
                         {isLoading ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={9} className="text-center py-8">
+                                <Table.TableCell colSpan={4} className="text-center py-8">
                                     <div className="flex justify-center">
                                         <Icon.Loader2Icon className="h-6 w-6 animate-spin" />
                                     </div>
@@ -246,8 +245,7 @@ export default function CarabinerosPage() {
                             </Table.TableRow>
                         ) : (
                             carabineros.map((carabinero, index) => (
-                                <Table.TableRow key={index}>
-                                    <Table.TableCell>{carabinero.id}</Table.TableCell>
+                                <Table.TableRow key={`${carabinero.rut}-${index}`}>
                                     <Table.TableCell className="font-medium">{carabinero.nombre_completo}</Table.TableCell>
                                     <Table.TableCell>{carabinero.rut}</Table.TableCell>
                                     <Table.TableCell>
@@ -279,14 +277,14 @@ export default function CarabinerosPage() {
                                                 {carabinero.status === "ACTIVO" ? (
                                                     <Dropdown.DropdownMenuItem
                                                         variant="destructive"
-                                                        onClick={() => handleToggleStatus(carabinero.id, carabinero.status)}
+                                                        onClick={() => handleToggleStatus(carabinero.rut, carabinero.status)}
                                                     >
                                                         <Icon.BanIcon className="h-4 w-4 mr-2" />
                                                         Desactivar
                                                     </Dropdown.DropdownMenuItem>
                                                 ) : (
                                                     <Dropdown.DropdownMenuItem
-                                                        onClick={() => handleToggleStatus(carabinero.id, carabinero.status)}
+                                                        onClick={() => handleToggleStatus(carabinero.rut, carabinero.status)}
                                                     >
                                                         <Icon.CheckIcon className="h-4 w-4 mr-2" />
                                                         Activar
@@ -301,6 +299,18 @@ export default function CarabinerosPage() {
                     </Table.TableBody>
                 </Table.Table>
             </Card.Card>
+
+            <ExportModal
+                open={openExport}
+                onOpenChange={setOpenExport}
+                onExport={handleExport}
+            />
+
+            <AddCarabineroModal
+                open={openAdd}
+                onOpenChange={setOpenAdd}
+                onSuccess={handleCarabineroAdded}
+            />
         </div>
     )
 }

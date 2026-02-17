@@ -1,7 +1,6 @@
 import { api } from '@/lib/api';
 
 export interface Carabinero {
-    id: number;
     nombre_completo: string;
     rut: string;
     status: "ACTIVO" | "INACTIVO";
@@ -47,18 +46,18 @@ export class CarabinerosService {
         return response.data;
     }
 
-    static async updateCarabinero(id: number, data: UpdateCarabineroParams): Promise<Carabinero> {
-        const response = await api.put(`/carabineros/${id}`, data);
+    static async updateCarabinero(rut: string, data: UpdateCarabineroParams): Promise<Carabinero> {
+        const response = await api.put(`/carabineros/${rut}`, data);
         return response.data;
     }
 
-    static async deleteCarabinero(id: number): Promise<void> {
-        const response = await api.delete(`/carabineros/${id}`);
+    static async deleteCarabinero(rut: string): Promise<void> {
+        const response = await api.delete(`/carabineros/${rut}`);
         return response.data;
     }
 
-    static async toggleStatus(id: number, currentStatus: "ACTIVO" | "INACTIVO"): Promise<Carabinero> {
+    static async toggleStatus(rut: string, currentStatus: "ACTIVO" | "INACTIVO"): Promise<Carabinero> {
         const newStatus = currentStatus === "ACTIVO" ? "INACTIVO" : "ACTIVO";
-        return this.updateCarabinero(id, { status: newStatus });
+        return this.updateCarabinero(rut, { status: newStatus });
     }
 }
