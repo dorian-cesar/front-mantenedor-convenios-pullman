@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/collapsible";
 import { NAVIGATION, NavItem } from "@/constants/navigation";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface MobileSidebarProps {
   open: boolean;
@@ -31,6 +32,7 @@ export function MobileSidebar({ open, onClose, onLogout }: MobileSidebarProps) {
   const { theme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const { user } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -57,6 +59,39 @@ export function MobileSidebar({ open, onClose, onLogout }: MobileSidebarProps) {
       [itemId]: !prev[itemId]
     }));
   };
+
+  const filterByRole = (items: NavItem[]): NavItem[] => {
+    return items
+      .map(item => {
+        const hasAccess =
+          !item.roles ||
+          (user?.rol && item.roles.includes(user.rol));
+
+        if (item.children) {
+          const filteredChildren = filterByRole(item.children);
+
+          if (filteredChildren.length > 0) {
+            return { ...item, children: filteredChildren };
+          }
+
+          return null;
+        }
+
+        return hasAccess ? item : null;
+      })
+      .filter(Boolean) as NavItem[];
+  };
+
+  const getSectionItems = (section: NavItem["section"]) => {
+    return filterByRole(
+      NAVIGATION.filter(item => item.section === section)
+    );
+  };
+
+  const mainItems = getSectionItems("main");
+  const secondaryItems = getSectionItems("secondary");
+  const tertiaryItems = getSectionItems("tertiary");
+
 
   const isChildActive = (children: NavItem[] = []) => {
     return children.some(child => pathname === child.href);
@@ -167,27 +202,29 @@ export function MobileSidebar({ open, onClose, onLogout }: MobileSidebarProps) {
         </SheetHeader>
 
         <nav className="flex-1 overflow-y-auto py-4">
-          <div className="flex flex-col gap-1 px-3">
-            {renderNavItems(
-              NAVIGATION.filter((item) => item.section === "main")
-            )}
-          </div>
+          {mainItems.length > 0 && (
+            <div className="flex flex-col gap-1 px-3">
+              {renderNavItems(mainItems)}
+            </div>
+          )}
 
-          <div className="my-4 border-t border-sidebar-border" />
+          {secondaryItems.length > 0 && (
+            <>
+              <div className="my-4 border-t border-sidebar-border" />
+              <div className="flex flex-col gap-1 px-3">
+                {renderNavItems(secondaryItems)}
+              </div>
+            </>
+          )}
 
-          <div className="flex flex-col gap-1 px-3">
-            {renderNavItems(
-              NAVIGATION.filter((item) => item.section === "secondary")
-            )}
-          </div>
-
-          <div className="my-4 border-t border-sidebar-border" />
-
-          <div className="flex flex-col gap-1 px-3">
-            {renderNavItems(
-              NAVIGATION.filter((item) => item.section === "tertiary")
-            )}
-          </div>
+          {tertiaryItems.length > 0 && (
+            <>
+              <div className="my-4 border-t border-sidebar-border" />
+              <div className="flex flex-col gap-1 px-3">
+                {renderNavItems(tertiaryItems)}
+              </div>
+            </>
+          )}
         </nav>
 
         <div className="border-t border-sidebar-border p-3">

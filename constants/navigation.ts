@@ -15,6 +15,8 @@ import {
     ShieldUser
 } from "lucide-react"
 
+export type UserRole = "SUPER_USUARIO" | "USUARIO" | "SISTEMA"
+
 export type NavItem = {
     id: string
     title: string
@@ -24,6 +26,7 @@ export type NavItem = {
     group: string
     section: "main" | "secondary" | "tertiary" | "sub"
     children?: NavItem[]
+    roles?: UserRole[]
 }
 
 export const NAVIGATION: NavItem[] = [
@@ -71,6 +74,7 @@ export const NAVIGATION: NavItem[] = [
         description: "endpoints · integraciones · terceros · externos · api · url",
         group: "Convenios y Beneficios",
         section: "secondary",
+        roles: ["SUPER_USUARIO"]
     },
     {
         id: "beneficios",
@@ -79,6 +83,7 @@ export const NAVIGATION: NavItem[] = [
         description: "gestión de beneficios y convenios",
         group: "Convenios y Beneficios",
         section: "secondary",
+        roles: ["SUPER_USUARIO"],
         children: [
             {
                 id: "mayores",
@@ -126,6 +131,7 @@ export const NAVIGATION: NavItem[] = [
         description: "usuarios · roles · accesos",
         group: "Seguridad",
         section: "tertiary",
+        roles: ["SUPER_USUARIO"],
     },
     {
         id: "pasajeros",

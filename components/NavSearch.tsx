@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/item"
 
 import { NAVIGATION } from "@/constants/navigation"
+import { useAuth } from "@/hooks/useAuth";
 
 type SearchItem = {
     label: string
@@ -29,17 +30,19 @@ export function GlobalSearch() {
     const router = useRouter()
     const [open, setOpen] = useState(false)
     const [inputValue, setInputValue] = useState("")
+    const { user } = useAuth();
 
-    // Extraer solo items que tienen href (hojas del árbol de navegación)
     const extractLeafItems = (items: typeof NAVIGATION): SearchItem[] => {
         let leafItems: SearchItem[] = [];
 
         items.forEach(item => {
+            const hasAccess =
+                !item.roles ||
+                (user?.rol && item.roles.includes(user.rol));
+
             if (item.children) {
-                // Si tiene hijos, extraer las hojas de los hijos
                 leafItems = [...leafItems, ...extractLeafItems(item.children)];
-            } else if (item.href) {
-                // Si no tiene hijos y tiene href, es una hoja
+            } else if (item.href && hasAccess) {
                 leafItems.push({
                     label: item.title,
                     description: item.description,
@@ -54,7 +57,7 @@ export function GlobalSearch() {
 
     const navigation: SearchItem[] = useMemo(
         () => extractLeafItems(NAVIGATION),
-        []
+        [user]
     );
 
     // Agrupar por grupo

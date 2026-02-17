@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/collapsible";
 import { NAVIGATION, NavItem } from "@/constants/navigation";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SidebarProps {
     collapsed: boolean;
@@ -36,6 +37,7 @@ export function Sidebar({ collapsed, onToggle, onLogout }: SidebarProps) {
     const { theme, systemTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+    const { user } = useAuth()
 
     useEffect(() => {
         setMounted(true);
@@ -66,6 +68,44 @@ export function Sidebar({ collapsed, onToggle, onLogout }: SidebarProps) {
     const isChildActive = (children: NavItem[] = []) => {
         return children.some(child => pathname === child.href);
     };
+
+    const filterByRole = (items: NavItem[]): NavItem[] => {
+        return items
+            .map(item => {
+                const hasAccess =
+                    !item.roles ||
+                    (user?.rol && item.roles.includes(user.rol))
+
+                // Si tiene hijos → filtrarlos primero
+                if (item.children) {
+                    const filteredChildren = filterByRole(item.children)
+
+                    // Mostrar padre SOLO si tiene hijos visibles
+                    if (filteredChildren.length > 0) {
+                        return {
+                            ...item,
+                            children: filteredChildren
+                        }
+                    }
+
+                    return null
+                }
+
+                // Si no tiene hijos → mostrar solo si tiene acceso
+                return hasAccess ? item : null
+            })
+            .filter(Boolean) as NavItem[]
+    }
+
+    const getSectionItems = (section: NavItem["section"]) => {
+        return filterByRole(
+            NAVIGATION.filter(item => item.section === section)
+        )
+    }
+
+    const mainItems = getSectionItems("main")
+    const secondaryItems = getSectionItems("secondary")
+    const tertiaryItems = getSectionItems("tertiary")
 
     const renderNavItem = (item: NavItem, depth = 0) => {
         const hasChildren = item.children && item.children.length > 0;
@@ -249,27 +289,29 @@ export function Sidebar({ collapsed, onToggle, onLogout }: SidebarProps) {
                 </div>
 
                 <nav className="flex-1 overflow-y-auto py-4">
-                    <div className="flex flex-col gap-1 px-3">
-                        {renderNavItems(
-                            NAVIGATION.filter((item) => item.section === "main")
-                        )}
-                    </div>
+                    {mainItems.length > 0 && (
+                        <div className="flex flex-col gap-1 px-3">
+                            {renderNavItems(mainItems)}
+                        </div>
+                    )}
 
-                    <div className="my-4 border-t border-sidebar-border" />
+                    {secondaryItems.length > 0 && (
+                        <>
+                            <div className="my-4 border-t border-sidebar-border" />
+                            <div className="flex flex-col gap-1 px-3">
+                                {renderNavItems(secondaryItems)}
+                            </div>
+                        </>
+                    )}
 
-                    <div className="flex flex-col gap-1 px-3">
-                        {renderNavItems(
-                            NAVIGATION.filter((item) => item.section === "secondary")
-                        )}
-                    </div>
-
-                    <div className="my-4 border-t border-sidebar-border" />
-
-                    <div className="flex flex-col gap-1 px-3">
-                        {renderNavItems(
-                            NAVIGATION.filter((item) => item.section === "tertiary")
-                        )}
-                    </div>
+                    {tertiaryItems.length > 0 && (
+                        <>
+                            <div className="my-4 border-t border-sidebar-border" />
+                            <div className="flex flex-col gap-1 px-3">
+                                {renderNavItems(tertiaryItems)}
+                            </div>
+                        </>
+                    )}
                 </nav>
 
                 <div className="border-t border-sidebar-border p-3">

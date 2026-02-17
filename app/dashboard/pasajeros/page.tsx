@@ -383,7 +383,7 @@ export default function PasajerosPage() {
                             <Table.TableHead>RUT</Table.TableHead>
                             <Table.TableHead>Nombre Completo</Table.TableHead>
                             <Table.TableHead>Correo</Table.TableHead>
-                            <Table.TableHead>Tipo Pasajero</Table.TableHead>
+                            {/* <Table.TableHead>Tipo Pasajero</Table.TableHead> */}
                             <Table.TableHead>Empresa</Table.TableHead>
                             <Table.TableHead>Convenio</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
@@ -419,7 +419,7 @@ export default function PasajerosPage() {
                                     <Table.TableCell>
                                         {pasajero.correo || "Sin correo"}
                                     </Table.TableCell>
-                                    <Table.TableCell>{getTipoPasajeroNombre(pasajero.tipo_pasajero_id)}</Table.TableCell>
+                                    {/* <Table.TableCell>{getTipoPasajeroNombre(pasajero.tipo_pasajero_id)}</Table.TableCell> */}
                                     <Table.TableCell>{getEmpresaNombre(pasajero.empresa_id)}</Table.TableCell>
                                     <Table.TableCell>{getConvenioNombre(pasajero.convenio_id)}</Table.TableCell>
                                     <Table.TableCell>
