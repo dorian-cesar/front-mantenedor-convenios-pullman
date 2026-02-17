@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
 import ExportModal from "@/components/modals/export"
 import AddCarabineroModal from "@/components/modals/add-carabinero"
+import UpdateCarabineroModal from "@/components/modals/update-carabinero"
 
 import { CarabinerosService, type Carabinero, GetCarabinerosParams } from "@/services/carabineros.service"
 import { toast } from "sonner"
@@ -310,6 +311,13 @@ export default function CarabinerosPage() {
                 open={openAdd}
                 onOpenChange={setOpenAdd}
                 onSuccess={handleCarabineroAdded}
+            />
+
+            <UpdateCarabineroModal
+                open={openUpdate}
+                onOpenChange={setOpenUpdate}
+                carabinero={selectedCarabinero}
+                onSuccess={handleCarabineroUpdated}
             />
         </div>
     )
