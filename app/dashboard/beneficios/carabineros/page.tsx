@@ -262,12 +262,12 @@ export default function CarabinerosPage() {
                                                 </Button>
                                             </Dropdown.DropdownMenuTrigger>
                                             <Dropdown.DropdownMenuContent align="end">
-                                                <Dropdown.DropdownMenuItem
+                                                {/* <Dropdown.DropdownMenuItem
                                                     onClick={() => handleDetailsCarabinero(carabinero)}
                                                 >
                                                     <Icon.EyeIcon className="h-4 w-4 mr-2" />
                                                     Ver detalles
-                                                </Dropdown.DropdownMenuItem>
+                                                </Dropdown.DropdownMenuItem> */}
                                                 <Dropdown.DropdownMenuItem
                                                     onClick={() => handleEditCarabinero(carabinero)}
                                                 >
