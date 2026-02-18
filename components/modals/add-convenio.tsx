@@ -70,7 +70,7 @@ export const convenioSchema = z.object({
     porcentaje_descuento: z.number().min(0).max(100).optional(),
     api_consulta_id: z.number().optional().nullable(),
 
-    tope_monto_ventas: z
+    tope_monto_descuento: z
         .number()
         .min(1, "Debe ser mayor a 0")
         .optional(),
@@ -90,6 +90,11 @@ export const convenioSchema = z.object({
         .nullable()
         .optional(),
 
+    fecha_inicio: z.string()
+        .min(1, "La fecha de inicio es obligatoria"),
+
+    fecha_termino: z.string()
+        .min(1, "La fecha de término es obligatoria"),
 })
     .refine((data) => {
         if (data.tipo_consulta === "CODIGO_DESCUENTO") {
@@ -126,9 +131,13 @@ export const convenioSchema = z.object({
     }, {
         message: "Debe ingresar un porcentaje de descuento válido (0-100)",
         path: ["porcentaje_descuento"],
+    })
+    .refine((data) => {
+        return data.fecha_inicio <= data.fecha_termino;
+    }, {
+        message: "La fecha de término debe ser posterior a la fecha de inicio",
+        path: ["fecha_termino"],
     });
-
-
 
 export type ConvenioFormValues = z.infer<typeof convenioSchema>
 
@@ -152,11 +161,13 @@ export default function AddConvenioModal({
             tipo_consulta: undefined,         // enum | undefined
             codigo: "",                        // texto opcional
             porcentaje_descuento: undefined,   // number opcional
-            tope_monto_ventas: undefined,      // number opcional
+            tope_monto_descuento: undefined,      // number opcional
             tope_cantidad_tickets: undefined,  // number opcional
             api_consulta_id: undefined,        // number | undefined
             limitar_por_stock: undefined,      // boolean | undefined
             limitar_por_monto: undefined,      // boolean | undefined
+            fecha_inicio: "",
+            fecha_termino: "",
         },
     })
 
@@ -189,11 +200,13 @@ export default function AddConvenioModal({
                 tipo_consulta: data.tipo_consulta,
                 codigo: data.codigo || undefined,
                 porcentaje_descuento: data.porcentaje_descuento,
-                tope_monto_ventas: data.tope_monto_ventas,
+                tope_monto_descuento: data.tope_monto_descuento,
                 tope_cantidad_tickets: data.tope_cantidad_tickets,
                 api_consulta_id: data.api_consulta_id || undefined,
                 limitar_por_stock: data.limitar_por_stock || undefined,
                 limitar_por_monto: data.limitar_por_monto || undefined,
+                fecha_inicio: data.fecha_inicio,
+                fecha_termino: data.fecha_termino,
             })
 
             toast.success("Convenio creado correctamente")
@@ -529,7 +542,7 @@ export default function AddConvenioModal({
                         {form.watch("limitar_por_monto") === true && (
                             <Form.FormField
                                 control={form.control}
-                                name="tope_monto_ventas"
+                                name="tope_monto_descuento"
                                 render={({ field }) => (
                                     <Form.FormItem>
                                         <Form.FormLabel>Tope monto ventas</Form.FormLabel>
@@ -549,6 +562,44 @@ export default function AddConvenioModal({
                                 )}
                             />
                         )}
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <Form.FormField
+                                control={form.control}
+                                name="fecha_inicio"
+                                render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel>Fecha de inicio</Form.FormLabel>
+                                        <Form.FormControl>
+                                            <Input
+                                                type="date"
+                                                {...field}
+                                                value={field.value || ""}
+                                            />
+                                        </Form.FormControl>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
+
+                            <Form.FormField
+                                control={form.control}
+                                name="fecha_termino"
+                                render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel>Fecha de término</Form.FormLabel>
+                                        <Form.FormControl>
+                                            <Input
+                                                type="date"
+                                                {...field}
+                                                value={field.value || ""}
+                                            />
+                                        </Form.FormControl>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
+                        </div>
 
 
                         <div className="flex justify-end space-x-2">

@@ -9,7 +9,7 @@ export interface Convenio {
     endpoint?: string;
     fecha_inicio?: string;
     fecha_termino?: string;
-    tope_monto_ventas?: number;
+    tope_monto_descuento?: number;
     tope_cantidad_tickets?: number;
     porcentaje_descuento?: number;
     codigo?: string;
@@ -48,11 +48,13 @@ export interface CreateConvenioData {
     tipo_consulta: "API_EXTERNA" | "CODIGO_DESCUENTO";
     codigo?: string;
     porcentaje_descuento?: number;
-    tope_monto_ventas?: number;
+    tope_monto_descuento?: number;
     tope_cantidad_tickets?: number;
     api_consulta_id?: number;
     limitar_por_stock?: boolean;
     limitar_por_monto?: boolean;
+    fecha_inicio?: string;
+    fecha_termino?: string;
 }
 
 export interface UpdateConvenioData {
@@ -62,11 +64,13 @@ export interface UpdateConvenioData {
     tipo_consulta?: "API_EXTERNA" | "CODIGO_DESCUENTO";
     codigo?: string | null;
     porcentaje_descuento?: number | null;
-    tope_monto_ventas?: number | null;
+    tope_monto_descuento?: number | null;
     tope_cantidad_tickets?: number | null;
     api_consulta_id?: number | null;
     limitar_por_stock?: boolean | null;
     limitar_por_monto?: boolean | null;
+    fecha_inicio?: string | null;
+    fecha_termino?: string | null;
 }
 
 export class ConveniosService {

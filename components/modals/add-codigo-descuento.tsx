@@ -345,10 +345,10 @@ export default function AddCodigoDescuentoModal({
                                             <p className="font-medium">{convenioSeleccionado.empresa.nombre}</p>
                                         </div>
                                     )}
-                                    {convenioSeleccionado.tope_monto_ventas && (
+                                    {convenioSeleccionado.tope_monto_descuento && (
                                         <div>
                                             <span className="text-muted-foreground">Tope ventas:</span>
-                                            <p className="font-medium">${convenioSeleccionado.tope_monto_ventas.toLocaleString()}</p>
+                                            <p className="font-medium">${convenioSeleccionado.tope_monto_descuento.toLocaleString()}</p>
                                         </div>
                                     )}
                                     {convenioSeleccionado.tope_cantidad_tickets && (

@@ -63,6 +63,13 @@ export default function DetailsConvenioModal({
                     </div>
 
                     <div>
+                        <p className="text-sm font-medium leading-none">Fecha de inicio</p>
+                        <p className="text-sm text-muted-foreground">
+                            {convenio.fecha_inicio ? formatDateOnly(convenio.fecha_inicio) : "N/A"}
+                        </p>
+                    </div>
+
+                    <div>
                         <p className="text-sm font-medium leading-none">Tipo de Consulta</p>
                         <p className="text-sm text-muted-foreground">
                             {convenio.tipo_consulta === "CODIGO_DESCUENTO"
@@ -105,7 +112,7 @@ export default function DetailsConvenioModal({
                     <div>
                         <p className="text-sm font-medium leading-none">Tope Monto Ventas</p>
                         <p className="text-sm text-muted-foreground">
-                            {convenio.tope_monto_ventas ? formatNumber(convenio.tope_monto_ventas) : "Sin tope"}
+                            {convenio.tope_monto_descuento ? formatNumber(convenio.tope_monto_descuento) : "Sin tope"}
                         </p>
                     </div>
 

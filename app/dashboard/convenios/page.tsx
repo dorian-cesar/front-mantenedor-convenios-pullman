@@ -316,6 +316,7 @@ export default function ConveniosPage() {
                             <Table.TableHead>Endpoint</Table.TableHead>
                             <Table.TableHead>Tope Monto</Table.TableHead>
                             <Table.TableHead>Tope Cantidad Tickets</Table.TableHead>
+                            <Table.TableHead>Periodo</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
                     </Table.TableHeader>
@@ -366,9 +367,9 @@ export default function ConveniosPage() {
                                     <Table.TableCell>
                                         {convenio.endpoint || "Sin endpoint"}
                                     </Table.TableCell>
-                                    <Table.TableCell>{(convenio.limitar_por_monto && convenio.tope_monto_ventas) ? formatNumber(convenio.tope_monto_ventas) : "Sin tope"}</Table.TableCell>
+                                    <Table.TableCell>{(convenio.limitar_por_monto && convenio.tope_monto_descuento) ? formatNumber(convenio.tope_monto_descuento) : "Sin tope"}</Table.TableCell>
                                     <Table.TableCell>{(convenio.limitar_por_stock && convenio.tope_cantidad_tickets) ? formatNumber(convenio.tope_cantidad_tickets) : "Sin tope"}</Table.TableCell>
-                                    {/* <Table.TableCell>{convenio.descuento?.porcentaje ? `${formatNumber(convenio.descuento.porcentaje)}%` : "Sin descuento"}</Table.TableCell> */}
+                                    <Table.TableCell>{convenio.fecha_inicio ? formatDateOnly(convenio.fecha_inicio) : "Sin inicio"} - {convenio.fecha_termino ? formatDateOnly(convenio.fecha_termino) : "Sin término"}</Table.TableCell>
                                     <Table.TableCell className="text-right">
                                         <Dropdown.DropdownMenu>
                                             <Dropdown.DropdownMenuTrigger asChild>

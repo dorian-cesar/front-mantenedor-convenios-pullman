@@ -64,7 +64,7 @@ export const convenioSchema = z.object({
     api_consulta_id: z.number().optional().nullable(),
 
     // Changed to string for input handling
-    tope_monto_ventas: z.string().optional(),
+    tope_monto_descuento: z.string().optional(),
 
     // Changed to string for input handling
     tope_cantidad_tickets: z.string().optional(),
@@ -78,6 +78,12 @@ export const convenioSchema = z.object({
         .boolean()
         .nullable()
         .optional(),
+
+    fecha_inicio: z.string()
+        .min(1, "La fecha de inicio es obligatoria"),
+
+    fecha_termino: z.string()
+        .min(1, "La fecha de término es obligatoria"),
 })
     .refine((data) => {
         if (data.tipo_consulta === "CODIGO_DESCUENTO") {
@@ -117,14 +123,14 @@ export const convenioSchema = z.object({
         path: ["porcentaje_descuento"],
     })
     .refine((data) => {
-        if (data.tope_monto_ventas) {
-            const val = Number(data.tope_monto_ventas);
+        if (data.tope_monto_descuento) {
+            const val = Number(data.tope_monto_descuento);
             return !isNaN(val) && val > 0;
         }
         return true;
     }, {
         message: "El monto debe ser mayor a 0",
-        path: ["tope_monto_ventas"],
+        path: ["tope_monto_descuento"],
     })
     .refine((data) => {
         if (data.tope_cantidad_tickets) {
@@ -135,6 +141,12 @@ export const convenioSchema = z.object({
     }, {
         message: "La cantidad debe ser mayor a 0",
         path: ["tope_cantidad_tickets"],
+    })
+    .refine((data) => {
+        return data.fecha_inicio <= data.fecha_termino;
+    }, {
+        message: "La fecha de término debe ser posterior a la fecha de inicio",
+        path: ["fecha_termino"],
     });
 
 export const descuentoSchema = z.object({
@@ -172,11 +184,13 @@ export default function UpdateConvenioModal({
             tipo_consulta: "CODIGO_DESCUENTO",
             codigo: "",
             porcentaje_descuento: "",
-            tope_monto_ventas: "",
+            tope_monto_descuento: "",
             tope_cantidad_tickets: "",
             api_consulta_id: undefined,
             limitar_por_stock: undefined,
             limitar_por_monto: undefined,
+            fecha_inicio: "",
+            fecha_termino: "",
         },
     })
 
@@ -199,14 +213,15 @@ export default function UpdateConvenioModal({
                 status: convenio.status || "ACTIVO",
                 tipo_consulta: convenio.tipo_consulta || "CODIGO_DESCUENTO",
                 codigo: convenio.codigo || "",
-                // Convert numbers to strings for input handling
                 porcentaje_descuento: convenio.porcentaje_descuento?.toString() || "",
-                tope_monto_ventas: convenio.tope_monto_ventas?.toString() || "",
+                tope_monto_descuento: convenio.tope_monto_descuento?.toString() || "",
                 tope_cantidad_tickets: convenio.tope_cantidad_tickets?.toString() || "",
 
                 api_consulta_id: convenio.api_consulta_id ?? undefined,
                 limitar_por_stock: convenio.limitar_por_stock ?? undefined,
                 limitar_por_monto: convenio.limitar_por_monto ?? undefined,
+                fecha_inicio: convenio.fecha_inicio || "",
+                fecha_termino: convenio.fecha_termino || "",
             })
         }
         setOpenEmpresaPopover(false)
@@ -234,12 +249,14 @@ export default function UpdateConvenioModal({
                 codigo: data.codigo,
                 // Convert strings back to numbers (or undefined if empty)
                 porcentaje_descuento: data.porcentaje_descuento ? Number(data.porcentaje_descuento) : undefined,
-                tope_monto_ventas: data.tope_monto_ventas ? Number(data.tope_monto_ventas) : undefined,
+                tope_monto_descuento: data.tope_monto_descuento ? Number(data.tope_monto_descuento) : undefined,
                 tope_cantidad_tickets: data.tope_cantidad_tickets ? Number(data.tope_cantidad_tickets) : undefined,
 
                 api_consulta_id: data.api_consulta_id,
                 limitar_por_stock: data.limitar_por_stock,
                 limitar_por_monto: data.limitar_por_monto,
+                fecha_inicio: data.fecha_inicio,
+                fecha_termino: data.fecha_termino,
             }
 
             await ConveniosService.updateConvenio(convenio.id, updateData)
@@ -612,7 +629,7 @@ export default function UpdateConvenioModal({
                         {form.watch("limitar_por_monto") === true && (
                             <Form.FormField
                                 control={form.control}
-                                name="tope_monto_ventas"
+                                name="tope_monto_descuento"
                                 render={({ field }) => (
                                     <Form.FormItem>
                                         <Form.FormLabel>Tope monto ventas</Form.FormLabel>
@@ -631,6 +648,44 @@ export default function UpdateConvenioModal({
                                 )}
                             />
                         )}
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <Form.FormField
+                                control={form.control}
+                                name="fecha_inicio"
+                                render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel>Fecha de inicio</Form.FormLabel>
+                                        <Form.FormControl>
+                                            <Input
+                                                type="date"
+                                                {...field}
+                                                value={field.value || ""}
+                                            />
+                                        </Form.FormControl>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
+
+                            <Form.FormField
+                                control={form.control}
+                                name="fecha_termino"
+                                render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel>Fecha de término</Form.FormLabel>
+                                        <Form.FormControl>
+                                            <Input
+                                                type="date"
+                                                {...field}
+                                                value={field.value || ""}
+                                            />
+                                        </Form.FormControl>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
+                        </div>
 
                         <div className="flex justify-end space-x-2 pt-4">
                             <Button
