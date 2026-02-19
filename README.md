@@ -16,7 +16,7 @@ Secciones Disponibles:
 - Adultos Mayores → CRUD.
 - Estudiantes → CRUD.
 - Usuarios Frecuentes → CRUD.
-- Carabineros.
+- Carabineros → CRUD.
 - Usuarios → CRUD.
 - Pasajeros → CRUD.
 
