@@ -323,7 +323,7 @@ export default function ConveniosPage() {
                     <Table.TableBody>
                         {isLoading ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={5} className="text-center py-8">
+                                <Table.TableCell colSpan={11} className="text-center py-8">
                                     <div className="flex justify-center">
                                         <Icon.Loader2Icon className="h-6 w-6 animate-spin" />
                                     </div>
@@ -331,7 +331,7 @@ export default function ConveniosPage() {
                             </Table.TableRow>
                         ) : convenios.length === 0 ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={5} className="text-center py-8">
+                                <Table.TableCell colSpan={11} className="text-center py-8">
                                     No se encontraron convenios
                                 </Table.TableCell>
                             </Table.TableRow>
