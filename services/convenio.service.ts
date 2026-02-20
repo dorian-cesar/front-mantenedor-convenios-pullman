@@ -15,6 +15,10 @@ export interface Convenio {
     codigo?: string;
     limitar_por_stock?: boolean;
     limitar_por_monto?: boolean;
+    beneficio?: boolean;
+    imagenes?: string[];
+    consumo_tickets?: number;
+    consumo_monto_descuento?: number;
     empresa?: {
         id: number;
         nombre: string;
@@ -53,6 +57,10 @@ export interface CreateConvenioData {
     api_consulta_id?: number;
     limitar_por_stock?: boolean;
     limitar_por_monto?: boolean;
+    beneficio?: boolean;
+    imagenes?: string[];
+    consumo_tickets?: number;
+    consumo_monto_descuento?: number;
     fecha_inicio?: string;
     fecha_termino?: string;
 }
@@ -69,6 +77,10 @@ export interface UpdateConvenioData {
     api_consulta_id?: number | null;
     limitar_por_stock?: boolean | null;
     limitar_por_monto?: boolean | null;
+    beneficio?: boolean;
+    imagenes?: string[];
+    consumo_tickets?: number;
+    consumo_monto_descuento?: number;
     fecha_inicio?: string | null;
     fecha_termino?: string | null;
 }

@@ -33,6 +33,8 @@ import { refine, z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ConveniosService } from "@/services/convenio.service"
 import { toast } from "sonner"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 
 interface Empresa {
     id: number
@@ -88,6 +90,12 @@ export const convenioSchema = z.object({
     limitar_por_monto: z
         .boolean()
         .nullable()
+        .optional(),
+
+    beneficio: z
+        .boolean(),
+
+    imagenes: z.array(z.string())
         .optional(),
 
     fecha_inicio: z.string()
@@ -151,6 +159,7 @@ export default function AddConvenioModal({
     const [isLoading, setIsLoading] = useState(false)
     const [openEmpresaPopover, setOpenEmpresaPopover] = useState(false)
     const [openApiPopover, setOpenApiPopover] = useState(false)
+    const [imagenesInputs, setImagenesInputs] = useState<string[]>([])
 
     const form = useForm<ConvenioFormValues>({
         resolver: zodResolver(convenioSchema),
@@ -166,6 +175,8 @@ export default function AddConvenioModal({
             api_consulta_id: undefined,        // number | undefined
             limitar_por_stock: undefined,      // boolean | undefined
             limitar_por_monto: undefined,      // boolean | undefined
+            beneficio: false,
+            imagenes: [],
             fecha_inicio: "",
             fecha_termino: "",
         },
@@ -182,13 +193,49 @@ export default function AddConvenioModal({
         (api) => api.id === apiSeleccionadaId
     )
 
+    const beneficioValue = form.watch("beneficio")
+
+    useEffect(() => {
+        if (!beneficioValue) {
+            setImagenesInputs([])
+            form.setValue("imagenes", [])
+        }
+    }, [beneficioValue, form])
 
     useEffect(() => {
         if (!open) {
             form.reset()
             setOpenEmpresaPopover(false)
+            setOpenApiPopover(false)
+            setImagenesInputs([])
         }
     }, [open, form])
+
+    const handleAddImagen = () => {
+        setImagenesInputs([...imagenesInputs, ""])
+    }
+
+    const handleRemoveImagen = (index: number) => {
+        const newImagenes = imagenesInputs.filter((_, i) => i !== index)
+        setImagenesInputs(newImagenes)
+        // Actualizar el array de imágenes en el formulario
+        const currentImagenes = form.getValues("imagenes") || []
+        form.setValue(
+            "imagenes",
+            currentImagenes.filter((_, i) => i !== index)
+        )
+    }
+
+    const handleImagenChange = (index: number, value: string) => {
+        const newImagenes = [...imagenesInputs]
+        newImagenes[index] = value
+        setImagenesInputs(newImagenes)
+
+        // Actualizar el array de imágenes en el formulario
+        const currentImagenes = form.getValues("imagenes") || []
+        currentImagenes[index] = value
+        form.setValue("imagenes", currentImagenes.filter(img => img.trim() !== ""))
+    }
 
     const onSubmit = async (data: ConvenioFormValues) => {
         setIsLoading(true)
@@ -205,6 +252,8 @@ export default function AddConvenioModal({
                 api_consulta_id: data.api_consulta_id || undefined,
                 limitar_por_stock: data.limitar_por_stock || undefined,
                 limitar_por_monto: data.limitar_por_monto || undefined,
+                beneficio: data.beneficio,
+                imagenes: data.imagenes?.filter(img => img.trim() !== "") || [],
                 fecha_inicio: data.fecha_inicio,
                 fecha_termino: data.fecha_termino,
             })
@@ -224,7 +273,7 @@ export default function AddConvenioModal({
 
     return (
         <Dialog.Dialog open={open} onOpenChange={onOpenChange}>
-            <Dialog.DialogContent>
+            <Dialog.DialogContent className="max-h-[90vh] overflow-y-auto">
                 <Dialog.DialogHeader>
                     <Dialog.DialogTitle>Agregar Nuevo Convenio</Dialog.DialogTitle>
                     <Dialog.DialogDescription>
@@ -561,6 +610,72 @@ export default function AddConvenioModal({
                                     </Form.FormItem>
                                 )}
                             />
+                        )}
+
+                        <Form.FormField
+                            control={form.control}
+                            name="beneficio"
+                            render={({ field }) => (
+                                <Form.FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                    <Form.FormControl>
+                                        <Checkbox
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </Form.FormControl>
+                                    <div className="space-y-1 leading-none">
+                                        <Form.FormLabel className="text-sm font-medium">
+                                            ¿Es un beneficio?
+                                        </Form.FormLabel>
+                                    </div>
+                                </Form.FormItem>
+                            )}
+                        />
+
+                        {/* Campos de imágenes condicionales */}
+                        {beneficioValue && (
+                            <div className="space-y-4 border rounded-md p-4">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-base font-semibold">Imágenes del beneficio</Label>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleAddImagen}
+                                    >
+                                        <Icon.PlusIcon className="h-4 w-4 mr-2" />
+                                        Agregar imagen
+                                    </Button>
+                                </div>
+
+                                {imagenesInputs.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground text-center py-4">
+                                        No hay imágenes agregadas.
+                                    </p>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {imagenesInputs.map((imagen, index) => (
+                                            <div key={index} className="flex items-center gap-2">
+                                                <Input
+                                                    placeholder={`Nombre de la imagen ${index + 1}`}
+                                                    value={imagen}
+                                                    onChange={(e) => handleImagenChange(index, e.target.value)}
+                                                    className="flex-1"
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleRemoveImagen(index)}
+                                                    className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                                                >
+                                                    <Icon.Trash2Icon className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         )}
 
                         <div className="grid grid-cols-2 gap-4">

@@ -151,6 +151,12 @@ export default function DetailsConvenioModal({
                             {convenio.fecha_termino ? formatDateOnly(convenio.fecha_termino) : "N/A"}
                         </p>
                     </div>
+                    <div>
+                        <p className="text-sm font-medium leading-none">Beneficio</p>
+                        <p className="text-sm text-muted-foreground">
+                            {convenio.beneficio ? "Sí" : "No"}
+                        </p>
+                    </div>
                 </div>
             </Dialog.DialogContent>
         </Dialog.Dialog>
