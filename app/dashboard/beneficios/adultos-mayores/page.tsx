@@ -166,8 +166,6 @@ export default function AdultosMayoresPage() {
                 RUT: formatRut(am.rut),
                 Teléfono: am.telefono,
                 Correo: am.correo,
-                Certificado: am.certificado,
-                "Fecha Emisión": am.fecha_emision,
                 Estado: am.status,
                 Creado: new Date(am.createdAt || "").toLocaleDateString(),
                 Actualizado: new Date(am.updatedAt || "").toLocaleDateString(),
@@ -244,8 +242,6 @@ export default function AdultosMayoresPage() {
                             <Table.TableHead>RUT</Table.TableHead>
                             <Table.TableHead>Correo</Table.TableHead>
                             <Table.TableHead>Teléfono</Table.TableHead>
-                            <Table.TableHead>Certificado</Table.TableHead>
-                            <Table.TableHead>Fecha Emisión</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
@@ -273,8 +269,6 @@ export default function AdultosMayoresPage() {
                                     <Table.TableCell>{formatRut(adultoMayor.rut)}</Table.TableCell>
                                     <Table.TableCell>{adultoMayor.correo}</Table.TableCell>
                                     <Table.TableCell>{adultoMayor.telefono}</Table.TableCell>
-                                    <Table.TableCell>{adultoMayor.certificado}</Table.TableCell>
-                                    <Table.TableCell>{adultoMayor.fecha_emision}</Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={adultoMayor.status === "ACTIVO" ? "active" : "inactive"}>
                                             {adultoMayor.status === "ACTIVO" ? "Activo" : "Inactivo"}

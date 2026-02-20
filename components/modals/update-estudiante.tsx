@@ -42,9 +42,6 @@ const estudianteSchema = z.object({
     telefono: z.string().min(1, "El teléfono es requerido"),
     correo: z.string().email("Correo electrónico inválido"),
     direccion: z.string().min(1, "La dirección es requerida"),
-    carnet_estudiante: z.string().min(1, "El carnet de estudiante es requerido"),
-    fecha_vencimiento: z.string().min(1, "La fecha de vencimiento es requerida"),
-    // imagen_base64: z.string().optional(),
     status: z.enum(["ACTIVO", "INACTIVO"]),
 })
 
@@ -66,9 +63,6 @@ export default function UpdateEstudianteModal({
             telefono: "",
             correo: "",
             direccion: "",
-            carnet_estudiante: "",
-            fecha_vencimiento: "",
-            // imagen_base64: "",
             status: "ACTIVO",
         },
     })
@@ -81,9 +75,6 @@ export default function UpdateEstudianteModal({
                 telefono: estudiante.telefono,
                 correo: estudiante.correo,
                 direccion: estudiante.direccion,
-                carnet_estudiante: estudiante.carnet_estudiante,
-                fecha_vencimiento: estudiante.fecha_vencimiento,
-                // imagen_base64: estudiante.imagen_base64 || "",
                 status: estudiante.status,
             })
         }
@@ -186,34 +177,6 @@ export default function UpdateEstudianteModal({
                                         <Form.FormLabel>Dirección</Form.FormLabel>
                                         <Form.FormControl>
                                             <Input placeholder="Dirección completa" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
-                                )}
-                            />
-
-                            <Form.FormField
-                                control={form.control}
-                                name="carnet_estudiante"
-                                render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Carnet Estudiante</Form.FormLabel>
-                                        <Form.FormControl>
-                                            <Input placeholder="Código carnet" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
-                                )}
-                            />
-
-                            <Form.FormField
-                                control={form.control}
-                                name="fecha_vencimiento"
-                                render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Fecha Vencimiento</Form.FormLabel>
-                                        <Form.FormControl>
-                                            <Input type="date" {...field} />
                                         </Form.FormControl>
                                         <Form.FormMessage />
                                     </Form.FormItem>

@@ -166,7 +166,6 @@ export default function EstudiantesPage() {
                 RUT: formatRut(est.rut),
                 Teléfono: est.telefono,
                 Correo: est.correo,
-                "Carnet Estudiante": est.carnet_estudiante,
                 Estado: est.status,
                 Creado: new Date(est.createdAt || "").toLocaleDateString(),
                 Actualizado: new Date(est.updatedAt || "").toLocaleDateString(),
@@ -243,8 +242,6 @@ export default function EstudiantesPage() {
                             <Table.TableHead>RUT</Table.TableHead>
                             <Table.TableHead>Correo</Table.TableHead>
                             <Table.TableHead>Teléfono</Table.TableHead>
-                            <Table.TableHead>Carnet</Table.TableHead>
-                            <Table.TableHead>Fecha Vencimiento</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
@@ -272,8 +269,6 @@ export default function EstudiantesPage() {
                                     <Table.TableCell>{formatRut(estudiante.rut)}</Table.TableCell>
                                     <Table.TableCell>{estudiante.correo}</Table.TableCell>
                                     <Table.TableCell>{estudiante.telefono}</Table.TableCell>
-                                    <Table.TableCell>{estudiante.carnet_estudiante}</Table.TableCell>
-                                    <Table.TableCell>{estudiante.fecha_vencimiento}</Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={estudiante.status === "ACTIVO" ? "active" : "inactive"}>
                                             {estudiante.status === "ACTIVO" ? "Activo" : "Inactivo"}

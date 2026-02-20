@@ -8,6 +8,8 @@ export interface UsuarioFrecuente {
     correo: string;
     direccion: string;
     status: "ACTIVO" | "INACTIVO";
+    imagen_cedula_identidad?: string;
+    imagen_certificado?: string;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -35,6 +37,8 @@ export interface CreateUsuarioFrecuenteData {
     telefono: string;
     correo: string;
     direccion: string;
+    imagen_cedula_identidad?: string;
+    imagen_certificado?: string;
     status?: "ACTIVO" | "INACTIVO";
 }
 
@@ -44,6 +48,8 @@ export interface UpdateUsuarioFrecuenteData {
     telefono?: string;
     correo?: string;
     direccion?: string;
+    imagen_cedula_identidad?: string;
+    imagen_certificado?: string;
     status?: "ACTIVO" | "INACTIVO";
 }
 

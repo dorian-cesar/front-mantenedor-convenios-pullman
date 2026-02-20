@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { AdultosMayoresService } from "@/services/adulto-mayor.service"
 import { toast } from "sonner"
 import { fileToBase64 } from "@/utils/helpers"
+import { FileTextIcon, UploadIcon, XIcon } from "lucide-react"
 
 interface AddAdultoMayorModalProps {
     open: boolean
@@ -35,11 +36,9 @@ const adultoMayorSchema = z.object({
     telefono: z.string().min(1, "El teléfono es requerido"),
     correo: z.string().email("Correo electrónico inválido"),
     direccion: z.string().min(1, "La dirección es requerida"),
-    certificado: z.string().min(1, "El certificado es requerido"),
-    fecha_emision: z.string().min(1, "La fecha de emisión es requerida"),
-    imagen_base64: z
+    imagen_cedula_identidad: z
         .string()
-        .nonempty("La imagen es requerida"),
+        .nonempty("El archivo es requerido"),
 })
 
 type AdultoMayorFormValues = z.infer<typeof adultoMayorSchema>
@@ -50,7 +49,7 @@ export default function AddAdultoMayorModal({
     onSuccess,
 }: AddAdultoMayorModalProps) {
     const [isLoading, setIsLoading] = useState(false)
-    const [preview, setPreview] = useState<string | null>(null)
+    const [preview, setPreview] = useState<{ src: string; isPDF: boolean } | null>(null)
 
     const form = useForm<AdultoMayorFormValues>({
         resolver: zodResolver(adultoMayorSchema),
@@ -60,9 +59,7 @@ export default function AddAdultoMayorModal({
             telefono: "",
             correo: "",
             direccion: "",
-            certificado: "",
-            fecha_emision: "",
-            imagen_base64: "",
+            imagen_cedula_identidad: "",
         },
     })
 
@@ -79,50 +76,78 @@ export default function AddAdultoMayorModal({
         onOpenChange(false)
     }
 
-    const handleImageChange = async (file: File) => {
+    const handleFileChange = async (file: File) => {
         if (!file) return
 
-        // Calcular el tamaño del archivo original
         const fileSizeInMB = file.size / (1024 * 1024)
 
-        // Verificar si el archivo original ya excede el límite
-        if (fileSizeInMB > 50) {
-            toast.error(`La imagen no puede superar 50MB. Esta imagen pesa ${fileSizeInMB.toFixed(2)}MB`)
+        if (fileSizeInMB > 5) {
+            toast.error(`El archivo no puede superar 5MB. Este archivo pesa ${fileSizeInMB.toFixed(2)}MB`)
             return
         }
 
         try {
             const base64 = await fileToBase64(file)
 
-            // Calcular el tamaño aproximado en base64
-            // El base64 aumenta el tamaño aproximadamente un 33%
             const base64SizeInMB = (base64.length * 3 / 4) / (1024 * 1024)
 
-            console.log(`Tamaño original: ${fileSizeInMB.toFixed(2)}MB`)
-            console.log(`Tamaño base64: ${base64SizeInMB.toFixed(2)}MB`)
-
-            if (base64SizeInMB > 50) {
-                toast.error(`La imagen en base64 excede el límite de 50MB (${base64SizeInMB.toFixed(2)}MB)`)
+            if (base64SizeInMB > 5) {
+                toast.error(`El archivo en base64 excede el límite de 5MB (${base64SizeInMB.toFixed(2)}MB)`)
                 return
             }
 
-            form.setValue("imagen_base64", base64)
-            setPreview(base64)
+            form.setValue("imagen_cedula_identidad", base64)
 
-            // Mostrar mensaje informativo
-            toast.info(`Imagen cargada: ${fileSizeInMB.toFixed(2)}MB (${base64SizeInMB.toFixed(2)}MB en base64)`)
+            // Detectar si es PDF
+            const fileIsPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+            setPreview({ src: base64, isPDF: fileIsPDF })
+
+            toast.info(`Archivo cargado: ${fileSizeInMB.toFixed(2)}MB`)
         } catch (error) {
-            toast.error("Error al procesar la imagen")
+            toast.error("Error al procesar el archivo")
         }
     }
 
+    const handleRemoveFile = () => {
+        form.setValue("imagen_cedula_identidad", "")
+        setPreview(null)
+    }
+
+    const renderFilePreview = () => {
+        if (!preview) return null
+
+        return (
+            <div className="relative">
+                {preview.isPDF ? (
+                    <div className="flex items-center justify-center p-4 bg-muted/30 rounded-lg">
+                        <FileTextIcon className="h-12 w-12 text-primary" />
+                        <span className="ml-2 text-sm text-muted-foreground">Documento PDF</span>
+                    </div>
+                ) : (
+                    <img
+                        src={preview.src}
+                        alt="Preview"
+                        className="mx-auto max-h-40 rounded-md object-contain"
+                    />
+                )}
+                <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                    onClick={handleRemoveFile}
+                >
+                    <XIcon className="h-4 w-4" />
+                </Button>
+            </div>
+        )
+    }
 
     const onSubmit = async (data: AdultoMayorFormValues) => {
+        const base64SizeInMB = (data.imagen_cedula_identidad.length * 3 / 4) / (1024 * 1024)
 
-        const base64SizeInMB = (data.imagen_base64.length * 3 / 4) / (1024 * 1024)
-
-        if (base64SizeInMB > 50) {
-            toast.error(`La imagen excede el límite de 50MB (${base64SizeInMB.toFixed(2)}MB). Por favor, selecciona una imagen más pequeña.`)
+        if (base64SizeInMB > 5) {
+            toast.error(`El archivo excede el límite de 5MB (${base64SizeInMB.toFixed(2)}MB). Por favor, selecciona un archivo más pequeño.`)
             return
         }
 
@@ -228,68 +253,37 @@ export default function AddAdultoMayorModal({
                                 )}
                             />
 
-                            <Form.FormField
-                                control={form.control}
-                                name="certificado"
-                                render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Certificado</Form.FormLabel>
-                                        <Form.FormControl>
-                                            <Input placeholder="Código certificado" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
-                                )}
-                            />
-
-                            <Form.FormField
-                                control={form.control}
-                                name="fecha_emision"
-                                render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Fecha Emisión</Form.FormLabel>
-                                        <Form.FormControl>
-                                            <Input type="date" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
-                                )}
-                            />
                         </div>
 
                         <Form.FormField
                             control={form.control}
-                            name="imagen_base64"
+                            name="imagen_cedula_identidad"
                             render={() => (
                                 <Form.FormItem>
-                                    <Form.FormLabel>Imagen</Form.FormLabel>
+                                    <Form.FormLabel>Documento (Cédula de Identidad)</Form.FormLabel>
                                     <Form.FormControl>
                                         <div
-                                            className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition"
+                                            className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition min-h-[200px] flex items-center justify-center"
                                             onClick={() => document.getElementById("fileInput")?.click()}
                                         >
                                             <input
                                                 id="fileInput"
                                                 type="file"
-                                                accept="image/*"
+                                                accept="image/*,application/pdf"
                                                 className="hidden"
                                                 onChange={(e) => {
                                                     const file = e.target.files?.[0]
-                                                    if (file) handleImageChange(file)
+                                                    if (file) handleFileChange(file)
                                                 }}
                                             />
 
                                             {preview ? (
-                                                <img
-                                                    src={preview}
-                                                    alt="Preview"
-                                                    className="mx-auto max-h-40 rounded-md object-contain"
-                                                />
+                                                renderFilePreview()
                                             ) : (
                                                 <div className="flex flex-col items-center text-muted-foreground">
-                                                    <Icon.UploadIcon className="h-8 w-8 mb-2" />
-                                                    <p>Haz click para subir una imagen aquí</p>
-                                                    <p className="text-xs">Máximo 50MB</p>
+                                                    <UploadIcon className="h-8 w-8 mb-2" />
+                                                    <p>Haz click para subir un archivo</p>
+                                                    <p className="text-xs mt-1">Imagen o PDF (Máximo 5MB)</p>
                                                 </div>
                                             )}
                                         </div>

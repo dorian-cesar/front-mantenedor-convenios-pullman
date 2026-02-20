@@ -50,14 +50,36 @@ export const fileToBase64 = (file: File): Promise<string> => {
   })
 }
 
-export const getImageSrc = (base64?: string | null) => {
+export const getFileSrc = (base64?: string | null) => {
   if (!base64) return null
 
-  // Si ya viene con data:image
-  if (base64.startsWith("data:image")) {
+  if (base64.startsWith("data:")) {
     return base64
   }
 
-  // Si viene puro
+  try {
+    const decoded = atob(base64.substring(0, 100));
+    if (decoded.includes('%PDF')) {
+      return `data:application/pdf;base64,${base64}`;
+    }
+  } catch {
+    // Si falla la decodificación, asumimos imagen
+  }
+
   return `data:image/jpeg;base64,${base64}`
+}
+
+export const isPDF = (base64?: string | null): boolean => {
+  if (!base64) return false
+
+  if (base64.startsWith("data:application/pdf")) {
+    return true
+  }
+
+  try {
+    const decoded = atob(base64.substring(0, 100));
+    return decoded.includes('%PDF');
+  } catch {
+    return false;
+  }
 }

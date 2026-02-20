@@ -3,11 +3,11 @@
 import * as Dialog from "@/components/ui/dialog"
 import { AdultoMayor } from "@/services/adulto-mayor.service"
 import { formatDateOnly } from "@/utils/helpers"
-import { getImageSrc } from "@/utils/helpers"
+import { getFileSrc, isPDF } from "@/utils/helpers"
 import { useState } from "react"
-import ImageViewerModal from "./image-viewer-modal"
+import FileViewerModal from "./file-viewer-modal"
 import { Button } from "@/components/ui/button"
-import { Maximize2Icon } from "lucide-react"
+import { Maximize2Icon, FileTextIcon } from "lucide-react"
 
 interface DetailsAdultoMayorModalProps {
     open: boolean
@@ -20,12 +20,56 @@ export default function DetailsAdultoMayorModal({
     onOpenChange,
     adultoMayor,
 }: DetailsAdultoMayorModalProps) {
-    const [openImageViewer, setOpenImageViewer] = useState(false)
+    const [openFileViewer, setOpenFileViewer] = useState(false)
 
-    const handleImageClick = () => {
-        if (adultoMayor?.imagen_base64) {
-            setOpenImageViewer(true)
+    const handleFileClick = () => {
+        if (adultoMayor?.imagen_cedula_identidad) {
+            setOpenFileViewer(true)
         }
+    }
+
+    const renderFilePreview = () => {
+        if (!adultoMayor?.imagen_cedula_identidad) {
+            return (
+                <div className="h-48 w-full flex items-center justify-center border rounded-lg text-muted-foreground">
+                    Sin archivo
+                </div>
+            )
+        }
+
+        const fileIsPDF = isPDF(adultoMayor.imagen_cedula_identidad)
+
+        return (
+            <div className="relative group h-48 w-full max-w-md mx-auto">
+                <div
+                    className="h-full w-full flex items-center justify-center border rounded-lg cursor-pointer hover:opacity-90 transition-opacity bg-muted/10 overflow-hidden"
+                    onClick={handleFileClick}
+                >
+                    {fileIsPDF ? (
+                        <div className="flex flex-col items-center justify-center p-4">
+                            <FileTextIcon className="h-16 w-16 text-primary mb-2" />
+                            <span className="text-sm text-muted-foreground text-center">Documento PDF</span>
+                            <span className="text-xs text-muted-foreground mt-1">Click para ver</span>
+                        </div>
+                    ) : (
+                        <img
+                            src={getFileSrc(adultoMayor.imagen_cedula_identidad) || ""}
+                            alt="Documento adulto mayor"
+                            className="h-full w-full object-contain"
+                        />
+                    )}
+                </div>
+                <Button
+                    variant="secondary"
+                    size="icon"
+                    className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={handleFileClick}
+                    title="Ver archivo completo"
+                >
+                    <Maximize2Icon className="h-4 w-4" />
+                </Button>
+            </div>
+        )
     }
 
     return (
@@ -39,30 +83,9 @@ export default function DetailsAdultoMayorModal({
                         </Dialog.DialogDescription>
                     </Dialog.DialogHeader>
 
-                    <div className="relative flex justify-center mb-4 group">
-                        {adultoMayor?.imagen_base64 ? (
-                            <div className="relative">
-                                <img
-                                    src={getImageSrc(adultoMayor.imagen_base64) || ""}
-                                    alt="Imagen adulto mayor"
-                                    className="max-h-48 rounded-lg object-contain border cursor-pointer hover:opacity-90 transition-opacity"
-                                    onClick={handleImageClick}
-                                />
-                                <Button
-                                    variant="secondary"
-                                    size="icon"
-                                    className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={handleImageClick}
-                                    title="Ver imagen completa"
-                                >
-                                    <Maximize2Icon className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className="h-40 w-40 flex items-center justify-center border rounded-lg text-muted-foreground">
-                                Sin imagen
-                            </div>
-                        )}
+                    <div className="mb-6">
+                        <p className="text-sm font-medium mb-2">Documento (Cédula de Identidad)</p>
+                        {renderFilePreview()}
                     </div>
 
                     <div className="grid gap-4 grid-cols-2">
@@ -87,14 +110,6 @@ export default function DetailsAdultoMayorModal({
                             <p className="text-sm">{adultoMayor?.direccion}</p>
                         </div>
                         <div>
-                            <p className="text-sm font-medium leading-none text-muted-foreground">Certificado</p>
-                            <p className="text-sm">{adultoMayor?.certificado}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium leading-none text-muted-foreground">Fecha Emisión</p>
-                            <p className="text-sm">{adultoMayor?.fecha_emision}</p>
-                        </div>
-                        <div>
                             <p className="text-sm font-medium leading-none text-muted-foreground">Estado</p>
                             <p className="text-sm">{adultoMayor?.status}</p>
                         </div>
@@ -108,10 +123,10 @@ export default function DetailsAdultoMayorModal({
                 </Dialog.DialogContent>
             </Dialog.Dialog>
 
-            <ImageViewerModal
-                open={openImageViewer}
-                onOpenChange={setOpenImageViewer}
-                imageSrc={adultoMayor?.imagen_base64 || null}
+            <FileViewerModal
+                open={openFileViewer}
+                onOpenChange={setOpenFileViewer}
+                fileSrc={adultoMayor?.imagen_cedula_identidad || null}
                 title={`Documento de ${adultoMayor?.nombre}`}
             />
         </>

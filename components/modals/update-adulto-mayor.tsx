@@ -42,8 +42,6 @@ const adultoMayorSchema = z.object({
     telefono: z.string().min(1, "El teléfono es requerido"),
     correo: z.string().email("Correo electrónico inválido"),
     direccion: z.string().min(1, "La dirección es requerida"),
-    certificado: z.string().min(1, "El certificado es requerido"),
-    fecha_emision: z.string().min(1, "La fecha de emisión es requerida"),
     status: z.enum(["ACTIVO", "INACTIVO"]),
 })
 
@@ -65,8 +63,6 @@ export default function UpdateAdultoMayorModal({
             telefono: "",
             correo: "",
             direccion: "",
-            certificado: "",
-            fecha_emision: "",
             status: "ACTIVO",
         },
     })
@@ -79,8 +75,6 @@ export default function UpdateAdultoMayorModal({
                 telefono: adultoMayor.telefono,
                 correo: adultoMayor.correo,
                 direccion: adultoMayor.direccion,
-                certificado: adultoMayor.certificado,
-                fecha_emision: adultoMayor.fecha_emision,
                 status: adultoMayor.status,
             })
         }
@@ -183,34 +177,6 @@ export default function UpdateAdultoMayorModal({
                                         <Form.FormLabel>Dirección</Form.FormLabel>
                                         <Form.FormControl>
                                             <Input placeholder="Dirección completa" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
-                                )}
-                            />
-
-                            <Form.FormField
-                                control={form.control}
-                                name="certificado"
-                                render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Certificado</Form.FormLabel>
-                                        <Form.FormControl>
-                                            <Input placeholder="Código certificado" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
-                                )}
-                            />
-
-                            <Form.FormField
-                                control={form.control}
-                                name="fecha_emision"
-                                render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Fecha Emisión</Form.FormLabel>
-                                        <Form.FormControl>
-                                            <Input type="date" {...field} />
                                         </Form.FormControl>
                                         <Form.FormMessage />
                                     </Form.FormItem>

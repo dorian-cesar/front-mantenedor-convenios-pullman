@@ -7,9 +7,8 @@ export interface Estudiante {
     telefono: string;
     correo: string;
     direccion: string;
-    carnet_estudiante: string;
-    fecha_vencimiento: string;
-    imagen_base64?: string;
+    imagen_cedula_identidad?: string;
+    imagen_certificado_alumno_regular?: string;
     status: "ACTIVO" | "INACTIVO";
     createdAt?: string;
     updatedAt?: string;
@@ -37,9 +36,8 @@ export interface CreateEstudianteData {
     telefono: string;
     correo: string;
     direccion: string;
-    carnet_estudiante: string;
-    fecha_vencimiento: string;
-    imagen_base64?: string;
+    imagen_cedula_identidad?: string;
+    imagen_certificado_alumno_regular?: string;
     status?: "ACTIVO" | "INACTIVO";
 }
 
@@ -49,9 +47,8 @@ export interface UpdateEstudianteData {
     telefono?: string;
     correo?: string;
     direccion?: string;
-    carnet_estudiante?: string;
-    fecha_vencimiento?: string;
-    imagen_base64?: string;
+    imagen_cedula_identidad?: string;
+    imagen_certificado_alumno_regular?: string;
     status?: "ACTIVO" | "INACTIVO";
 }
 

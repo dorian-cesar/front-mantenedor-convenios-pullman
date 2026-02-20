@@ -7,9 +7,8 @@ export interface AdultoMayor {
     telefono: string;
     correo: string;
     direccion: string;
-    certificado: string;
-    fecha_emision: string;
-    imagen_base64?: string;
+    imagen_cedula_identidad?: string;
+    imagen_certificado_residencia?: string;
     status: "ACTIVO" | "INACTIVO";
     createdAt?: string;
     updatedAt?: string;
@@ -38,9 +37,8 @@ export interface CreateAdultoMayorData {
     telefono: string;
     correo: string;
     direccion: string;
-    certificado: string;
-    fecha_emision: string;
-    imagen_base64?: string;
+    imagen_cedula_identidad?: string;
+    imagen_certificado_residencia?: string;
     status?: "ACTIVO" | "INACTIVO";
 }
 
@@ -50,9 +48,8 @@ export interface UpdateAdultoMayorData {
     telefono?: string;
     correo?: string;
     direccion?: string;
-    certificado?: string;
-    fecha_emision?: string;
-    imagen_base64?: string;
+    imagen_cedula_identidad?: string;
+    imagen_certificado_residencia?: string;
     status?: "ACTIVO" | "INACTIVO";
 }
 
