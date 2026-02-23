@@ -137,9 +137,15 @@ export default function EstudiantesPage() {
         setOpenAdd(false)
     }
 
-    const handleEditEstudiante = (estudiante: Estudiante) => {
-        setSelectedEstudiante(estudiante)
-        setOpenUpdate(true)
+    const handleEditEstudiante = async (estudiante: Estudiante) => {
+        try {
+            const usuario = await EstudiantesService.getEstudianteById(estudiante.id)
+            setSelectedEstudiante(usuario)
+            setOpenUpdate(true)
+        } catch (error) {
+            console.error('Error fetching estudiante details:', error)
+            toast.error("No se pudieron cargar los detalles del estudiante")
+        }
     }
 
     const handleEstudianteUpdated = () => {
