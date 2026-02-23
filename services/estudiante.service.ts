@@ -10,7 +10,7 @@ export interface Estudiante {
     imagen_cedula_identidad?: string;
     imagen_certificado_alumno_regular?: string;
     razon_rechazo?: string;
-    status: "ACTIVO" | "INACTIVO";
+    status: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     createdAt?: string;
     updatedAt?: string;
 }
@@ -20,7 +20,7 @@ export interface GetEstudiantesParams {
     limit?: number;
     sortBy?: string;
     order?: "ASC" | "DESC";
-    status?: "ACTIVO" | "INACTIVO";
+    status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     nombre?: string;
 }
 
@@ -39,7 +39,7 @@ export interface CreateEstudianteData {
     direccion: string;
     imagen_cedula_identidad?: string;
     imagen_certificado_alumno_regular?: string;
-    status?: "ACTIVO" | "INACTIVO";
+    status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
 }
 
 export interface UpdateEstudianteData {
@@ -51,7 +51,12 @@ export interface UpdateEstudianteData {
     imagen_cedula_identidad?: string;
     imagen_certificado_alumno_regular?: string;
     razon_rechazo?: string;
-    status?: "ACTIVO" | "INACTIVO";
+    status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
+}
+
+export interface RechazarEstudianteData {
+    razon_rechazo: string;
+    status: "RECHAZADO";
 }
 
 export class EstudiantesService {
@@ -79,12 +84,18 @@ export class EstudiantesService {
         await api.delete(`/estudiantes/${id}`);
     }
 
-    static async toggleStatus(id: number, currentStatus: "ACTIVO" | "INACTIVO"): Promise<Estudiante> {
-        const newStatus = currentStatus === "ACTIVO" ? "INACTIVO" : "ACTIVO";
+    static async toggleStatus(id: number, currentStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO"): Promise<Estudiante> {
+        let newStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO";
+        if (currentStatus === "ACTIVO") {
+            newStatus = "INACTIVO";
+        } else {
+            newStatus = "ACTIVO";
+        }
         return this.updateEstudiante(id, { status: newStatus });
     }
 
-    static async rechazar(id: number, motivo: string): Promise<Estudiante> {
-        return this.updateEstudiante(id, { razon_rechazo: motivo, status: "INACTIVO" });
+    static async rechazar(id: number, data: RechazarEstudianteData): Promise<Estudiante> {
+        const response = await api.patch(`/estudiantes/rechazar/${id}`, data);
+        return response.data;
     }
 }

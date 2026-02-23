@@ -95,7 +95,7 @@ export default function EstudiantesPage() {
 
     const handleToggleStatus = async (
         id: number,
-        currentStatus: "ACTIVO" | "INACTIVO"
+        currentStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO"
     ) => {
         try {
             await EstudiantesService.toggleStatus(id, currentStatus)
@@ -115,10 +115,10 @@ export default function EstudiantesPage() {
 
     const handleEstudanteRechazado = async (
         id: number,
-        motivo: string
+        razon_rechazo: string
     ) => {
         try {
-            await EstudiantesService.rechazar(id, motivo)
+            await EstudiantesService.rechazar(id, { razon_rechazo, status: "RECHAZADO" })
             toast.success("Se rechazo la solicitud exitosamente")
             fetchEstudiantes()
         } catch (error) {
@@ -298,7 +298,7 @@ export default function EstudiantesPage() {
                                     <Table.TableCell>{estudiante.telefono}</Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={estudiante.status === "ACTIVO" ? "active" : "inactive"}>
-                                            {estudiante.status === "ACTIVO" ? "Activo" : "Inactivo"}
+                                            {estudiante.status === "ACTIVO" ? "Activo" : estudiante.status === "INACTIVO" ? "Inactivo" : "Rechazado"}
                                         </BadgeStatus>
                                     </Table.TableCell>
                                     <Table.TableCell className="text-right">
@@ -321,30 +321,36 @@ export default function EstudiantesPage() {
                                                     <Icon.PencilIcon className="h-4 w-4 mr-2" />
                                                     Editar
                                                 </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuSeparator />
                                                 {estudiante.status === "ACTIVO" ? (
-                                                    <Dropdown.DropdownMenuItem
-                                                        variant="destructive"
-                                                        onClick={() => handleToggleStatus(estudiante.id, estudiante.status)}
-                                                    >
-                                                        <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                        Desactivar
-                                                    </Dropdown.DropdownMenuItem>
-                                                ) : (
                                                     <>
-                                                        <Dropdown.DropdownMenuItem
-                                                            onClick={() => handleToggleStatus(estudiante.id, estudiante.status)}
-                                                        >
-                                                            <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                            Activar
-                                                        </Dropdown.DropdownMenuItem>
+                                                        <Dropdown.DropdownMenuSeparator />
                                                         <Dropdown.DropdownMenuItem
                                                             variant="destructive"
-                                                            onClick={() => handleRechazar(estudiante)}
+                                                            onClick={() => handleToggleStatus(estudiante.id, estudiante.status)}
                                                         >
                                                             <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                            Rechazar
+                                                            Desactivar
                                                         </Dropdown.DropdownMenuItem>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        {estudiante.status !== "RECHAZADO" && (
+                                                            <>
+                                                                <Dropdown.DropdownMenuItem
+                                                                    onClick={() => handleToggleStatus(estudiante.id, estudiante.status)}
+                                                                >
+                                                                    <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                                    Activar
+                                                                </Dropdown.DropdownMenuItem>
+                                                                <Dropdown.DropdownMenuItem
+                                                                    variant="destructive"
+                                                                    onClick={() => handleRechazar(estudiante)}
+                                                                >
+                                                                    <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                                    Rechazar
+                                                                </Dropdown.DropdownMenuItem>
+                                                            </>
+                                                        )}
                                                     </>
                                                 )}
                                             </Dropdown.DropdownMenuContent>
