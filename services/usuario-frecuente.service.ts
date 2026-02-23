@@ -10,6 +10,7 @@ export interface UsuarioFrecuente {
     status: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     imagen_cedula_identidad?: string;
     imagen_certificado?: string;
+    razon_rechazo?: string;
     createdAt?: string;
     updatedAt?: string;
 }

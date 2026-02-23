@@ -129,12 +129,20 @@ export default function DetailsUsuarioFrecuenteModal({
                             <p className="text-sm font-medium leading-none text-muted-foreground">Estado</p>
                             <p className="text-sm">{usuarioFrecuente?.status}</p>
                         </div>
-                        <div className="col-span-2">
+                        <div>
                             <p className="text-sm font-medium leading-none text-muted-foreground">Fecha de creación</p>
                             <p className="text-sm">
                                 {formatDateOnly(String(usuarioFrecuente?.createdAt || 0))}
                             </p>
                         </div>
+                        {(usuarioFrecuente?.razon_rechazo && usuarioFrecuente?.status === "RECHAZADO") && (
+                            <div>
+                                <p className="text-sm font-medium leading-none text-muted-foreground">Motivo de rechazo</p>
+                                <p className="text-sm">
+                                    {usuarioFrecuente?.razon_rechazo}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </Dialog.DialogContent>
             </Dialog.Dialog>
