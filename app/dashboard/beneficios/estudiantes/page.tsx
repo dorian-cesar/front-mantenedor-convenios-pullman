@@ -118,7 +118,7 @@ export default function EstudiantesPage() {
         razon_rechazo: string
     ) => {
         try {
-            await EstudiantesService.rechazar(id, { razon_rechazo, status: "RECHAZADO" })
+            await EstudiantesService.rechazarEstudiante(id, { razon_rechazo, status: "RECHAZADO" })
             toast.success("Se rechazo la solicitud exitosamente")
             fetchEstudiantes()
         } catch (error) {

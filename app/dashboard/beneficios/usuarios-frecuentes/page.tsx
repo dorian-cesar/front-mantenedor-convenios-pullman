@@ -13,6 +13,7 @@ import ExportModal from "@/components/modals/export"
 import AddUsuarioFrecuenteModal from "@/components/modals/add-usuario-frecuente"
 import UpdateUsuarioFrecuenteModal from "@/components/modals/update-usuario-frecuente"
 import DetailsUsuarioFrecuenteModal from "@/components/modals/details-usuario-frecuente"
+import RechazarModal from "@/components/modals/rechazar"
 import { UsuariosFrecuentesService, type UsuarioFrecuente, type GetUsuariosFrecuentesParams } from "@/services/usuario-frecuente.service"
 import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
@@ -30,6 +31,7 @@ export default function UsuariosFrecuentesPage() {
     const [openUpdate, setOpenUpdate] = useState(false)
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedUsuarioFrecuente, setSelectedUsuarioFrecuente] = useState<UsuarioFrecuente | null>(null)
+    const [openRechazar, setOpenRechazar] = useState(false)
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -93,7 +95,7 @@ export default function UsuariosFrecuentesPage() {
 
     const handleToggleStatus = async (
         id: number,
-        currentStatus: "ACTIVO" | "INACTIVO"
+        currentStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO"
     ) => {
         try {
             await UsuariosFrecuentesService.toggleStatus(id, currentStatus)
@@ -140,6 +142,25 @@ export default function UsuariosFrecuentesPage() {
             console.error('Error fetching usuario frecuente details:', error)
             toast.error("No se pudieron cargar los detalles del usuario frecuente")
         }
+    }
+
+    const handleUsuarioFrecuenteRechazado = async (
+        id: number,
+        razon_rechazo: string
+    ) => {
+        try {
+            await UsuariosFrecuentesService.rechazarUsuarioFrecuente(id, { razon_rechazo, status: "RECHAZADO" })
+            toast.success("Se rechazo la solicitud exitosamente")
+            fetchUsuariosFrecuentes()
+        } catch (error) {
+            console.error('Error rechazando solicitud:', error)
+            toast.error("No se pudo rechazar la solicitud")
+        }
+    }
+
+    const handleRechazar = async (usuarioFrecuente: UsuarioFrecuente) => {
+        setSelectedUsuarioFrecuente(usuarioFrecuente)
+        setOpenRechazar(true)
     }
 
     const handleRefresh = () => {
@@ -277,7 +298,7 @@ export default function UsuariosFrecuentesPage() {
                                     <Table.TableCell>{usuarioFrecuente.telefono}</Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={usuarioFrecuente.status === "ACTIVO" ? "active" : "inactive"}>
-                                            {usuarioFrecuente.status === "ACTIVO" ? "Activo" : "Inactivo"}
+                                            {usuarioFrecuente.status === "ACTIVO" ? "Activo" : usuarioFrecuente.status === "INACTIVO" ? "Inactivo" : "Rechazado"}
                                         </BadgeStatus>
                                     </Table.TableCell>
                                     <Table.TableCell className="text-right">
@@ -300,22 +321,37 @@ export default function UsuariosFrecuentesPage() {
                                                     <Icon.PencilIcon className="h-4 w-4 mr-2" />
                                                     Editar
                                                 </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuSeparator />
                                                 {usuarioFrecuente.status === "ACTIVO" ? (
-                                                    <Dropdown.DropdownMenuItem
-                                                        variant="destructive"
-                                                        onClick={() => handleToggleStatus(usuarioFrecuente.id, usuarioFrecuente.status)}
-                                                    >
-                                                        <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                        Desactivar
-                                                    </Dropdown.DropdownMenuItem>
+                                                    <>
+                                                        <Dropdown.DropdownMenuSeparator />
+                                                        <Dropdown.DropdownMenuItem
+                                                            variant="destructive"
+                                                            onClick={() => handleToggleStatus(usuarioFrecuente.id, usuarioFrecuente.status)}
+                                                        >
+                                                            <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                            Desactivar
+                                                        </Dropdown.DropdownMenuItem>
+                                                    </>
                                                 ) : (
-                                                    <Dropdown.DropdownMenuItem
-                                                        onClick={() => handleToggleStatus(usuarioFrecuente.id, usuarioFrecuente.status)}
-                                                    >
-                                                        <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                        Activar
-                                                    </Dropdown.DropdownMenuItem>
+                                                    <>
+                                                        {usuarioFrecuente.status !== "RECHAZADO" && (
+                                                            <>
+                                                                <Dropdown.DropdownMenuItem
+                                                                    onClick={() => handleToggleStatus(usuarioFrecuente.id, usuarioFrecuente.status)}
+                                                                >
+                                                                    <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                                    Activar
+                                                                </Dropdown.DropdownMenuItem>
+                                                                <Dropdown.DropdownMenuItem
+                                                                    variant="destructive"
+                                                                    onClick={() => handleRechazar(usuarioFrecuente)}
+                                                                >
+                                                                    <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                                    Rechazar
+                                                                </Dropdown.DropdownMenuItem>
+                                                            </>
+                                                        )}
+                                                    </>
                                                 )}
                                             </Dropdown.DropdownMenuContent>
                                         </Dropdown.DropdownMenu>
@@ -350,6 +386,12 @@ export default function UsuariosFrecuentesPage() {
                 open={openDetails}
                 onOpenChange={setOpenDetails}
                 usuarioFrecuente={selectedUsuarioFrecuente}
+            />
+
+            <RechazarModal
+                open={openRechazar}
+                onOpenChange={setOpenRechazar}
+                onSubmit={(motivo) => handleUsuarioFrecuenteRechazado(selectedUsuarioFrecuente?.id || 0, motivo)}
             />
 
         </div>

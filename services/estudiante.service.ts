@@ -94,7 +94,7 @@ export class EstudiantesService {
         return this.updateEstudiante(id, { status: newStatus });
     }
 
-    static async rechazar(id: number, data: RechazarEstudianteData): Promise<Estudiante> {
+    static async rechazarEstudiante(id: number, data: RechazarEstudianteData): Promise<Estudiante> {
         const response = await api.patch(`/estudiantes/rechazar/${id}`, data);
         return response.data;
     }

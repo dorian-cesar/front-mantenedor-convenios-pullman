@@ -7,7 +7,7 @@ export interface UsuarioFrecuente {
     telefono: string;
     correo: string;
     direccion: string;
-    status: "ACTIVO" | "INACTIVO";
+    status: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     imagen_cedula_identidad?: string;
     imagen_certificado?: string;
     createdAt?: string;
@@ -19,7 +19,7 @@ export interface GetUsuariosFrecuentesParams {
     limit?: number;
     sortBy?: string;
     order?: "ASC" | "DESC";
-    status?: "ACTIVO" | "INACTIVO";
+    status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     nombre?: string;
     rut?: string;
 }
@@ -39,7 +39,7 @@ export interface CreateUsuarioFrecuenteData {
     direccion: string;
     imagen_cedula_identidad?: string;
     imagen_certificado?: string;
-    status?: "ACTIVO" | "INACTIVO";
+    status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
 }
 
 export interface UpdateUsuarioFrecuenteData {
@@ -50,7 +50,12 @@ export interface UpdateUsuarioFrecuenteData {
     direccion?: string;
     imagen_cedula_identidad?: string;
     imagen_certificado?: string;
-    status?: "ACTIVO" | "INACTIVO";
+    status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
+}
+
+export interface RechazarUsuarioFrecuenteData {
+    razon_rechazo: string;
+    status: "RECHAZADO";
 }
 
 export class UsuariosFrecuentesService {
@@ -78,8 +83,18 @@ export class UsuariosFrecuentesService {
         await api.delete(`/pasajeros-frecuentes/${id}`);
     }
 
-    static async toggleStatus(id: number, currentStatus: "ACTIVO" | "INACTIVO"): Promise<UsuarioFrecuente> {
-        const newStatus = currentStatus === "ACTIVO" ? "INACTIVO" : "ACTIVO";
+    static async toggleStatus(id: number, currentStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO"): Promise<UsuarioFrecuente> {
+        let newStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO";
+        if (currentStatus === "ACTIVO") {
+            newStatus = "INACTIVO";
+        } else {
+            newStatus = "ACTIVO";
+        }
         return this.updateUsuarioFrecuente(id, { status: newStatus });
+    }
+
+    static async rechazarUsuarioFrecuente(id: number, data: RechazarUsuarioFrecuenteData): Promise<UsuarioFrecuente> {
+        const response = await api.patch(`/pasajeros-frecuentes/rechazar/${id}`, data);
+        return response.data;
     }
 }
