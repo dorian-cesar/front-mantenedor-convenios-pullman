@@ -10,6 +10,7 @@ export interface AdultoMayor {
     imagen_cedula_identidad?: string;
     imagen_certificado_residencia?: string;
     status: "ACTIVO" | "INACTIVO" | "RECHAZADO";
+    razon_rechazo?: string;
     createdAt?: string;
     updatedAt?: string;
 }

@@ -113,12 +113,20 @@ export default function DetailsAdultoMayorModal({
                             <p className="text-sm font-medium leading-none text-muted-foreground">Estado</p>
                             <p className="text-sm">{adultoMayor?.status}</p>
                         </div>
-                        <div className="col-span-2">
+                        <div>
                             <p className="text-sm font-medium leading-none text-muted-foreground">Fecha de creación</p>
                             <p className="text-sm">
                                 {formatDateOnly(String(adultoMayor?.createdAt || 0))}
                             </p>
                         </div>
+                        {(adultoMayor?.razon_rechazo && adultoMayor?.status === "RECHAZADO") && (
+                            <div>
+                                <p className="text-sm font-medium leading-none text-muted-foreground">Razón de rechazo</p>
+                                <p className="text-sm">
+                                    {adultoMayor?.razon_rechazo}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </Dialog.DialogContent>
             </Dialog.Dialog>
