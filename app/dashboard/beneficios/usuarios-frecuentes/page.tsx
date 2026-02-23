@@ -116,9 +116,15 @@ export default function UsuariosFrecuentesPage() {
         setOpenAdd(false)
     }
 
-    const handleEditUsuarioFrecuente = (usuarioFrecuente: UsuarioFrecuente) => {
-        setSelectedUsuarioFrecuente(usuarioFrecuente)
-        setOpenUpdate(true)
+    const handleEditUsuarioFrecuente = async (usuarioFrecuente: UsuarioFrecuente) => {
+        try {
+            const usuario = await UsuariosFrecuentesService.getUsuarioFrecuenteById(usuarioFrecuente.id)
+            setSelectedUsuarioFrecuente(usuario)
+            setOpenUpdate(true)
+        } catch (error) {
+            console.error('Error fetching usuario frecuente details for edit:', error)
+            toast.error("No se pudieron cargar los detalles del usuario frecuente para editar")
+        }
     }
 
     const handleUsuarioFrecuenteUpdated = () => {

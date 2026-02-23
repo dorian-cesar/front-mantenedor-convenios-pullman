@@ -19,6 +19,7 @@ import { useDebounce } from "@/hooks/use-debounce"
 import { formatRut } from "@/utils/helpers"
 import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
+import RechazarModal from "@/components/modals/rechazar"
 
 
 export default function AdultosMayoresPage() {
@@ -30,6 +31,7 @@ export default function AdultosMayoresPage() {
     const [openUpdate, setOpenUpdate] = useState(false)
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedAdultoMayor, setSelectedAdultoMayor] = useState<AdultoMayor | null>(null)
+    const [openRechazar, setOpenRechazar] = useState(false)
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -93,7 +95,7 @@ export default function AdultosMayoresPage() {
 
     const handleToggleStatus = async (
         id: number,
-        currentStatus: "ACTIVO" | "INACTIVO"
+        currentStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO"
     ) => {
         try {
             await AdultosMayoresService.toggleStatus(id, currentStatus)
@@ -140,6 +142,22 @@ export default function AdultosMayoresPage() {
             console.error('Error fetching adulto mayor details:', error)
             toast.error("No se pudieron cargar los detalles del adulto mayor")
         }
+    }
+
+    const handleAdultoMayorRechazado = async (id: number, razon_rechazo: string) => {
+        try {
+            await AdultosMayoresService.rechazarAdultoMayor(id, { razon_rechazo, status: "RECHAZADO" })
+            toast.success("Se rechazó la solicitud correctamente")
+            fetchAdultosMayores()
+        } catch (error) {
+            console.error('Error rechazando adulto mayor:', error)
+            toast.error("No se pudo rechazar la solicitud")
+        }
+    }
+
+    const handleRechazar = async (adultoMayor: AdultoMayor) => {
+        setSelectedAdultoMayor(adultoMayor)
+        setOpenRechazar(true)
     }
 
     const handleRefresh = () => {
@@ -277,7 +295,7 @@ export default function AdultosMayoresPage() {
                                     <Table.TableCell>{adultoMayor.telefono}</Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={adultoMayor.status === "ACTIVO" ? "active" : "inactive"}>
-                                            {adultoMayor.status === "ACTIVO" ? "Activo" : "Inactivo"}
+                                            {adultoMayor.status === "ACTIVO" ? "Activo" : adultoMayor.status === "INACTIVO" ? "Inactivo" : "Rechazado"}
                                         </BadgeStatus>
                                     </Table.TableCell>
                                     <Table.TableCell className="text-right">
@@ -310,12 +328,22 @@ export default function AdultosMayoresPage() {
                                                         Desactivar
                                                     </Dropdown.DropdownMenuItem>
                                                 ) : (
-                                                    <Dropdown.DropdownMenuItem
-                                                        onClick={() => handleToggleStatus(adultoMayor.id, adultoMayor.status)}
-                                                    >
-                                                        <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                        Activar
-                                                    </Dropdown.DropdownMenuItem>
+                                                    <>
+                                                        <Dropdown.DropdownMenuItem
+                                                            onClick={() => handleToggleStatus(adultoMayor.id, adultoMayor.status)}
+                                                        >
+                                                            <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                            Activar
+                                                        </Dropdown.DropdownMenuItem>
+                                                        <Dropdown.DropdownMenuItem
+                                                            variant="destructive"
+                                                            onClick={() => handleRechazar(adultoMayor)}
+                                                        >
+                                                            <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                            Rechazar
+                                                        </Dropdown.DropdownMenuItem>
+                                                    </>
+
                                                 )}
                                             </Dropdown.DropdownMenuContent>
                                         </Dropdown.DropdownMenu>
@@ -350,6 +378,12 @@ export default function AdultosMayoresPage() {
                 open={openDetails}
                 onOpenChange={setOpenDetails}
                 adultoMayor={selectedAdultoMayor}
+            />
+
+            <RechazarModal
+                open={openRechazar}
+                onOpenChange={setOpenRechazar}
+                onSubmit={(motivo) => handleAdultoMayorRechazado(selectedAdultoMayor?.id || 0, motivo)}
             />
 
         </div>

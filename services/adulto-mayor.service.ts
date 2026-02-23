@@ -9,7 +9,7 @@ export interface AdultoMayor {
     direccion: string;
     imagen_cedula_identidad?: string;
     imagen_certificado_residencia?: string;
-    status: "ACTIVO" | "INACTIVO";
+    status: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     createdAt?: string;
     updatedAt?: string;
 }
@@ -19,7 +19,7 @@ export interface GetAdultosMayoresParams {
     limit?: number;
     sortBy?: string;
     order?: "ASC" | "DESC";
-    status?: "ACTIVO" | "INACTIVO";
+    status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     rut?: string;
     nombre?: string;
 }
@@ -39,7 +39,7 @@ export interface CreateAdultoMayorData {
     direccion: string;
     imagen_cedula_identidad?: string;
     imagen_certificado_residencia?: string;
-    status?: "ACTIVO" | "INACTIVO";
+    status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
 }
 
 export interface UpdateAdultoMayorData {
@@ -50,7 +50,12 @@ export interface UpdateAdultoMayorData {
     direccion?: string;
     imagen_cedula_identidad?: string;
     imagen_certificado_residencia?: string;
-    status?: "ACTIVO" | "INACTIVO";
+    status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
+}
+
+export interface RechazarAdultoMayorData {
+    razon_rechazo: string;
+    status: "RECHAZADO";
 }
 
 export class AdultosMayoresService {
@@ -78,8 +83,18 @@ export class AdultosMayoresService {
         await api.delete(`/adultos-mayores/${id}`);
     }
 
-    static async toggleStatus(id: number, currentStatus: "ACTIVO" | "INACTIVO"): Promise<AdultoMayor> {
-        const newStatus = currentStatus === "ACTIVO" ? "INACTIVO" : "ACTIVO";
+    static async toggleStatus(id: number, currentStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO"): Promise<AdultoMayor> {
+        let newStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO";
+        if (currentStatus === "ACTIVO") {
+            newStatus = "INACTIVO";
+        } else {
+            newStatus = "ACTIVO";
+        }
         return this.updateAdultoMayor(id, { status: newStatus });
+    }
+
+    static async rechazarAdultoMayor(id: number, data: RechazarAdultoMayorData): Promise<AdultoMayor> {
+        const response = await api.patch(`/adultos-mayores/rechazar/${id}`, data);
+        return response.data;
     }
 }
