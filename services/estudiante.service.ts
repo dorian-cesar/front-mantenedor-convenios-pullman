@@ -9,6 +9,7 @@ export interface Estudiante {
     direccion: string;
     imagen_cedula_identidad?: string;
     imagen_certificado_alumno_regular?: string;
+    razon_rechazo?: string;
     status: "ACTIVO" | "INACTIVO";
     createdAt?: string;
     updatedAt?: string;
@@ -49,6 +50,7 @@ export interface UpdateEstudianteData {
     direccion?: string;
     imagen_cedula_identidad?: string;
     imagen_certificado_alumno_regular?: string;
+    razon_rechazo?: string;
     status?: "ACTIVO" | "INACTIVO";
 }
 
@@ -80,5 +82,9 @@ export class EstudiantesService {
     static async toggleStatus(id: number, currentStatus: "ACTIVO" | "INACTIVO"): Promise<Estudiante> {
         const newStatus = currentStatus === "ACTIVO" ? "INACTIVO" : "ACTIVO";
         return this.updateEstudiante(id, { status: newStatus });
+    }
+
+    static async rechazar(id: number, motivo: string): Promise<Estudiante> {
+        return this.updateEstudiante(id, { razon_rechazo: motivo, status: "INACTIVO" });
     }
 }

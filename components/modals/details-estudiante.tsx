@@ -129,12 +129,18 @@ export default function DetailsEstudianteModal({
                             <p className="text-sm font-medium leading-none text-muted-foreground">Estado</p>
                             <p className="text-sm">{estudiante?.status}</p>
                         </div>
-                        <div className="col-span-2">
+                        <div>
                             <p className="text-sm font-medium leading-none text-muted-foreground">Fecha de creación</p>
                             <p className="text-sm">
                                 {formatDateOnly(String(estudiante?.createdAt || 0))}
                             </p>
                         </div>
+                        {estudiante?.razon_rechazo && (
+                            <div>
+                                <p className="text-sm font-medium leading-none text-muted-foreground">Motivo de rechazo</p>
+                                <p className="text-sm">{estudiante?.razon_rechazo}</p>
+                            </div>
+                        )}
                     </div>
                 </Dialog.DialogContent>
             </Dialog.Dialog>

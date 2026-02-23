@@ -13,6 +13,7 @@ import ExportModal from "@/components/modals/export"
 import AddEstudianteModal from "@/components/modals/add-estudiante"
 import UpdateEstudianteModal from "@/components/modals/update-estudiante"
 import DetailsEstudianteModal from "@/components/modals/details-estudiante"
+import RechazarModal from "@/components/modals/rechazar"
 import { EstudiantesService, type Estudiante, type GetEstudiantesParams } from "@/services/estudiante.service"
 import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
@@ -30,6 +31,7 @@ export default function EstudiantesPage() {
     const [openUpdate, setOpenUpdate] = useState(false)
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedEstudiante, setSelectedEstudiante] = useState<Estudiante | null>(null)
+    const [openRechazar, setOpenRechazar] = useState(false)
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -109,6 +111,25 @@ export default function EstudiantesPage() {
             console.error('Error toggling status:', error)
             toast.error("No se pudo actualizar el estado")
         }
+    }
+
+    const handleEstudanteRechazado = async (
+        id: number,
+        motivo: string
+    ) => {
+        try {
+            await EstudiantesService.rechazar(id, motivo)
+            toast.success("Se rechazo la solicitud exitosamente")
+            fetchEstudiantes()
+        } catch (error) {
+            console.error('Error rechazando solicitud:', error)
+            toast.error("No se pudo rechazar la solicitud")
+        }
+    }
+
+    const handleRechazar = async (estudiante: Estudiante) => {
+        setSelectedEstudiante(estudiante)
+        setOpenRechazar(true)
     }
 
     const handleEstudianteAdded = () => {
@@ -304,12 +325,21 @@ export default function EstudiantesPage() {
                                                         Desactivar
                                                     </Dropdown.DropdownMenuItem>
                                                 ) : (
-                                                    <Dropdown.DropdownMenuItem
-                                                        onClick={() => handleToggleStatus(estudiante.id, estudiante.status)}
-                                                    >
-                                                        <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                        Activar
-                                                    </Dropdown.DropdownMenuItem>
+                                                    <>
+                                                        <Dropdown.DropdownMenuItem
+                                                            onClick={() => handleToggleStatus(estudiante.id, estudiante.status)}
+                                                        >
+                                                            <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                            Activar
+                                                        </Dropdown.DropdownMenuItem>
+                                                        <Dropdown.DropdownMenuItem
+                                                            variant="destructive"
+                                                            onClick={() => handleRechazar(estudiante)}
+                                                        >
+                                                            <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                            Rechazar
+                                                        </Dropdown.DropdownMenuItem>
+                                                    </>
                                                 )}
                                             </Dropdown.DropdownMenuContent>
                                         </Dropdown.DropdownMenu>
@@ -344,6 +374,12 @@ export default function EstudiantesPage() {
                 open={openDetails}
                 onOpenChange={setOpenDetails}
                 estudiante={selectedEstudiante}
+            />
+
+            <RechazarModal
+                open={openRechazar}
+                onOpenChange={setOpenRechazar}
+                onSubmit={(motivo) => handleEstudanteRechazado(selectedEstudiante?.id || 0, motivo)}
             />
 
         </div>
