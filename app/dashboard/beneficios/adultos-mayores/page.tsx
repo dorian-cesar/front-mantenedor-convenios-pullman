@@ -116,9 +116,15 @@ export default function AdultosMayoresPage() {
         setOpenAdd(false)
     }
 
-    const handleEditAdultoMayor = (adultoMayor: AdultoMayor) => {
-        setSelectedAdultoMayor(adultoMayor)
-        setOpenUpdate(true)
+    const handleEditAdultoMayor = async (adultoMayor: AdultoMayor) => {
+        try {
+            const usuario = await AdultosMayoresService.getAdultoMayorById(adultoMayor.id)
+            setSelectedAdultoMayor(usuario)
+            setOpenUpdate(true)
+        } catch (error) {
+            console.error('Error fetching adulto mayor details:', error)
+            toast.error("No se pudieron cargar los detalles del adulto mayor")
+        }
     }
 
     const handleAdultoMayorUpdated = () => {
