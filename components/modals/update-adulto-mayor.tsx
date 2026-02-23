@@ -44,7 +44,7 @@ const adultoMayorSchema = z.object({
     telefono: z.string().min(1, "El teléfono es requerido"),
     correo: z.string().email("Correo electrónico inválido"),
     direccion: z.string().min(1, "La dirección es requerida"),
-    status: z.enum(["ACTIVO", "INACTIVO"]),
+    status: z.enum(["ACTIVO", "INACTIVO", "RECHAZADO"]),
     imagen_cedula_identidad: z.string().optional(),
 })
 
@@ -302,6 +302,7 @@ export default function UpdateAdultoMayorModal({
                                             <SelectContent>
                                                 <SelectItem value="ACTIVO">Activo</SelectItem>
                                                 <SelectItem value="INACTIVO">Inactivo</SelectItem>
+                                                <SelectItem value="RECHAZADO">Rechazado</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <Form.FormMessage />

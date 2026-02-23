@@ -318,32 +318,37 @@ export default function AdultosMayoresPage() {
                                                     <Icon.PencilIcon className="h-4 w-4 mr-2" />
                                                     Editar
                                                 </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuSeparator />
                                                 {adultoMayor.status === "ACTIVO" ? (
-                                                    <Dropdown.DropdownMenuItem
-                                                        variant="destructive"
-                                                        onClick={() => handleToggleStatus(adultoMayor.id, adultoMayor.status)}
-                                                    >
-                                                        <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                        Desactivar
-                                                    </Dropdown.DropdownMenuItem>
-                                                ) : (
                                                     <>
-                                                        <Dropdown.DropdownMenuItem
-                                                            onClick={() => handleToggleStatus(adultoMayor.id, adultoMayor.status)}
-                                                        >
-                                                            <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                            Activar
-                                                        </Dropdown.DropdownMenuItem>
+                                                        <Dropdown.DropdownMenuSeparator />
                                                         <Dropdown.DropdownMenuItem
                                                             variant="destructive"
-                                                            onClick={() => handleRechazar(adultoMayor)}
+                                                            onClick={() => handleToggleStatus(adultoMayor.id, adultoMayor.status)}
                                                         >
                                                             <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                            Rechazar
+                                                            Desactivar
                                                         </Dropdown.DropdownMenuItem>
                                                     </>
-
+                                                ) : (
+                                                    <>
+                                                        {adultoMayor.status !== "RECHAZADO" && (
+                                                            <>
+                                                                <Dropdown.DropdownMenuItem
+                                                                    onClick={() => handleToggleStatus(adultoMayor.id, adultoMayor.status)}
+                                                                >
+                                                                    <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                                    Activar
+                                                                </Dropdown.DropdownMenuItem>
+                                                                <Dropdown.DropdownMenuItem
+                                                                    variant="destructive"
+                                                                    onClick={() => handleRechazar(adultoMayor)}
+                                                                >
+                                                                    <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                                    Rechazar
+                                                                </Dropdown.DropdownMenuItem>
+                                                            </>
+                                                        )}
+                                                    </>
                                                 )}
                                             </Dropdown.DropdownMenuContent>
                                         </Dropdown.DropdownMenu>
