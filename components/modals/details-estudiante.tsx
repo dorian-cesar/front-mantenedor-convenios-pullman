@@ -135,7 +135,7 @@ export default function DetailsEstudianteModal({
                                 {formatDateOnly(String(estudiante?.createdAt || 0))}
                             </p>
                         </div>
-                        {estudiante?.razon_rechazo && (
+                        {(estudiante?.razon_rechazo && estudiante?.status === "RECHAZADO") && (
                             <div>
                                 <p className="text-sm font-medium leading-none text-muted-foreground">Motivo de rechazo</p>
                                 <p className="text-sm">{estudiante?.razon_rechazo}</p>

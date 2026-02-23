@@ -121,7 +121,7 @@ export default function DetailsAdultoMayorModal({
                         </div>
                         {(adultoMayor?.razon_rechazo && adultoMayor?.status === "RECHAZADO") && (
                             <div>
-                                <p className="text-sm font-medium leading-none text-muted-foreground">Razón de rechazo</p>
+                                <p className="text-sm font-medium leading-none text-muted-foreground">Motivo de rechazo</p>
                                 <p className="text-sm">
                                     {adultoMayor?.razon_rechazo}
                                 </p>
