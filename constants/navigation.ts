@@ -12,7 +12,8 @@ import {
     HeartHandshake,
     BadgeCheck,
     GraduationCap,
-    ShieldUser
+    ShieldUser,
+    Plane
 } from "lucide-react"
 
 export type UserRole = "SUPER_USUARIO" | "USUARIO" | "SISTEMA"
@@ -118,6 +119,15 @@ export const NAVIGATION: NavItem[] = [
                 href: "/dashboard/beneficios/carabineros",
                 icon: ShieldUser,
                 description: "beneficios · alianzas · carabineros · descuentos",
+                group: "Convenios y Beneficios",
+                section: "sub",
+            },
+            {
+                id: "fach",
+                title: "Fach",
+                href: "/dashboard/beneficios/fach",
+                icon: Plane,
+                description: "beneficios · alianzas · fach · descuentos",
                 group: "Convenios y Beneficios",
                 section: "sub",
             },
