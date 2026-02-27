@@ -7,12 +7,13 @@ export const metadata: Metadata = {
     title: "Administración - Convenios",
 };
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    const token = async () => (await cookies()).get("token")?.value;
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
 
     if (!token) {
         redirect("/");

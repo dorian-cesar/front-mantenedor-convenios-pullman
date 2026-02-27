@@ -158,7 +158,7 @@ export default function DashboardPage() {
                         <Card.CardAction><DollarSign className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
                     </Card.CardHeader>
                     <Card.CardContent>
-                        {isLoading ? "Cargando..." : <p>{resumen[0].total_ventas}</p>}
+                        {isLoading ? "Cargando..." : <p>{resumen[0]?.total_ventas || 0}</p>}
                     </Card.CardContent>
                 </Card.Card>
 
@@ -168,7 +168,7 @@ export default function DashboardPage() {
                         <Card.CardAction><Undo2 className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
                     </Card.CardHeader>
                     <Card.CardContent>
-                        {isLoading ? "Cargando..." : <p>{resumen[0].total_devoluciones}</p>}
+                        {isLoading ? "Cargando..." : <p>{resumen[0]?.total_devoluciones || 0}</p>}
                     </Card.CardContent>
                 </Card.Card>
 
@@ -178,7 +178,7 @@ export default function DashboardPage() {
                         <Card.CardAction><Percent className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
                     </Card.CardHeader>
                     <Card.CardContent>
-                        {isLoading ? "Cargando..." : <p>{resumen[0].total_devoluciones}</p>}
+                        {isLoading ? "Cargando..." : <p>{resumen[0]?.total_descuento || 0}</p>}
                     </Card.CardContent>
                 </Card.Card>
 

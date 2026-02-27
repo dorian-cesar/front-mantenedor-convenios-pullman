@@ -6,42 +6,29 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import LoadingScreen from "@/components/ui/loading-screen";
-import { AuthService } from "@/services/auth.service";
 
 export default function DashboardLayoutClient({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    const { isAuthenticated, user, isTokenExpiringSoon, logout, checkToken } = useAuth();
+    const { isAuthenticated, user, isTokenExpiringSoon, logout, initialized } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(true);
-    const [initialCheckDone, setInitialCheckDone] = useState(false);
 
     useEffect(() => {
-        checkToken();
-        setInitialCheckDone(true);
-    }, [checkToken]); 
-
-    useEffect(() => {
-        console.log("Estado de autenticación:", {
-            isAuthenticated,
-            user,
-            initialCheckDone
-        });
-
-        if (!initialCheckDone) return;
+        if (!initialized) return;
 
         if (!isAuthenticated) {
-            console.log("Redirigiendo a login. Token:", AuthService.getToken());
+            console.log("No autenticado, redirigiendo...");
             router.replace("/");
         } else {
             console.log("Usuario autenticado:", user);
             setLoading(false);
         }
-    }, [isAuthenticated, router, initialCheckDone]);
+    }, [isAuthenticated, initialized, router, user]);
 
-    if (loading) {
+    if (!initialized || loading) {
         return <LoadingScreen />;
     }
 
