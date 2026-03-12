@@ -13,7 +13,8 @@ import {
     BadgeCheck,
     GraduationCap,
     ShieldUser,
-    Plane
+    Plane,
+    BookUser
 } from "lucide-react"
 
 export type UserRole = "SUPER_USUARIO" | "USUARIO" | "SISTEMA"
@@ -73,6 +74,16 @@ export const NAVIGATION: NavItem[] = [
         href: "/dashboard/apis",
         icon: Plug,
         description: "endpoints · integraciones · terceros · externos · api · url",
+        group: "Convenios y Beneficios",
+        section: "secondary",
+        roles: ["SUPER_USUARIO"]
+    },
+    {
+        id: "api-registro",
+        title: "API Registro",
+        href: "/dashboard/apis-registro",
+        icon: BookUser,
+        description: "registro · beneficiarios · api · beneficios · inscripción",
         group: "Convenios y Beneficios",
         section: "secondary",
         roles: ["SUPER_USUARIO"]

@@ -13,11 +13,13 @@ import ExportModal from "@/components/modals/export"
 import AddConvenioModal from "@/components/modals/add-convenio"
 import UpdateConvenioModal from "@/components/modals/update-convenio"
 import DetailsConvenioModal from "@/components/modals/details-convenio"
+import RutasModal from "@/components/modals/rutas-modal"
 import { ConveniosService, type Convenio, type GetConveniosParams } from "@/services/convenio.service"
 import { EmpresasService, type Empresa } from "@/services/empresa.service"
 import { ApisService, type Api } from "@/services/api.service"
 import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
+import { cn } from "@/lib/utils"
 import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
 import { AuthService, CurrentUser } from "@/services/auth.service"
@@ -37,6 +39,7 @@ export default function ConveniosPage() {
     const [openAdd, setOpenAdd] = useState(false)
     const [openUpdate, setOpenUpdate] = useState(false)
     const [openDetails, setOpenDetails] = useState(false)
+    const [openRutas, setOpenRutas] = useState(false)
     const [selectedConvenio, setSelectedConvenio] = useState<Convenio | null>(null)
     const [selectedEmpresa, setSelectedEmpresa] = useState<number | null>(null)
     const [user, setUser] = useState<CurrentUser | null>(null)
@@ -179,6 +182,11 @@ export default function ConveniosPage() {
         setOpenUpdate(true)
     }
 
+    const handleManageRutas = (convenio: Convenio) => {
+        setSelectedConvenio(convenio)
+        setOpenRutas(true)
+    }
+
     const handleConvenioUpdated = () => {
         fetchConvenios()
     }
@@ -313,9 +321,10 @@ export default function ConveniosPage() {
                             <Table.TableHead>Estado</Table.TableHead>
                             <Table.TableHead>Tipo Consulta</Table.TableHead>
                             <Table.TableHead>Descuento</Table.TableHead>
-                            <Table.TableHead>Endpoint</Table.TableHead>
+                            <Table.TableHead>Alcance</Table.TableHead>
+                            <Table.TableHead>Beneficio</Table.TableHead>
                             <Table.TableHead>Tope Monto</Table.TableHead>
-                            <Table.TableHead>Tope Cantidad Tickets</Table.TableHead>
+                            <Table.TableHead>Tope Tickets</Table.TableHead>
                             <Table.TableHead>Periodo</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
@@ -341,7 +350,7 @@ export default function ConveniosPage() {
                                     <Table.TableCell>{convenio.id}</Table.TableCell>
                                     <Table.TableCell className="font-medium">{convenio.nombre}</Table.TableCell>
                                     <Table.TableCell>
-                                        {convenio.empresa?.nombre || "Sin empresa"}
+                                        {convenio.empresa_nombre || convenio.empresa?.nombre || "Sin empresa"}
                                     </Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={convenio.status === "ACTIVO" ? "active" : "inactive"}>
@@ -363,9 +372,32 @@ export default function ConveniosPage() {
                                             "Sin consulta"
                                         )}
                                     </Table.TableCell>
-                                    <Table.TableCell>{convenio.porcentaje_descuento ? `${formatNumber(convenio.porcentaje_descuento)}%` : "Sin descuento"}</Table.TableCell>
                                     <Table.TableCell>
-                                        {convenio.endpoint || "Sin endpoint"}
+                                        {convenio.tipo_descuento && convenio.valor_descuento != null
+                                            ? `${convenio.tipo_descuento}: ${convenio.tipo_descuento === "Porcentaje" ? `${formatNumber(convenio.valor_descuento)}%` : `$${formatNumber(convenio.valor_descuento)}`}`
+                                            : convenio.porcentaje_descuento ? `${formatNumber(convenio.porcentaje_descuento)}%` : "Sin descuento"
+                                        }
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className={cn(
+                                                "h-7 px-2 text-xs rounded-full",
+                                                convenio.tipo_alcance === "Rutas Especificas"
+                                                    ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                                                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                            )}
+                                            onClick={() => handleManageRutas(convenio)}
+                                        >
+                                            {convenio.tipo_alcance === "Rutas Especificas" ? "Rutas" : "Global (Sin rutas)"}
+                                        </Button>
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        {convenio.beneficio
+                                            ? <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Sí</span>
+                                            : <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">No</span>
+                                        }
                                     </Table.TableCell>
                                     <Table.TableCell>{(convenio.limitar_por_monto && convenio.tope_monto_descuento) ? formatNumber(convenio.tope_monto_descuento) : "Sin tope"}</Table.TableCell>
                                     <Table.TableCell>{(convenio.limitar_por_stock && convenio.tope_cantidad_tickets) ? formatNumber(convenio.tope_cantidad_tickets) : "Sin tope"}</Table.TableCell>
@@ -457,6 +489,15 @@ export default function ConveniosPage() {
                 onOpenChange={setOpenDetails}
                 convenio={selectedConvenio}
             />
+
+            {selectedConvenio && (
+                <RutasModal
+                    open={openRutas}
+                    onOpenChange={setOpenRutas}
+                    convenio={selectedConvenio}
+                    onSuccess={fetchConvenios}
+                />
+            )}
 
         </div>
     )

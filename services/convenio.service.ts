@@ -1,17 +1,42 @@
 import { api } from '@/lib/api';
 
+export type TipoDescuento = "Porcentaje" | "Monto Fijo" | "Tarifa Plana";
+export type TipoAlcance = "Global" | "Rutas Especificas";
+
+export interface RutaConfiguracion {
+    tipo_viaje: string;
+    tipo_asiento: string;
+    precio_solo_ida?: number;
+    precio_ida_vuelta?: number;
+    max_pasajes?: number;
+}
+
+export interface Ruta {
+    origen_codigo: string;
+    origen_ciudad: string;
+    destino_codigo: string;
+    destino_ciudad: string;
+    configuraciones?: RutaConfiguracion[];
+}
+
 export interface Convenio {
     id: number;
     nombre: string;
     empresa_id: number | null;
+    empresa_nombre?: string;
+    empresa_rut?: string;
     status: "ACTIVO" | "INACTIVO";
     tipo_consulta?: "API_EXTERNA" | "CODIGO_DESCUENTO";
+    api_url_id?: number;
     endpoint?: string;
     fecha_inicio?: string;
     fecha_termino?: string;
     tope_monto_descuento?: number;
     tope_cantidad_tickets?: number;
     porcentaje_descuento?: number;
+    tipo_descuento?: TipoDescuento;
+    valor_descuento?: number | null;
+    tipo_alcance?: TipoAlcance;
     codigo?: string;
     limitar_por_stock?: boolean;
     limitar_por_monto?: boolean;
@@ -19,6 +44,8 @@ export interface Convenio {
     imagenes?: string[];
     consumo_tickets?: number;
     consumo_monto_descuento?: number;
+    rutas?: Ruta[];
+    configuraciones?: RutaConfiguracion[];
     empresa?: {
         id: number;
         nombre: string;
@@ -51,7 +78,9 @@ export interface CreateConvenioData {
     empresa_id?: number | null;
     tipo_consulta: "API_EXTERNA" | "CODIGO_DESCUENTO";
     codigo?: string;
-    porcentaje_descuento?: number;
+    tipo_descuento?: TipoDescuento;
+    valor_descuento?: number;
+    tipo_alcance?: TipoAlcance;
     tope_monto_descuento?: number;
     tope_cantidad_tickets?: number;
     api_consulta_id?: number;
@@ -59,10 +88,10 @@ export interface CreateConvenioData {
     limitar_por_monto?: boolean;
     beneficio?: boolean;
     imagenes?: string[];
-    consumo_tickets?: number;
-    consumo_monto_descuento?: number;
     fecha_inicio?: string;
     fecha_termino?: string;
+    rutas?: Ruta[];
+    configuraciones?: RutaConfiguracion[];
 }
 
 export interface UpdateConvenioData {
@@ -71,7 +100,9 @@ export interface UpdateConvenioData {
     status?: "ACTIVO" | "INACTIVO";
     tipo_consulta?: "API_EXTERNA" | "CODIGO_DESCUENTO";
     codigo?: string | null;
-    porcentaje_descuento?: number | null;
+    tipo_descuento?: TipoDescuento | null;
+    valor_descuento?: number | null;
+    tipo_alcance?: TipoAlcance | null;
     tope_monto_descuento?: number | null;
     tope_cantidad_tickets?: number | null;
     api_consulta_id?: number | null;
@@ -79,10 +110,10 @@ export interface UpdateConvenioData {
     limitar_por_monto?: boolean | null;
     beneficio?: boolean;
     imagenes?: string[];
-    consumo_tickets?: number;
-    consumo_monto_descuento?: number;
     fecha_inicio?: string | null;
     fecha_termino?: string | null;
+    rutas?: Ruta[] | null;
+    configuraciones?: RutaConfiguracion[] | null;
 }
 
 export class ConveniosService {

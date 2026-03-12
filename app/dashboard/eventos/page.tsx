@@ -10,7 +10,7 @@ import { useState, useEffect } from "react"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
 import { Calendar } from "@/components/ui/calendar"
-import { formatDateOnly, formatNumber } from "@/utils/helpers"
+import { formatDateOnly, formatNumber, formatDateTime } from "@/utils/helpers"
 import { es } from "date-fns/locale"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { DateRange } from "react-day-picker"
@@ -198,6 +198,9 @@ export default function EventosPage() {
                 Tipo: getTipoEventoLabel(evento.tipo_evento),
                 "Origen - Destino": `${evento.terminal_origen} → ${evento.terminal_destino}`,
                 "Fecha Viaje": formatDateOnly(evento.fecha_viaje),
+                "Hora Salida": evento.hora_salida ?? "N/A",
+                "Fecha Evento": formatDateOnly(evento.fecha_evento),
+                "Fecha Compra": formatDateTime(evento.fecha_compra),
                 "Tarifa Base": `$${formatNumber(evento.tarifa_base)}`,
                 "Monto Pagado": `$${formatNumber(evento.monto_pagado)}`,
                 Descuento: `${evento.porcentaje_descuento_aplicado}%`,
@@ -393,6 +396,8 @@ export default function EventosPage() {
                             <Table.TableHead>Tipo</Table.TableHead>
                             <Table.TableHead>Origen - Destino</Table.TableHead>
                             <Table.TableHead>Fecha Viaje</Table.TableHead>
+                            <Table.TableHead>Hora Salida</Table.TableHead>
+                            <Table.TableHead>Fecha Compra</Table.TableHead>
                             <Table.TableHead>Tarifa Base</Table.TableHead>
                             <Table.TableHead>Monto Pagado</Table.TableHead>
                             <Table.TableHead>Descuento</Table.TableHead>
@@ -406,7 +411,7 @@ export default function EventosPage() {
                     <Table.TableBody>
                         {isLoading ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={11} className="text-center py-8">
+                                <Table.TableCell colSpan={13} className="text-center py-8">
                                     <div className="flex justify-center">
                                         <Icon.Loader2Icon className="h-6 w-6 animate-spin" />
                                     </div>
@@ -414,7 +419,7 @@ export default function EventosPage() {
                             </Table.TableRow>
                         ) : eventos.length === 0 ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={11} className="text-center py-8">
+                                <Table.TableCell colSpan={13} className="text-center py-8">
                                     No se encontraron eventos
                                 </Table.TableCell>
                             </Table.TableRow>
@@ -436,6 +441,8 @@ export default function EventosPage() {
                                         {evento.terminal_origen} → {evento.terminal_destino}
                                     </Table.TableCell>
                                     <Table.TableCell>{formatDateOnly(evento.fecha_viaje)}</Table.TableCell>
+                                    <Table.TableCell>{evento.hora_salida ?? "N/A"}</Table.TableCell>
+                                    <Table.TableCell>{formatDateTime(evento.fecha_compra)}</Table.TableCell>
                                     <Table.TableCell>${formatNumber(evento.tarifa_base)}</Table.TableCell>
                                     <Table.TableCell>${formatNumber(evento.monto_pagado)}</Table.TableCell>
                                     <Table.TableCell>{evento.porcentaje_descuento_aplicado}%</Table.TableCell>

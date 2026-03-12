@@ -22,6 +22,8 @@ export interface Evento {
     monto_devolucion?: number;
     is_deleted?: boolean;
     fecha_evento: string;
+    hora_evento?: string;
+    fecha_compra?: string;
     codigo_autorizacion?: string;
     token?: string;
     estado?: "CONFIRMADO" | "ANULADO" | "REVERTIDO";

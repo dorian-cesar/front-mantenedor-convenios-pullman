@@ -3,7 +3,8 @@ export const formatDateOnly = (isoDate: string) => {
   return isoDate.split("T")[0]
 }
 
-export const formatRut = (rut: string) => {
+export const formatRut = (rut: string | null | undefined) => {
+  if (!rut) return ""
   if (rut.includes('-')) return rut
 
   const rutBody = rut.slice(0, -1)
@@ -23,6 +24,27 @@ export const formatDate = (isoDate: string) => {
     month: "2-digit",
     year: "numeric",
   })
+}
+
+export const formatDateTime = (isoDate: string | null | undefined) => {
+  if (!isoDate) return "-"
+
+  const date = new Date(isoDate)
+
+  if (isNaN(date.getTime())) return "-"
+
+  const fecha = date.toLocaleDateString("es-CL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+
+  const hora = date.toLocaleTimeString("es-CL", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+
+  return `${fecha} ${hora}`
 }
 
 export const formatNumber = (value?: number | string | null) => {
