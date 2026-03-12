@@ -21,14 +21,16 @@ interface PreciosModalProps {
 const ConfigPrecioItem = memo(({
     config,
     onUpdate,
+    showRemove = false,
     onRemove
 }: {
     config: RutaConfiguracion,
     onUpdate: (updates: Partial<RutaConfiguracion>) => void,
-    onRemove: () => void
+    showRemove?: boolean,
+    onRemove?: () => void
 }) => {
     return (
-        <div className="grid grid-cols-5 gap-3 items-end p-4 rounded-xl bg-white border border-gray-100 shadow-sm relative group transition-all hover:border-primary/20">
+        <div className="grid grid-cols-4 gap-3 items-end p-4 rounded-xl bg-white border border-gray-100 shadow-sm relative group transition-all hover:border-primary/20">
             <div className="space-y-1">
                 <Label className="text-[10px] uppercase text-gray-400 font-bold">Tipo Asiento</Label>
                 <Select value={config.tipo_asiento} onValueChange={(val) => onUpdate({ tipo_asiento: val })}>
@@ -71,16 +73,18 @@ const ConfigPrecioItem = memo(({
                     className="h-10 text-xs border-gray-100 bg-gray-50/30"
                 />
             </div>
-            <div className="flex justify-end pb-0.5">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                    onClick={onRemove}
-                >
-                    <Icon.Trash2Icon className="h-5 w-5" />
-                </Button>
-            </div>
+            {showRemove && onRemove && (
+                <div className="flex justify-end pb-0.5 col-span-1">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                        onClick={onRemove}
+                    >
+                        <Icon.Trash2Icon className="h-5 w-5" />
+                    </Button>
+                </div>
+            )}
         </div>
     )
 })
@@ -92,80 +96,73 @@ export default function PreciosModal({ open, onOpenChange, convenio, onSuccess }
 
     useEffect(() => {
         if (open && convenio) {
-            // Lógica de MERGE: Agrupamos las configuraciones por tipo_asiento y max_pasajes
+            // Lógica de MERGE para mostrar una sola fila consolidada
             const rawConfigs = convenio.configuraciones || []
-            const mergedMap = new Map<string, RutaConfiguracion>()
 
-            rawConfigs.forEach(conf => {
-                const key = `${conf.tipo_asiento}-${conf.max_pasajes}`
-                if (mergedMap.has(key)) {
-                    const existing = mergedMap.get(key)!
-                    mergedMap.set(key, {
-                        ...existing,
-                        precio_solo_ida: conf.precio_solo_ida || existing.precio_solo_ida,
-                        precio_ida_vuelta: conf.precio_ida_vuelta || existing.precio_ida_vuelta,
-                    })
-                } else {
-                    mergedMap.set(key, { ...conf })
+            if (rawConfigs.length === 0) {
+                setConfiguraciones([{
+                    tipo_viaje: "Solo Ida",
+                    tipo_asiento: "Semi Cama",
+                    precio_solo_ida: 0,
+                    precio_ida_vuelta: 0,
+                    max_pasajes: 1
+                }])
+            } else {
+                // Consolidamos todas en una si el usuario quiere "una sola"
+                // O tomamos la primera y mezclamos valores si hay varias (fallback seguro)
+                const consolidated: RutaConfiguracion = {
+                    tipo_viaje: "Solo Ida",
+                    tipo_asiento: rawConfigs[0].tipo_asiento || "Semi Cama",
+                    precio_solo_ida: rawConfigs.find(c => c.tipo_viaje === "Solo Ida")?.precio_solo_ida || 0,
+                    precio_ida_vuelta: rawConfigs.find(c => c.tipo_viaje === "Ida y Vuelta")?.precio_ida_vuelta || 0,
+                    max_pasajes: rawConfigs[0].max_pasajes || 1
                 }
-            })
-
-            setConfiguraciones(Array.from(mergedMap.values()))
+                setConfiguraciones([consolidated])
+            }
         }
     }, [open, convenio])
-
-    const handleAddConfig = () => {
-        setConfiguraciones(prev => [...prev, {
-            tipo_viaje: "Solo Ida",
-            tipo_asiento: "Semi Cama",
-            precio_solo_ida: 0,
-            precio_ida_vuelta: 0,
-            max_pasajes: 1
-        }])
-    }
 
     const handleUpdateConfig = useCallback((index: number, updates: Partial<RutaConfiguracion>) => {
         setConfiguraciones(prev => prev.map((c, i) => i === index ? { ...c, ...updates } : c))
     }, [])
 
-    const handleRemoveConfig = useCallback((index: number) => {
-        setConfiguraciones(prev => prev.filter((_, i) => i !== index))
-    }, [])
-
     const handleSave = async () => {
         setIsLoading(true)
         try {
-            // Lógica de SPLIT: Separamos cada fila en dos objetos si tiene ambos precios
-            const finalConfigs: RutaConfiguracion[] = []
+            // Lógica simplificada: Enviamos solo la configuración actual
+            const config = configuraciones[0];
+            const finalConfigs: RutaConfiguracion[] = [];
 
-            configuraciones.forEach(c => {
-                if (c.precio_solo_ida !== undefined && c.precio_solo_ida !== null && Number(c.precio_solo_ida) >= 0) {
+            if (config) {
+                // El backend a veces prefiere objetos separados por tipo_viaje
+                if (config.precio_solo_ida !== undefined && config.precio_solo_ida !== null) {
                     finalConfigs.push({
                         tipo_viaje: "Solo Ida",
-                        tipo_asiento: c.tipo_asiento,
-                        precio_solo_ida: Number(c.precio_solo_ida),
-                        max_pasajes: Number(c.max_pasajes) || 1
-                    })
+                        tipo_asiento: config.tipo_asiento,
+                        precio_solo_ida: Number(config.precio_solo_ida),
+                        max_pasajes: Number(config.max_pasajes) || 1
+                    });
                 }
-                if (c.precio_ida_vuelta !== undefined && c.precio_ida_vuelta !== null && Number(c.precio_ida_vuelta) >= 0) {
+                // Si hay precio de ida y vuelta, agregamos la otra configuración
+                if (config.precio_ida_vuelta !== undefined && config.precio_ida_vuelta !== null && Number(config.precio_ida_vuelta) > 0) {
                     finalConfigs.push({
                         tipo_viaje: "Ida y Vuelta",
-                        tipo_asiento: c.tipo_asiento,
-                        precio_ida_vuelta: Number(c.precio_ida_vuelta),
-                        max_pasajes: Number(c.max_pasajes) || 1
-                    })
+                        tipo_asiento: config.tipo_asiento,
+                        precio_ida_vuelta: Number(config.precio_ida_vuelta),
+                        max_pasajes: Number(config.max_pasajes) || 1
+                    });
                 }
-            })
+            }
 
-            // Payload completo y seguro para evitar 400
+            // Payload optimizado siguiendo el esquema del backend
             await ConveniosService.updateConvenio(convenio.id, {
                 nombre: convenio.nombre,
                 status: convenio.status,
                 empresa_id: convenio.empresa_id || null,
-                configuraciones: finalConfigs.length > 0 ? finalConfigs : null,
-                rutas: (convenio.rutas && convenio.rutas.length > 0) ? convenio.rutas : null,
+                configuraciones: finalConfigs.length > 0 ? finalConfigs : [],
+                rutas: convenio.rutas || null,
                 tipo_alcance: convenio.tipo_alcance || "Global",
-                // Campos base con defaults seguros
+                // Mantenemos los campos existentes
                 codigo: convenio.codigo || null,
                 tipo_descuento: convenio.tipo_descuento || null,
                 valor_descuento: convenio.valor_descuento ?? null,
@@ -185,7 +182,7 @@ export default function PreciosModal({ open, onOpenChange, convenio, onSuccess }
             onOpenChange(false)
         } catch (error) {
             console.error('Error updating prices:', error)
-            toast.error("Error al actualizar precios")
+            toast.error("Error al actualizar precios. Verifique los datos.")
         } finally {
             setIsLoading(false)
         }
@@ -207,31 +204,20 @@ export default function PreciosModal({ open, onOpenChange, convenio, onSuccess }
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                         <div className="space-y-0.5">
-                            <h3 className="text-sm font-bold text-gray-900">Tarifas del Convenio</h3>
-                            <p className="text-xs text-gray-400">Agrega reglas de precio por tipo de viaje y asiento</p>
+                            <h3 className="text-sm font-bold text-gray-900">Tarifa Única</h3>
+                            <p className="text-xs text-gray-400">Configura los precios base para este convenio</p>
                         </div>
-                        <Button type="button" variant="default" size="sm" className="rounded-full px-4 shadow-sm" onClick={handleAddConfig}>
-                            <Icon.PlusIcon className="h-4 w-4 mr-2" />
-                            Nuevo Precio
-                        </Button>
                     </div>
 
                     <div className="space-y-3">
-                        {configuraciones.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-2xl bg-white border-gray-200">
-                                <Icon.DollarSign className="h-10 w-10 text-gray-200 mb-2" />
-                                <p className="text-sm text-gray-400">No hay precios configurados aún.</p>
-                            </div>
-                        ) : (
-                            configuraciones.map((config, idx) => (
-                                <ConfigPrecioItem
-                                    key={idx}
-                                    config={config}
-                                    onUpdate={(updates) => handleUpdateConfig(idx, updates)}
-                                    onRemove={() => handleRemoveConfig(idx)}
-                                />
-                            ))
-                        )}
+                        {configuraciones.map((config, idx) => (
+                            <ConfigPrecioItem
+                                key={idx}
+                                config={config}
+                                onUpdate={(updates) => handleUpdateConfig(idx, updates)}
+                                showRemove={false}
+                            />
+                        ))}
                     </div>
                 </div>
 
