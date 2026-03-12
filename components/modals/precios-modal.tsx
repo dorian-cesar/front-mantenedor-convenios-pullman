@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback, memo } from "react"
 import * as Dialog from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import * as Icon from "lucide-react"
-import { ConveniosService, type Convenio, type RutaConfiguracion, type Ruta, type TipoDescuento } from "@/services/convenio.service"
-import { toast } from "sonner"
+import { type Convenio, type RutaConfiguracion } from "@/services/convenio.service"
+import { useConvenio } from "@/components/providers/convenio-provider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -32,6 +32,16 @@ const ConfigPrecioItem = memo(({
     return (
         <div className="grid grid-cols-4 gap-3 items-end p-4 rounded-xl bg-white border border-gray-100 shadow-sm relative group transition-all hover:border-primary/20">
             <div className="space-y-1">
+                <Label className="text-[10px] uppercase text-gray-400 font-bold">Tipo Viaje</Label>
+                <Select value={config.tipo_viaje} onValueChange={(val) => onUpdate({ tipo_viaje: val })}>
+                    <SelectTrigger className="h-10 text-xs border-gray-100 bg-gray-50/30"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Solo Ida">Solo Ida</SelectItem>
+                        <SelectItem value="Ida y Vuelta">Ida y Vuelta</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-1">
                 <Label className="text-[10px] uppercase text-gray-400 font-bold">Tipo Asiento</Label>
                 <Select value={config.tipo_asiento} onValueChange={(val) => onUpdate({ tipo_asiento: val })}>
                     <SelectTrigger className="h-10 text-xs border-gray-100 bg-gray-50/30"><SelectValue /></SelectTrigger>
@@ -44,7 +54,7 @@ const ConfigPrecioItem = memo(({
                 </Select>
             </div>
             <div className="space-y-1">
-                <Label className="text-[10px] uppercase text-gray-400 font-bold">Precio Ida ($)</Label>
+                <Label className="text-[10px] uppercase text-gray-400 font-bold">Precio Solo Ida ($)</Label>
                 <Input
                     type="number"
                     value={config.precio_solo_ida || ""}
@@ -53,16 +63,18 @@ const ConfigPrecioItem = memo(({
                     className="h-10 text-xs border-gray-100 bg-gray-50/30"
                 />
             </div>
-            <div className="space-y-1">
-                <Label className="text-[10px] uppercase text-gray-400 font-bold">Precio Ida/Vta ($)</Label>
-                <Input
-                    type="number"
-                    value={config.precio_ida_vuelta || ""}
-                    placeholder="0"
-                    onChange={(e) => onUpdate({ precio_ida_vuelta: e.target.value === "" ? 0 : Number(e.target.value) })}
-                    className="h-10 text-xs border-gray-100 bg-gray-50/30"
-                />
-            </div>
+            {config.tipo_viaje === "Ida y Vuelta" && (
+                <div className="space-y-1">
+                    <Label className="text-[10px] uppercase text-gray-400 font-bold">Precio Ida/Vta ($)</Label>
+                    <Input
+                        type="number"
+                        value={config.precio_ida_vuelta || ""}
+                        placeholder="0"
+                        onChange={(e) => onUpdate({ precio_ida_vuelta: e.target.value === "" ? 0 : Number(e.target.value) })}
+                        className="h-10 text-xs border-gray-100 bg-gray-50/30"
+                    />
+                </div>
+            )}
             <div className="space-y-1">
                 <Label className="text-[10px] uppercase text-gray-400 font-bold">Stock Máx</Label>
                 <Input
@@ -91,87 +103,41 @@ const ConfigPrecioItem = memo(({
 ConfigPrecioItem.displayName = "ConfigPrecioItem"
 
 export default function PreciosModal({ open, onOpenChange, convenio, onSuccess }: PreciosModalProps) {
-    const [configuraciones, setConfiguraciones] = useState<RutaConfiguracion[]>([])
-    const [isLoading, setIsLoading] = useState(false)
+    const {
+        configuraciones,
+        setConfiguraciones,
+        fetchFullConvenio: fetchFull,
+        handleSave: unifiedSave,
+        isSaving: isLoading,
+        normalizeStr
+    } = useConvenio()
+    
+    const [currentId, setCurrentId] = useState<number | null>(null)
+
+    const fetchFullConvenio = useCallback(async (id: number) => {
+        await fetchFull(id)
+    }, [fetchFull])
 
     useEffect(() => {
         if (open && convenio) {
-            // Lógica de MERGE para mostrar una sola fila consolidada
-            const rawConfigs = convenio.configuraciones || []
-
-            if (rawConfigs.length === 0) {
-                setConfiguraciones([{
-                    tipo_viaje: "Solo Ida",
-                    tipo_asiento: "Semi Cama",
-                    precio_solo_ida: 0,
-                    precio_ida_vuelta: 0,
-                    max_pasajes: 1
-                }])
-            } else {
-                // Consolidamos todas en una si el usuario quiere "una sola"
-                // O tomamos la primera y mezclamos valores si hay varias (fallback seguro)
-                const consolidated: RutaConfiguracion = {
-                    tipo_viaje: "Solo Ida",
-                    tipo_asiento: rawConfigs[0].tipo_asiento || "Semi Cama",
-                    precio_solo_ida: rawConfigs.find(c => c.tipo_viaje === "Solo Ida")?.precio_solo_ida || 0,
-                    precio_ida_vuelta: rawConfigs.find(c => c.tipo_viaje === "Ida y Vuelta")?.precio_ida_vuelta || 0,
-                    max_pasajes: rawConfigs[0].max_pasajes || 1
-                }
-                setConfiguraciones([consolidated])
-            }
+            if (currentId === convenio.id) return;
+            setCurrentId(convenio.id)
+            fetchFullConvenio(convenio.id)
+        } else if (!open) {
+            setCurrentId(null)
         }
-    }, [open, convenio])
+    }, [open, convenio, currentId, fetchFullConvenio])
 
     const handleUpdateConfig = useCallback((index: number, updates: Partial<RutaConfiguracion>) => {
         setConfiguraciones(prev => prev.map((c, i) => i === index ? { ...c, ...updates } : c))
     }, [])
 
     const handleSave = async () => {
-        setIsLoading(true)
-        try {
-            const finalConfigs = configuraciones.slice(0, 1).map(c => ({
-                tipo_viaje: c.tipo_viaje || "Solo Ida",
-                tipo_asiento: c.tipo_asiento || "Semi Cama",
-                precio_solo_ida: c.precio_solo_ida !== null && c.precio_solo_ida !== undefined ? Number(c.precio_solo_ida) : undefined,
-                precio_ida_vuelta: c.precio_ida_vuelta !== null && c.precio_ida_vuelta !== undefined ? Number(c.precio_ida_vuelta) : undefined,
-                max_pasajes: c.max_pasajes !== null && c.max_pasajes !== undefined ? Number(c.max_pasajes) : undefined
-            }))
-
-            // Payload optimizado siguiendo el esquema del backend
-            const empresaId = typeof convenio.empresa === 'object' && convenio.empresa !== null
-                ? convenio.empresa.id
-                : (typeof convenio.empresa_id === 'number' ? convenio.empresa_id : null);
-
-            await ConveniosService.updateConvenio(convenio.id, {
-                nombre: convenio.nombre,
-                status: convenio.status,
-                empresa_id: empresaId,
-                tipo_alcance: convenio.tipo_alcance || "Global",
-                configuraciones: finalConfigs,
-                rutas: convenio.rutas || [],
-                codigo: convenio.codigo || null,
-                api_consulta_id: convenio.api_consulta_id || null,
-                tipo_descuento: (convenio.tipo_descuento as TipoDescuento) || null,
-                valor_descuento: convenio.valor_descuento !== null && convenio.valor_descuento !== undefined ? Number(convenio.valor_descuento) : null,
-                tope_monto_descuento: convenio.tope_monto_descuento !== null && convenio.tope_monto_descuento !== undefined ? Number(convenio.tope_monto_descuento) : null,
-                tope_cantidad_tickets: convenio.tope_cantidad_tickets !== null && convenio.tope_cantidad_tickets !== undefined ? Number(convenio.tope_cantidad_tickets) : null,
-                limitar_por_stock: convenio.limitar_por_stock ?? null,
-                limitar_por_monto: convenio.limitar_por_monto ?? null,
-                beneficio: !!convenio.beneficio,
-                imagenes: convenio.imagenes || [],
-                fecha_inicio: convenio.fecha_inicio || null,
-                fecha_termino: convenio.fecha_termino || null,
-            })
-
-            toast.success("Precios actualizados correctamente")
+        // En PreciosModal, enviamos las configuraciones globales actuales (están en el hook)
+        const success = await unifiedSave(convenio.id, {}, () => {
             onSuccess?.()
             onOpenChange(false)
-        } catch (error) {
-            console.error('Error updating prices:', error)
-            toast.error("Error al actualizar precios. Verifique los datos.")
-        } finally {
-            setIsLoading(false)
-        }
+        })
     }
 
     return (

@@ -1,6 +1,7 @@
-﻿"use client"
+"use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+// ... (rest of imports are already there)
 import { Button } from "@/components/ui/button"
 import * as Dialog from "@/components/ui/dialog"
 import * as Form from "@/components/ui/form"
@@ -26,6 +27,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { ConveniosService, Convenio, type Ruta, type RutaConfiguracion, type TipoAlcance, type TipoDescuento } from "@/services/convenio.service"
 import { Empresa } from "@/services/empresa.service"
 import { toast } from "sonner"
+import { useConvenio } from "@/components/providers/convenio-provider"
 import {
     Select,
     SelectContent,
@@ -67,17 +69,18 @@ const rutaSchema = z.object({
 })
 
 const convenioSchema = z.object({
+    id: z.number().optional(),
     nombre: z.string().min(3, "Al menos 3 caracteres").max(100, "Demasiado largo"),
     empresa_id: z.number().nullable().optional(),
     status: z.enum(["ACTIVO", "INACTIVO"]),
     tipo_consulta: z.enum(["CODIGO_DESCUENTO", "API_EXTERNA"], { message: "Seleccione un tipo" }),
-    codigo: z.string().optional(),
+    codigo: z.string().nullable().optional(),
     api_consulta_id: z.number().optional().nullable(),
-    tipo_descuento: z.enum(["Porcentaje", "Monto Fijo", "Tarifa Plana"]).optional(),
-    valor_descuento: z.number().min(0).optional(),
+    tipo_descuento: z.enum(["Porcentaje", "Monto Fijo", "Tarifa Plana"]).nullable().optional(),
+    valor_descuento: z.number().min(0).nullable().optional(),
     tipo_alcance: z.enum(["Global", "Rutas Especificas"]),
-    tope_monto_descuento: z.number().min(1).optional(),
-    tope_cantidad_tickets: z.number().min(1).optional(),
+    tope_monto_descuento: z.number().min(1).nullable().optional(),
+    tope_cantidad_tickets: z.number().min(1).nullable().optional(),
     limitar_por_stock: z.boolean().nullable().optional(),
     limitar_por_monto: z.boolean().nullable().optional(),
     beneficio: z.boolean().optional(),
@@ -85,6 +88,7 @@ const convenioSchema = z.object({
     fecha_inicio: z.string().optional(),
     fecha_termino: z.string().optional(),
     rutas: z.array(rutaSchema).optional(),
+    configuraciones: z.array(rutaConfiguracionSchema).optional(),
 })
     .refine((data) => {
         if (data.tipo_consulta === "CODIGO_DESCUENTO") return !!data.codigo && data.codigo.length >= 3
@@ -148,12 +152,14 @@ function RutaConfiguracionForm({
                         value={config.precio_solo_ida ?? ""}
                         onChange={(e) => onUpdate({ ...config, precio_solo_ida: e.target.value === "" ? undefined : Number(e.target.value.replace(/[^0-9.]/g, "")) })} />
                 </div>
-                <div>
-                    <Label className="text-xs">Precio Ida y Vuelta</Label>
-                    <Input className="h-8 text-xs" type="number" placeholder="0"
-                        value={config.precio_ida_vuelta ?? ""}
-                        onChange={(e) => onUpdate({ ...config, precio_ida_vuelta: e.target.value === "" ? undefined : Number(e.target.value.replace(/[^0-9.]/g, "")) })} />
-                </div>
+                {config.tipo_viaje === "Ida y Vuelta" && (
+                    <div>
+                        <Label className="text-xs">Precio Ida y Vuelta</Label>
+                        <Input className="h-8 text-xs" type="number" placeholder="0"
+                            value={config.precio_ida_vuelta ?? ""}
+                            onChange={(e) => onUpdate({ ...config, precio_ida_vuelta: e.target.value === "" ? undefined : Number(e.target.value.replace(/[^0-9.]/g, "")) })} />
+                    </div>
+                )}
                 <div>
                     <Label className="text-xs">Máx. pasajes</Label>
                     <Input className="h-8 text-xs" type="number" placeholder="0"
@@ -165,7 +171,6 @@ function RutaConfiguracionForm({
     )
 }
 
-// â€”â€”â€” Componente principal â€”â€”â€”
 export default function UpdateConvenioModal({
     open,
     onOpenChange,
@@ -174,13 +179,28 @@ export default function UpdateConvenioModal({
     apis,
     onSuccess,
 }: UpdateConvenioModalProps) {
-    const [isLoading, setIsLoading] = useState(false)
     const [openEmpresaPopover, setOpenEmpresaPopover] = useState(false)
     const [openApiPopover, setOpenApiPopover] = useState(false)
     const [imagenesInputs, setImagenesInputs] = useState<string[]>([])
     const [cities, setCities] = useState<City[]>([])
     const [loadingCities, setLoadingCities] = useState(false)
-    const [rutas, setRutas] = useState<Ruta[]>([])
+
+    const {
+        rutas,
+        setRutas,
+        configuraciones,
+        setConfiguraciones,
+        fetchFullConvenio: fetchFull,
+        handleSave: unifiedSave,
+        isSaving: isLoading,
+        handleAddRuta,
+        handleUpdateRuta,
+        handleRemoveRuta,
+        handleAddConfigToRuta,
+        handleUpdateRutaConfig,
+        handleRemoveRutaConfig,
+        normalizeStr
+    } = useConvenio()
 
     const form = useForm<ConvenioFormValues>({
         resolver: zodResolver(convenioSchema),
@@ -204,6 +224,7 @@ export default function UpdateConvenioModal({
             fecha_inicio: "",
             fecha_termino: "",
             rutas: [],
+            configuraciones: []
         },
     })
 
@@ -214,6 +235,7 @@ export default function UpdateConvenioModal({
     const apiSeleccionadaId = form.watch("api_consulta_id")
     const empresaSeleccionada = empresas.find((e) => e.id === empresaSeleccionadaId)
     const apiSeleccionada = apis.find((a) => a.id === apiSeleccionadaId)
+    const formConfigs = form.watch("configuraciones")
 
     const fetchCities = useCallback(async (q = "") => {
         setLoadingCities(true)
@@ -228,57 +250,53 @@ export default function UpdateConvenioModal({
         }
     }, [])
 
+    const loadedConvenioIdRef = useRef<number | null>(null)
+
     useEffect(() => {
         if (tipoAlcance === "Rutas Especificas" && cities.length === 0) {
             fetchCities()
         }
     }, [tipoAlcance, cities.length, fetchCities])
 
+    const fetchFullConvenio = useCallback(async (id: number) => {
+        const full = await fetchFull(id)
+        if (!full) return
+
+        const updateData = ConveniosService.mapConvenioToUpdateData(full)
+        
+        // Update form with normalized prices and strings
+        form.reset({
+            ...(updateData as any),
+            id: full.id,
+            api_consulta_id: updateData.api_consulta_id || undefined,
+            fecha_inicio: full.fecha_inicio?.split("T")[0] || "",
+            fecha_termino: full.fecha_termino?.split("T")[0] || "",
+            configuraciones: (full.configuraciones || []).map(c => ({
+                ...c,
+                tipo_viaje: normalizeStr(c.tipo_viaje),
+                tipo_asiento: normalizeStr(c.tipo_asiento)
+            }))
+        })
+
+        setImagenesInputs(full.imagenes || [])
+        if (full.tipo_alcance === "Rutas Especificas") {
+            fetchCities()
+        }
+    }, [form, fetchFull, fetchCities, normalizeStr])
+
     // Pre-cargar datos del convenio cuando se abre el modal
     useEffect(() => {
         if (convenio && open) {
-            form.reset({
-                nombre: convenio.nombre || "",
-                empresa_id: convenio.empresa_id || null,
-                status: convenio.status || "ACTIVO",
-                tipo_consulta: convenio.tipo_consulta || "CODIGO_DESCUENTO",
-                codigo: convenio.codigo || "",
-                api_consulta_id: convenio.api_consulta_id || convenio.api_url_id || undefined,
-                tipo_descuento: (convenio.tipo_descuento as TipoDescuento) || undefined,
-                valor_descuento: convenio.valor_descuento !== null && convenio.valor_descuento !== undefined ? Number(convenio.valor_descuento) : undefined,
-                tipo_alcance: (convenio.tipo_alcance as TipoAlcance) || "Global",
-                tope_monto_descuento: convenio.tope_monto_descuento !== null && convenio.tope_monto_descuento !== undefined ? Number(convenio.tope_monto_descuento) : undefined,
-                tope_cantidad_tickets: convenio.tope_cantidad_tickets !== null && convenio.tope_cantidad_tickets !== undefined ? Number(convenio.tope_cantidad_tickets) : undefined,
-                limitar_por_stock: convenio.limitar_por_stock ?? undefined,
-                limitar_por_monto: convenio.limitar_por_monto ?? undefined,
-                beneficio: convenio.beneficio ?? false,
-                imagenes: convenio.imagenes || [],
-                fecha_inicio: convenio.fecha_inicio?.split("T")[0] || "",
-                fecha_termino: convenio.fecha_termino?.split("T")[0] || "",
-                rutas: [],
-            })
-
-            // Pre-cargar imágenes
-            if (convenio.imagenes && convenio.imagenes.length > 0) {
-                setImagenesInputs(convenio.imagenes)
-            } else {
-                setImagenesInputs([])
-            }
-
-            // Pre-cargar rutas en estado local (no en form)
-            if (convenio.rutas && convenio.rutas.length > 0) {
-                setRutas(convenio.rutas)
-                // Cargar ciudades si hay rutas específicas
-                if (convenio.tipo_alcance === "Rutas Especificas") {
-                    fetchCities()
-                }
-            } else {
-                setRutas([])
-            }
+            // Guard para evitar resets infinitos: solo cargar si el ID cambia
+            if (loadedConvenioIdRef.current === convenio.id) return;
+            
+            console.log("Modal Open - Cargando convenio:", convenio.id);
+            loadedConvenioIdRef.current = convenio.id;
+            fetchFullConvenio(convenio.id)
+        } else if (!open) {
+            loadedConvenioIdRef.current = null;
         }
-        setOpenEmpresaPopover(false)
-        setOpenApiPopover(false)
-    }, [convenio, open, form, fetchCities])
+    }, [convenio?.id, open, fetchFullConvenio])
 
     useEffect(() => {
         if (!open) {
@@ -304,28 +322,24 @@ export default function UpdateConvenioModal({
     }
 
     // â€”â€”â€” Helpers rutas â€”â€”â€”
-    const handleAddRuta = () => setRutas([...rutas, { origen_codigo: "", origen_ciudad: "", destino_codigo: "", destino_ciudad: "", configuraciones: [] }])
-    const handleRemoveRuta = (index: number) => setRutas(rutas.filter((_, i) => i !== index))
-    const handleUpdateRuta = (index: number, fields: Partial<Ruta>) => {
-        setRutas(prev => prev.map((r, i) => i === index ? { ...r, ...fields } : r))
-    }
-    const handleAddConfigToRuta = (rutaIndex: number) => {
-        const newRutas = [...rutas]
-        newRutas[rutaIndex].configuraciones = [...(newRutas[rutaIndex].configuraciones || []), { tipo_viaje: "", tipo_asiento: "" }]
-        setRutas(newRutas)
-    }
-    const handleUpdateConfigRuta = (rutaIndex: number, configIndex: number, config: RutaConfiguracion) => {
-        const newRutas = [...rutas]
-        const configs = [...(newRutas[rutaIndex].configuraciones || [])]
-        configs[configIndex] = config
-        newRutas[rutaIndex].configuraciones = configs
-        setRutas(newRutas)
-    }
-    const handleRemoveConfigRuta = (rutaIndex: number, configIndex: number) => {
-        // Enforce single config rule
-    }
+    // These are now managed by the useConvenioForm hook
+    // const handleAddRuta = () => setRutas([...rutas, { origen_codigo: "", origen_ciudad: "", destino_codigo: "", destino_ciudad: "", configuraciones: [] }])
+    // const handleRemoveRuta = (index: number) => setRutas(rutas.filter((_, i) => i !== index))
+    // const handleUpdateRuta = (index: number, fields: Partial<Ruta>) => {
+    //     setRutas(prev => prev.map((r, i) => i === index ? { ...r, ...fields } : r))
+    // }
+    // const handleAddConfigToRuta = (rutaIndex: number) => {
+    //     const newRutas = [...rutas]
+    //     newRutas[rutaIndex].configuraciones = [...(newRutas[rutaIndex].configuraciones || []), { tipo_viaje: "", tipo_asiento: "" }]
+    //     setRutas(newRutas)
+    // }
+    const handleUpdateConfigRuta = handleUpdateRutaConfig
+    const handleRemoveConfigRuta = handleRemoveRutaConfig
+    // const handleRemoveConfigRuta = (rutaIndex: number, configIndex: number) => {
+    //     // Enforce single config rule
+    // }
 
-    const getValorDescuentoLabel = (tipo?: string) => {
+    const getValorDescuentoLabel = (tipo?: string | null) => {
         if (tipo === "Porcentaje") return "Valor del descuento (%)"
         if (tipo === "Monto Fijo") return "Monto de descuento ($)"
         if (tipo === "Tarifa Plana") return "Precio plano ($)"
@@ -334,44 +348,10 @@ export default function UpdateConvenioModal({
 
     const onSubmit = async (data: ConvenioFormValues) => {
         if (!convenio) return
-        setIsLoading(true)
-        try {
-            // Las configuraciones van a nivel raíz
-            const configuracionesGlobal = rutas.flatMap(r => r.configuraciones || []).filter(Boolean)
-            const rutasSinConfig = tipoAlcance === "Rutas Especificas"
-                ? rutas.map(({ configuraciones: _, ...r }) => r)
-                : null
-
-            await ConveniosService.updateConvenio(convenio.id, {
-                nombre: data.nombre,
-                empresa_id: data.empresa_id,
-                status: data.status,
-                // tipo_consulta no se envía en actualización
-                codigo: data.codigo || null,
-                api_consulta_id: data.api_consulta_id,
-                tipo_descuento: data.tipo_descuento as TipoDescuento | undefined,
-                valor_descuento: data.valor_descuento,
-                tipo_alcance: data.tipo_alcance as TipoAlcance,
-                tope_monto_descuento: data.tope_monto_descuento,
-                tope_cantidad_tickets: data.tope_cantidad_tickets,
-                limitar_por_stock: data.limitar_por_stock,
-                limitar_por_monto: data.limitar_por_monto,
-                beneficio: data.beneficio,
-                imagenes: data.imagenes?.filter(img => img.trim() !== "") || [],
-                fecha_inicio: data.fecha_inicio || null,
-                fecha_termino: data.fecha_termino || null,
-                rutas: rutasSinConfig,
-                configuraciones: (configuracionesGlobal || []).slice(0, 1),
-            })
-            toast.success("Convenio actualizado correctamente")
+        const success = await unifiedSave(convenio.id, data, () => {
             onSuccess?.()
             onOpenChange(false)
-        } catch (error) {
-            console.error("Error updating convenio:", error)
-            toast.error("No se pudo actualizar el convenio")
-        } finally {
-            setIsLoading(false)
-        }
+        })
     }
 
     return (
@@ -531,7 +511,10 @@ export default function UpdateConvenioModal({
                                     <Form.FormLabel>{getValorDescuentoLabel(tipoDescuento)}</Form.FormLabel>
                                     <Form.FormControl>
                                         <Input type="number" placeholder="Ej: 15" value={field.value ?? ""}
-                                            onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))} />
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                field.onChange(val === "" ? "" : Number(val));
+                                            }} />
                                     </Form.FormControl>
                                     <Form.FormMessage />
                                 </Form.FormItem>
@@ -549,11 +532,48 @@ export default function UpdateConvenioModal({
                                         <SelectItem value="Rutas Especificas">Rutas Específicas</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <Form.FormMessage />
-                            </Form.FormItem>
-                        )} />
+                        <Form.FormMessage />
+                    </Form.FormItem>
+                )} />
 
-                        {/* Rutas (condicional) */}
+                {/* Configuración Global (Solo si es Global) */}
+                {tipoAlcance === "Global" && (
+                    <div className="space-y-3 p-4 border rounded-md bg-amber-50/10 border-amber-200/50">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-sm font-semibold">Configuración de Tarifa Global</Label>
+                        </div>
+                        <Form.FormField
+                            control={form.control}
+                            name="configuraciones"
+                            render={({ field }) => {
+                                const configs = field.value || []
+                                if (configs.length === 0) {
+                                    return (
+                                    <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full border-dashed"
+                                            onClick={() => field.onChange([{ tipo_viaje: "Solo Ida", tipo_asiento: "Semi Cama", precio_solo_ida: 0, precio_ida_vuelta: 0, max_pasajes: 1 }])}
+                                        >
+                                            <Icon.PlusIcon className="h-4 w-4 mr-2" />
+                                            Habilitar Configuración de Tarifa
+                                        </Button>
+                                    )
+                                }
+                                return (
+                                    <RutaConfiguracionForm
+                                        config={configs[0]}
+                                        onUpdate={(newConfig) => field.onChange([newConfig])}
+                                        onRemove={() => field.onChange([])}
+                                    />
+                                )
+                            }}
+                        />
+                    </div>
+                )}
+
+                {/* Rutas (condicional) */}
                         {tipoAlcance === "Rutas Especificas" && (
                             <div className="space-y-4 border rounded-md p-4">
                                 <div className="flex items-center justify-between">
@@ -707,7 +727,10 @@ export default function UpdateConvenioModal({
                                     <Form.FormLabel>Tope cantidad tickets</Form.FormLabel>
                                     <Form.FormControl>
                                         <Input type="number" placeholder="Ej: 50" value={field.value ?? ""}
-                                            onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))} />
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                field.onChange(val === "" ? "" : Number(val));
+                                            }} />
                                     </Form.FormControl>
                                     <Form.FormMessage />
                                 </Form.FormItem>
@@ -736,7 +759,10 @@ export default function UpdateConvenioModal({
                                     <Form.FormLabel>Tope monto ventas</Form.FormLabel>
                                     <Form.FormControl>
                                         <Input type="number" placeholder="Ej: 1000000" value={field.value ?? ""}
-                                            onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))} />
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                field.onChange(val === "" ? "" : Number(val));
+                                            }} />
                                     </Form.FormControl>
                                     <Form.FormMessage />
                                 </Form.FormItem>

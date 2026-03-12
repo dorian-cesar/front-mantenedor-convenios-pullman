@@ -20,17 +20,26 @@ import { EmpresasService, type Empresa } from "@/services/empresa.service"
 import { ApisService, type Api } from "@/services/api.service"
 import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
-import { cn } from "@/lib/utils"
-import { exportToCSV } from "@/utils/exportCSV"
-import { exportToExcel } from "@/utils/exportXLSX"
 import { AuthService, CurrentUser } from "@/services/auth.service"
 import { formatDateOnly, formatNumber } from "@/utils/helpers"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import * as Empty from "@/components/ui/empty"
+import { exportToCSV } from "@/utils/exportCSV"
+import { exportToExcel } from "@/utils/exportXLSX"
+import { cn } from "@/lib/utils"
+import { ConvenioProvider } from "@/components/providers/convenio-provider"
 
-export default function ConveniosPage() {
+export default function ConveniosPageWrapper() {
+    return (
+        <ConvenioProvider>
+            <ConveniosPage />
+        </ConvenioProvider>
+    )
+}
+
+function ConveniosPage() {
     const [searchValue, setSearchValue] = useState("")
     const [convenios, setConvenios] = useState<Convenio[]>([])
     const [empresas, setEmpresas] = useState<Empresa[]>([])

@@ -188,12 +188,14 @@ function RutaConfiguracionForm({
                         value={config.precio_solo_ida ?? ""}
                         onChange={(e) => onUpdate({ ...config, precio_solo_ida: e.target.value === "" ? undefined : Number(e.target.value.replace(/[^0-9.]/g, "")) })} />
                 </div>
-                <div>
-                    <Label className="text-xs">Precio Ida y Vuelta</Label>
-                    <Input className="h-8 text-xs" type="number" placeholder="0"
-                        value={config.precio_ida_vuelta ?? ""}
-                        onChange={(e) => onUpdate({ ...config, precio_ida_vuelta: e.target.value === "" ? undefined : Number(e.target.value.replace(/[^0-9.]/g, "")) })} />
-                </div>
+                {config.tipo_viaje === "Ida y Vuelta" && (
+                    <div>
+                        <Label className="text-xs">Precio Ida y Vuelta</Label>
+                        <Input className="h-8 text-xs" type="number" placeholder="0"
+                            value={config.precio_ida_vuelta ?? ""}
+                            onChange={(e) => onUpdate({ ...config, precio_ida_vuelta: e.target.value === "" ? undefined : Number(e.target.value.replace(/[^0-9.]/g, "")) })} />
+                    </div>
+                )}
                 <div>
                     <Label className="text-xs">Máx. pasajes</Label>
                     <Input className="h-8 text-xs" type="number" placeholder="0"

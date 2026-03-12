@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import * as Icon from "lucide-react"
 import { ConveniosService, type Convenio, type Ruta, type TipoDescuento, type RutaConfiguracion } from "@/services/convenio.service"
 import { toast } from "sonner"
+import { useConvenio } from "@/components/providers/convenio-provider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
@@ -135,9 +136,19 @@ RutaItem.displayName = "RutaItem"
 // --- Componente Principal ---
 
 export default function RutasModal({ open, onOpenChange, convenio, onSuccess }: RutasModalProps) {
-    const [rutas, setRutas] = useState<Ruta[]>([])
+    const { 
+        rutas, 
+        setRutas, 
+        fetchFullConvenio: fetchFull,
+        handleSave: unifiedSave,
+        isSaving: isLoading, // Reusamos isLoading del hook
+        handleAddRuta,
+        handleRemoveRuta,
+        handleUpdateRuta,
+        normalizeStr
+    } = useConvenio()
+    
     const [cities, setCities] = useState<{ id: string, name: string }[]>([])
-    const [isLoading, setIsLoading] = useState(false)
 
     const fetchCities = useCallback(async () => {
         try {
@@ -152,109 +163,36 @@ export default function RutasModal({ open, onOpenChange, convenio, onSuccess }: 
         }
     }, [])
 
+    const [currentId, setCurrentId] = useState<number | null>(null)
+
+    const fetchFullConvenio = useCallback(async (id: number) => {
+        await fetchFull(id)
+        fetchCities()
+    }, [fetchFull, fetchCities])
+
     useEffect(() => {
         if (open && convenio) {
-            setRutas(convenio.rutas || [])
-            fetchCities()
+            if (currentId === convenio.id) return;
+            setCurrentId(convenio.id)
+            fetchFullConvenio(convenio.id)
+        } else if (!open) {
+            setCurrentId(null)
         }
-    }, [open, convenio, fetchCities])
-
-    const handleAddRuta = () => {
-        setRutas(prev => [...prev, {
-            origen_codigo: "",
-            origen_ciudad: "",
-            destino_codigo: "",
-            destino_ciudad: "",
-            configuraciones: []
-        }])
-    }
-
-    const handleRemoveRuta = useCallback((index: number) => {
-        setRutas(prev => prev.filter((_, i) => i !== index))
-    }, [])
-
-    const handleUpdateRuta = useCallback((index: number, updates: Partial<Ruta>) => {
-        setRutas(prev => prev.map((r, i) => i === index ? { ...r, ...updates } : r))
-    }, [])
+    }, [open, convenio, currentId, fetchFullConvenio])
 
     const handleSave = async () => {
-        setIsLoading(true)
-        try {
-            const invalidRutas = rutas.some(r => !r.origen_ciudad || !r.destino_ciudad)
-            if (invalidRutas) {
-                toast.error("Por favor, completa todas las ciudades en las rutas")
-                setIsLoading(false)
-                return
-            }
+        // En RutasModal, lo que queremos es enviar las rutas actuales (ya en el hook)
+        // La validación se puede hacer aquí o dejar que el hook lo intente.
+        const invalidRutas = rutas.some(r => !r.origen_ciudad || !r.destino_ciudad)
+        if (invalidRutas) {
+            toast.error("Por favor, completa todas las ciudades en las rutas")
+            return
+        }
 
-            const normalizeStr = (s: string | undefined) => {
-                if (!s) return ""
-                const map: Record<string, string> = {
-                    "SOLO_IDA": "Solo Ida", "IDA_VUELTA": "Ida y Vuelta",
-                    "SEMICAMA": "Semi Cama", "SALON_CAMA": "Salon Cama",
-                    "CAMA_PREMIUM": "Cama", "CAMA": "Cama", "EJECUTIVO": "Ejecutivo",
-                    "Solo ida": "Solo Ida", "Semi cama": "Semi Cama", "Salon cama": "Salon Cama",
-                    "Ida y vuelta": "Ida y Vuelta"
-                }
-                const upperS = s.toUpperCase().replace(/\s+/g, '_')
-                return map[upperS] || map[s] || s
-            }
-
-            const cleanConfigs = (configs?: any[]) => {
-                if (!configs) return []
-                return configs.slice(0, 1).map(c => ({
-                    tipo_viaje: normalizeStr(c.tipo_viaje),
-                    tipo_asiento: normalizeStr(c.tipo_asiento),
-                    precio_solo_ida: c.precio_solo_ida !== null && c.precio_solo_ida !== undefined ? Number(c.precio_solo_ida) : undefined,
-                    precio_ida_vuelta: c.precio_ida_vuelta !== null && c.precio_ida_vuelta !== undefined ? Number(c.precio_ida_vuelta) : undefined,
-                    max_pasajes: c.max_pasajes !== null && c.max_pasajes !== undefined ? Number(c.max_pasajes) : undefined
-                }))
-            }
-
-            const rutasLimpias = rutas.map(r => ({
-                origen_codigo: r.origen_codigo ? String(r.origen_codigo) : "",
-                origen_ciudad: r.origen_ciudad || "",
-                destino_codigo: r.destino_codigo ? String(r.destino_codigo) : "",
-                destino_ciudad: r.destino_ciudad || "",
-                configuraciones: cleanConfigs(r.configuraciones)
-            })).filter(r => r.origen_codigo && r.destino_codigo)
-
-            const configsGlobalesLimpias = cleanConfigs(convenio.configuraciones)
-
-            const empresaId = typeof convenio.empresa === 'object' && convenio.empresa !== null
-                ? convenio.empresa.id
-                : (typeof convenio.empresa_id === 'number' ? convenio.empresa_id : null);
-
-            await ConveniosService.updateConvenio(convenio.id, {
-                nombre: convenio.nombre,
-                status: convenio.status,
-                empresa_id: empresaId,
-                tipo_alcance: rutasLimpias.length > 0 ? "Rutas Especificas" : "Global",
-                rutas: rutasLimpias,
-                configuraciones: configsGlobalesLimpias.length > 0 ? configsGlobalesLimpias : [],
-                codigo: convenio.codigo || null,
-                api_consulta_id: convenio.api_consulta_id || null,
-                tipo_descuento: (convenio.tipo_descuento as TipoDescuento) || null,
-                valor_descuento: convenio.valor_descuento !== null && convenio.valor_descuento !== undefined ? Number(convenio.valor_descuento) : null,
-                tope_monto_descuento: convenio.tope_monto_descuento !== null && convenio.tope_monto_descuento !== undefined ? Number(convenio.tope_monto_descuento) : null,
-                tope_cantidad_tickets: convenio.tope_cantidad_tickets !== null && convenio.tope_cantidad_tickets !== undefined ? Number(convenio.tope_cantidad_tickets) : null,
-                limitar_por_stock: convenio.limitar_por_stock ?? null,
-                limitar_por_monto: convenio.limitar_por_monto ?? null,
-                beneficio: !!convenio.beneficio,
-                imagenes: convenio.imagenes || [],
-                fecha_inicio: convenio.fecha_inicio || null,
-                fecha_termino: convenio.fecha_termino || null,
-            })
-
-            toast.success("Trayectos actualizados correctamente")
+        const success = await unifiedSave(convenio.id, {}, () => {
             onSuccess?.()
             onOpenChange(false)
-        } catch (error) {
-            console.error('Error updating routes:', error)
-            toast.error("Error al actualizar trayectos")
-        } finally {
-            setIsLoading(false)
-        }
+        })
     }
 
     return (
