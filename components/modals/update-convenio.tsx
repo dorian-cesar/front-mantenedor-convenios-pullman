@@ -263,7 +263,7 @@ export default function UpdateConvenioModal({
         if (!full) return
 
         const updateData = ConveniosService.mapConvenioToUpdateData(full)
-        
+
         // Update form with normalized prices and strings
         form.reset({
             ...(updateData as any),
@@ -289,7 +289,7 @@ export default function UpdateConvenioModal({
         if (convenio && open) {
             // Guard para evitar resets infinitos: solo cargar si el ID cambia
             if (loadedConvenioIdRef.current === convenio.id) return;
-            
+
             console.log("Modal Open - Cargando convenio:", convenio.id);
             loadedConvenioIdRef.current = convenio.id;
             fetchFullConvenio(convenio.id)
@@ -532,48 +532,48 @@ export default function UpdateConvenioModal({
                                         <SelectItem value="Rutas Especificas">Rutas Específicas</SelectItem>
                                     </SelectContent>
                                 </Select>
-                        <Form.FormMessage />
-                    </Form.FormItem>
-                )} />
+                                <Form.FormMessage />
+                            </Form.FormItem>
+                        )} />
 
-                {/* Configuración Global (Solo si es Global) */}
-                {tipoAlcance === "Global" && (
-                    <div className="space-y-3 p-4 border rounded-md bg-amber-50/10 border-amber-200/50">
-                        <div className="flex items-center justify-between">
-                            <Label className="text-sm font-semibold">Configuración de Tarifa Global</Label>
-                        </div>
-                        <Form.FormField
-                            control={form.control}
-                            name="configuraciones"
-                            render={({ field }) => {
-                                const configs = field.value || []
-                                if (configs.length === 0) {
-                                    return (
-                                    <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            className="w-full border-dashed"
-                                            onClick={() => field.onChange([{ tipo_viaje: "Solo Ida", tipo_asiento: "Semi Cama", precio_solo_ida: 0, precio_ida_vuelta: 0, max_pasajes: 1 }])}
-                                        >
-                                            <Icon.PlusIcon className="h-4 w-4 mr-2" />
-                                            Habilitar Configuración de Tarifa
-                                        </Button>
-                                    )
-                                }
-                                return (
-                                    <RutaConfiguracionForm
-                                        config={configs[0]}
-                                        onUpdate={(newConfig) => field.onChange([newConfig])}
-                                        onRemove={() => field.onChange([])}
-                                    />
-                                )
-                            }}
-                        />
-                    </div>
-                )}
+                        {/* Configuración Global (Solo si es Global) */}
+                        {tipoAlcance === "Global" && (
+                            <div className="space-y-3 p-4 border rounded-md bg-amber-50/10 border-amber-200/50">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-sm font-semibold">Configuración de Tarifa Global</Label>
+                                </div>
+                                <Form.FormField
+                                    control={form.control}
+                                    name="configuraciones"
+                                    render={({ field }) => {
+                                        const configs = field.value || []
+                                        if (configs.length === 0) {
+                                            return (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="w-full border-dashed"
+                                                    onClick={() => field.onChange([{ tipo_viaje: "Solo Ida", tipo_asiento: "Semi Cama", precio_solo_ida: 0, precio_ida_vuelta: 0, max_pasajes: 1 }])}
+                                                >
+                                                    <Icon.PlusIcon className="h-4 w-4 mr-2" />
+                                                    Habilitar Configuración de Tarifa
+                                                </Button>
+                                            )
+                                        }
+                                        return (
+                                            <RutaConfiguracionForm
+                                                config={configs[0]}
+                                                onUpdate={(newConfig) => field.onChange([newConfig])}
+                                                onRemove={() => field.onChange([])}
+                                            />
+                                        )
+                                    }}
+                                />
+                            </div>
+                        )}
 
-                {/* Rutas (condicional) */}
+                        {/* Rutas (condicional) */}
                         {tipoAlcance === "Rutas Especificas" && (
                             <div className="space-y-4 border rounded-md p-4">
                                 <div className="flex items-center justify-between">

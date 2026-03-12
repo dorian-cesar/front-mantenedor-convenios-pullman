@@ -50,8 +50,6 @@ export default function AdultosMayoresPage() {
             const params: GetAdultosMayoresParams = {
                 page: pagination.page,
                 limit: pagination.limit,
-                sortBy: 'id',
-                order: 'DESC',
             }
 
             if (debouncedSearch.trim()) {
@@ -59,15 +57,17 @@ export default function AdultosMayoresPage() {
             }
 
             const response = await AdultosMayoresService.getAdultosMayores(params)
+            
+            const rows = response?.rows || (response as any)?.data || (Array.isArray(response) ? response : []);
 
-            setAdultosMayores(response.rows)
+            setAdultosMayores(rows ?? [])
 
             setPagination(prev => ({
                 ...prev,
-                total: response.totalItems,
-                totalPages: response.totalPages || 1,
+                total: response.totalItems || (response as any).total || rows.length,
+                totalPages: response.totalPages || (response as any).lastPage || 1,
                 hasPrevPage: (response.currentPage || 1) > 1,
-                hasNextPage: (response.currentPage || 1) < (response.totalPages || 1)
+                hasNextPage: (response.currentPage || 1) < (response.totalPages || (response as any).lastPage || 1)
             }))
         } catch (error) {
             console.error('Error fetching adultos mayores:', error)
@@ -169,8 +169,6 @@ export default function AdultosMayoresPage() {
             toast.loading("Preparando exportación...", { id: "export" })
 
             const params: GetAdultosMayoresParams = {
-                sortBy: "id",
-                order: "DESC",
             }
 
             if (debouncedSearch.trim()) {
@@ -178,13 +176,15 @@ export default function AdultosMayoresPage() {
             }
 
             const response = await AdultosMayoresService.getAdultosMayores(params)
+            
+            const rows = response.rows || (response as any).data || (Array.isArray(response) ? response : []);
 
-            if (!response.rows.length) {
+            if (!rows.length) {
                 toast.error("No hay datos para exportar", { id: "export" })
                 return
             }
 
-            const formattedData = response.rows.map(am => ({
+            const formattedData = rows.map(am => ({
                 ID: am.id,
                 Nombre: am.nombre,
                 RUT: formatRut(am.rut),
@@ -279,7 +279,7 @@ export default function AdultosMayoresPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : adultosMayores.length === 0 ? (
+                        ) : adultosMayores?.length === 0 ? (
                             <Table.TableRow>
                                 <Table.TableCell colSpan={7} className="text-center py-8">
                                     No se encontraron adultos mayores

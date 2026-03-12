@@ -50,8 +50,6 @@ export default function EstudiantesPage() {
             const params: GetEstudiantesParams = {
                 page: pagination.page,
                 limit: pagination.limit,
-                sortBy: 'id',
-                order: 'DESC',
             }
 
             if (debouncedSearch.trim()) {
@@ -59,15 +57,17 @@ export default function EstudiantesPage() {
             }
 
             const response = await EstudiantesService.getEstudiantes(params)
+            
+            const rows = response?.rows || (response as any)?.data || (Array.isArray(response) ? response : []);
 
-            setEstudiantes(response.rows)
+            setEstudiantes(rows ?? [])
 
             setPagination(prev => ({
                 ...prev,
-                total: response.totalItems,
-                totalPages: response.totalPages || 1,
+                total: response.totalItems || (response as any).total || rows.length,
+                totalPages: response.totalPages || (response as any).lastPage || 1,
                 hasPrevPage: (response.currentPage || 1) > 1,
-                hasNextPage: (response.currentPage || 1) < (response.totalPages || 1)
+                hasNextPage: (response.currentPage || 1) < (response.totalPages || (response as any).lastPage || 1)
             }))
         } catch (error) {
             console.error('Error fetching estudiantes:', error)
@@ -172,8 +172,6 @@ export default function EstudiantesPage() {
             toast.loading("Preparando exportación...", { id: "export" })
 
             const params: GetEstudiantesParams = {
-                sortBy: "id",
-                order: "DESC",
             }
 
             if (debouncedSearch.trim()) {
@@ -181,13 +179,15 @@ export default function EstudiantesPage() {
             }
 
             const response = await EstudiantesService.getEstudiantes(params)
+            
+            const rows = response.rows || (response as any).data || (Array.isArray(response) ? response : []);
 
-            if (!response.rows.length) {
+            if (!rows.length) {
                 toast.error("No hay datos para exportar", { id: "export" })
                 return
             }
 
-            const formattedData = response.rows.map(est => ({
+            const formattedData = rows.map(est => ({
                 ID: est.id,
                 Nombre: est.nombre,
                 RUT: formatRut(est.rut),
@@ -282,7 +282,7 @@ export default function EstudiantesPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : estudiantes.length === 0 ? (
+                        ) : estudiantes?.length === 0 ? (
                             <Table.TableRow>
                                 <Table.TableCell colSpan={7} className="text-center py-8">
                                     No se encontraron estudiantes

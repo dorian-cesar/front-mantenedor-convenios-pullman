@@ -61,7 +61,8 @@ export interface RechazarUsuarioFrecuenteData {
 
 export class UsuariosFrecuentesService {
     static async getUsuariosFrecuentes(params?: GetUsuariosFrecuentesParams): Promise<UsuariosFrecuentesResponse> {
-        const response = await api.get<UsuariosFrecuentesResponse>('/pasajeros-frecuentes', { params });
+        const queryParams = { ...params, empresa_id: 80 };
+        const response = await api.get<UsuariosFrecuentesResponse>('/beneficiarios', { params: queryParams });
         return response.data;
     }
 

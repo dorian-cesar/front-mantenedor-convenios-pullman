@@ -50,8 +50,6 @@ export default function UsuariosFrecuentesPage() {
             const params: GetUsuariosFrecuentesParams = {
                 page: pagination.page,
                 limit: pagination.limit,
-                sortBy: 'id',
-                order: 'DESC',
             }
 
             if (debouncedSearch.trim()) {
@@ -59,15 +57,17 @@ export default function UsuariosFrecuentesPage() {
             }
 
             const response = await UsuariosFrecuentesService.getUsuariosFrecuentes(params)
+            
+            const rows = response?.rows || (response as any)?.data || (Array.isArray(response) ? response : []);
 
-            setUsuariosFrecuentes(response.rows)
+            setUsuariosFrecuentes(rows ?? [])
 
             setPagination(prev => ({
                 ...prev,
-                total: response.totalItems,
-                totalPages: response.totalPages || 1,
+                total: response.totalItems || (response as any).total || rows.length,
+                totalPages: response.totalPages || (response as any).lastPage || 1,
                 hasPrevPage: (response.currentPage || 1) > 1,
-                hasNextPage: (response.currentPage || 1) < (response.totalPages || 1)
+                hasNextPage: (response.currentPage || 1) < (response.totalPages || (response as any).lastPage || 1)
             }))
         } catch (error) {
             console.error('Error fetching usuarios frecuentes:', error)
@@ -172,8 +172,6 @@ export default function UsuariosFrecuentesPage() {
             toast.loading("Preparando exportación...", { id: "export" })
 
             const params: GetUsuariosFrecuentesParams = {
-                sortBy: "id",
-                order: "DESC",
             }
 
             if (debouncedSearch.trim()) {
@@ -181,13 +179,15 @@ export default function UsuariosFrecuentesPage() {
             }
 
             const response = await UsuariosFrecuentesService.getUsuariosFrecuentes(params)
+            
+            const rows = response.rows || (response as any).data || (Array.isArray(response) ? response : []);
 
-            if (!response.rows.length) {
+            if (!rows.length) {
                 toast.error("No hay datos para exportar", { id: "export" })
                 return
             }
 
-            const formattedData = response.rows.map(uf => ({
+            const formattedData = rows.map(uf => ({
                 ID: uf.id,
                 Nombre: uf.nombre,
                 RUT: formatRut(uf.rut),
@@ -282,7 +282,7 @@ export default function UsuariosFrecuentesPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : usuariosFrecuentes.length === 0 ? (
+                        ) : usuariosFrecuentes?.length === 0 ? (
                             <Table.TableRow>
                                 <Table.TableCell colSpan={10} className="text-center py-8">
                                     No se encontraron usuarios frecuentes

@@ -11,7 +11,7 @@ export function useConvenioForm() {
         setIsLoading(true)
         try {
             const full = await ConveniosService.getConvenioById(id)
-            
+
             // Normalize global configurations
             const normalizedRootConfigs = (full.configuraciones || []).map(c => ({
                 ...c,
@@ -23,7 +23,7 @@ export function useConvenioForm() {
             // Process and rescue routes
             const processedRutas = (full.rutas || []).map(r => {
                 let configs = r.configuraciones || []
-                
+
                 // Rescue logic: If route has no config but convenio has root configs
                 if (configs.length === 0 && normalizedRootConfigs.length > 0) {
                     configs = normalizedRootConfigs
@@ -38,7 +38,7 @@ export function useConvenioForm() {
 
                 return { ...r, configuraciones: configs }
             })
-            
+
             setRutas(processedRutas)
             return full
         } catch (error) {
@@ -53,7 +53,7 @@ export function useConvenioForm() {
     const handleAddRuta = useCallback(() => {
         // Use global configs as a base for new routes
         const initialConfigs = configuraciones.length > 0 ? configuraciones : []
-        
+
         setRutas(prev => [...prev, {
             origen_codigo: "",
             origen_ciudad: "",
@@ -72,8 +72,8 @@ export function useConvenioForm() {
     }, [])
 
     const handleAddConfigToRuta = useCallback((rutaIndex: number) => {
-        const defaultConfig = configuraciones.length > 0 
-            ? configuraciones[0] 
+        const defaultConfig = configuraciones.length > 0
+            ? configuraciones[0]
             : { tipo_viaje: "Solo Ida", tipo_asiento: "Semi Cama", precio_solo_ida: 0, precio_ida_vuelta: 0, max_pasajes: 1 }
 
         setRutas(prev => {
@@ -137,6 +137,7 @@ export function useConvenioForm() {
             const finalPayload = {
                 ...basePayload,
                 ...data, // Sobrescribir con data específica si viene (ej. del Form)
+                empresa_id: data?.empresa_id !== undefined ? data.empresa_id : basePayload.empresa_id,
                 rutas: cleanRutas,
                 configuraciones: globalConfigs.slice(0, 1),
             }
