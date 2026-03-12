@@ -35,8 +35,20 @@ export async function GET(request: Request) {
             cache: "no-cache",
         });
 
+        if (!res.ok) {
+            console.error(`KUPOS API error: ${res.status} ${res.statusText}`);
+            return NextResponse.json(
+                { error: "Error en la respuesta de KUPOS" },
+                { status: res.status === 401 ? 401 : 502 },
+            );
+        }
+
         const data = await res.json();
-        const [, ...rows] = data.result;
+        if (!data || !data.result) {
+            return NextResponse.json({ cities: [] });
+        }
+
+        const [, ...rows] = data.result || [];
 
         let cities: City[] = rows.map((row: any[]) => ({
             id: row[0],

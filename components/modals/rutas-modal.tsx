@@ -4,11 +4,24 @@ import { useState, useEffect, useCallback, memo } from "react"
 import * as Dialog from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import * as Icon from "lucide-react"
-import { ConveniosService, type Convenio, type Ruta } from "@/services/convenio.service"
+import { ConveniosService, type Convenio, type Ruta, type TipoDescuento, type RutaConfiguracion } from "@/services/convenio.service"
 import { toast } from "sonner"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command"
 
 interface RutasModalProps {
     open: boolean
@@ -38,44 +51,80 @@ const RutaItem = memo(({ ruta, cities, onRemove, onUpdate }: RutaItemProps) => {
                 <Icon.Trash2Icon className="h-4.5 w-4.5" />
             </Button>
 
-            <div className="grid grid-cols-2 gap-6 mr-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mr-10">
                 <div className="space-y-2">
-                    <Label className="text-gray-600 font-medium">Origen</Label>
-                    <Select
-                        value={ruta.origen_ciudad}
-                        onValueChange={(val) => {
-                            const city = cities.find(c => c.name === val)
-                            onUpdate({ origen_ciudad: val, origen_codigo: city ? String(city.id) : "" })
-                        }}
-                    >
-                        <SelectTrigger className="bg-gray-50/50">
-                            <SelectValue placeholder="Ciudad Origen" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {[...new Map(cities.map(c => [c.name, c])).values()].map(c => (
-                                <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <Label className="text-gray-600 font-medium text-xs">Origen</Label>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                role="combobox"
+                                className={cn("w-full h-10 text-sm justify-between px-3 bg-gray-50/50", !ruta.origen_ciudad && "text-muted-foreground")}
+                            >
+                                {ruta.origen_ciudad || "Seleccionar origen"}
+                                <Icon.ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0" align="start">
+                            <Command>
+                                <CommandInput placeholder="Buscar ciudad..." className="h-9" />
+                                <CommandList>
+                                    <CommandEmpty>No se encontraron ciudades.</CommandEmpty>
+                                    <CommandGroup>
+                                        {cities.map((city) => (
+                                            <CommandItem
+                                                key={city.id}
+                                                value={city.name}
+                                                onSelect={() => {
+                                                    onUpdate({ origen_ciudad: city.name, origen_codigo: String(city.id) })
+                                                }}
+                                            >
+                                                <Icon.CheckIcon className={cn("mr-2 h-4 w-4", ruta.origen_ciudad === city.name ? "opacity-100" : "opacity-0")} />
+                                                {city.name}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
                 </div>
                 <div className="space-y-2">
-                    <Label className="text-gray-600 font-medium">Destino</Label>
-                    <Select
-                        value={ruta.destino_ciudad}
-                        onValueChange={(val) => {
-                            const city = cities.find(c => c.name === val)
-                            onUpdate({ destino_ciudad: val, destino_codigo: city ? String(city.id) : "" })
-                        }}
-                    >
-                        <SelectTrigger className="bg-gray-50/50">
-                            <SelectValue placeholder="Ciudad Destino" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {[...new Map(cities.map(c => [c.name, c])).values()].map(c => (
-                                <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <Label className="text-gray-600 font-medium text-xs">Destino</Label>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                role="combobox"
+                                className={cn("w-full h-10 text-sm justify-between px-3 bg-gray-50/50", !ruta.destino_ciudad && "text-muted-foreground")}
+                            >
+                                {ruta.destino_ciudad || "Seleccionar destino"}
+                                <Icon.ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0" align="start">
+                            <Command>
+                                <CommandInput placeholder="Buscar ciudad..." className="h-9" />
+                                <CommandList>
+                                    <CommandEmpty>No se encontraron ciudades.</CommandEmpty>
+                                    <CommandGroup>
+                                        {cities.filter(c => c.name !== ruta.origen_ciudad).map((city) => (
+                                            <CommandItem
+                                                key={city.id}
+                                                value={city.name}
+                                                onSelect={() => {
+                                                    onUpdate({ destino_ciudad: city.name, destino_codigo: String(city.id) })
+                                                }}
+                                            >
+                                                <Icon.CheckIcon className={cn("mr-2 h-4 w-4", ruta.destino_ciudad === city.name ? "opacity-100" : "opacity-0")} />
+                                                {city.name}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
                 </div>
             </div>
         </div>
@@ -138,44 +187,57 @@ export default function RutasModal({ open, onOpenChange, convenio, onSuccess }: 
                 return
             }
 
-            // Mapeamos explícitamente para asegurar que los campos son correctos y evitar "undefined" como string
-            const rutasLimpias = rutas.map(r => ({
-                origen_codigo: r.origen_codigo ? String(r.origen_codigo) : "",
-                origen_ciudad: r.origen_ciudad || "",
-                destino_codigo: r.destino_codigo ? String(r.destino_codigo) : "",
-                destino_ciudad: r.destino_ciudad || ""
-            })).filter(r => r.origen_codigo && r.destino_codigo)
-
-            const normalizeStr = (s: string) => {
-                if (!s) return s
+            const normalizeStr = (s: string | undefined) => {
+                if (!s) return ""
                 const map: Record<string, string> = {
                     "SOLO_IDA": "Solo Ida", "IDA_VUELTA": "Ida y Vuelta",
                     "SEMICAMA": "Semi Cama", "SALON_CAMA": "Salon Cama",
                     "CAMA_PREMIUM": "Cama", "CAMA": "Cama", "EJECUTIVO": "Ejecutivo",
-                    "Solo ida": "Solo Ida", "Semi cama": "Semi Cama", "Salon cama": "Salon Cama"
+                    "Solo ida": "Solo Ida", "Semi cama": "Semi Cama", "Salon cama": "Salon Cama",
+                    "Ida y vuelta": "Ida y Vuelta"
                 }
-                return map[s] || map[s.toUpperCase()] || s
+                const upperS = s.toUpperCase().replace(/\s+/g, '_')
+                return map[upperS] || map[s] || s
             }
 
-            const configsLimpias = (convenio.configuraciones || []).map(c => ({
-                ...c,
-                tipo_viaje: normalizeStr(c.tipo_viaje),
-                tipo_asiento: normalizeStr(c.tipo_asiento)
-            }))
+            const cleanConfigs = (configs?: any[]) => {
+                if (!configs) return []
+                return configs.slice(0, 1).map(c => ({
+                    tipo_viaje: normalizeStr(c.tipo_viaje),
+                    tipo_asiento: normalizeStr(c.tipo_asiento),
+                    precio_solo_ida: c.precio_solo_ida !== null && c.precio_solo_ida !== undefined ? Number(c.precio_solo_ida) : undefined,
+                    precio_ida_vuelta: c.precio_ida_vuelta !== null && c.precio_ida_vuelta !== undefined ? Number(c.precio_ida_vuelta) : undefined,
+                    max_pasajes: c.max_pasajes !== null && c.max_pasajes !== undefined ? Number(c.max_pasajes) : undefined
+                }))
+            }
+
+            const rutasLimpias = rutas.map(r => ({
+                origen_codigo: r.origen_codigo ? String(r.origen_codigo) : "",
+                origen_ciudad: r.origen_ciudad || "",
+                destino_codigo: r.destino_codigo ? String(r.destino_codigo) : "",
+                destino_ciudad: r.destino_ciudad || "",
+                configuraciones: cleanConfigs(r.configuraciones)
+            })).filter(r => r.origen_codigo && r.destino_codigo)
+
+            const configsGlobalesLimpias = cleanConfigs(convenio.configuraciones)
+
+            const empresaId = typeof convenio.empresa === 'object' && convenio.empresa !== null
+                ? convenio.empresa.id
+                : (typeof convenio.empresa_id === 'number' ? convenio.empresa_id : null);
 
             await ConveniosService.updateConvenio(convenio.id, {
                 nombre: convenio.nombre,
                 status: convenio.status,
-                empresa_id: convenio.empresa_id || (convenio.empresa?.id) || null,
+                empresa_id: empresaId,
                 tipo_alcance: rutasLimpias.length > 0 ? "Rutas Especificas" : "Global",
-                rutas: rutasLimpias.length > 0 ? rutasLimpias : [],
-                configuraciones: configsLimpias.length > 0 ? configsLimpias : [],
+                rutas: rutasLimpias,
+                configuraciones: configsGlobalesLimpias.length > 0 ? configsGlobalesLimpias : [],
                 codigo: convenio.codigo || null,
                 api_consulta_id: convenio.api_consulta_id || null,
-                tipo_descuento: convenio.tipo_descuento || null,
-                valor_descuento: convenio.valor_descuento ?? null,
-                tope_monto_descuento: convenio.tope_monto_descuento || null,
-                tope_cantidad_tickets: convenio.tope_cantidad_tickets || null,
+                tipo_descuento: (convenio.tipo_descuento as TipoDescuento) || null,
+                valor_descuento: convenio.valor_descuento !== null && convenio.valor_descuento !== undefined ? Number(convenio.valor_descuento) : null,
+                tope_monto_descuento: convenio.tope_monto_descuento !== null && convenio.tope_monto_descuento !== undefined ? Number(convenio.tope_monto_descuento) : null,
+                tope_cantidad_tickets: convenio.tope_cantidad_tickets !== null && convenio.tope_cantidad_tickets !== undefined ? Number(convenio.tope_cantidad_tickets) : null,
                 limitar_por_stock: convenio.limitar_por_stock ?? null,
                 limitar_por_monto: convenio.limitar_por_monto ?? null,
                 beneficio: !!convenio.beneficio,

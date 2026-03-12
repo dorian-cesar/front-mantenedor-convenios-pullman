@@ -146,19 +146,19 @@ function RutaConfiguracionForm({
                     <Label className="text-xs">Precio Solo Ida</Label>
                     <Input className="h-8 text-xs" type="number" placeholder="0"
                         value={config.precio_solo_ida ?? ""}
-                        onChange={(e) => onUpdate({ ...config, precio_solo_ida: e.target.value ? Number(e.target.value) : undefined })} />
+                        onChange={(e) => onUpdate({ ...config, precio_solo_ida: e.target.value === "" ? undefined : Number(e.target.value.replace(/[^0-9.]/g, "")) })} />
                 </div>
                 <div>
                     <Label className="text-xs">Precio Ida y Vuelta</Label>
                     <Input className="h-8 text-xs" type="number" placeholder="0"
                         value={config.precio_ida_vuelta ?? ""}
-                        onChange={(e) => onUpdate({ ...config, precio_ida_vuelta: e.target.value ? Number(e.target.value) : undefined })} />
+                        onChange={(e) => onUpdate({ ...config, precio_ida_vuelta: e.target.value === "" ? undefined : Number(e.target.value.replace(/[^0-9.]/g, "")) })} />
                 </div>
                 <div>
                     <Label className="text-xs">Máx. pasajes</Label>
                     <Input className="h-8 text-xs" type="number" placeholder="0"
                         value={config.max_pasajes ?? ""}
-                        onChange={(e) => onUpdate({ ...config, max_pasajes: e.target.value ? Number(e.target.value) : undefined })} />
+                        onChange={(e) => onUpdate({ ...config, max_pasajes: e.target.value === "" ? undefined : Number(e.target.value.replace(/[^0-9]/g, "")) })} />
                 </div>
             </div>
         </div>
@@ -245,10 +245,10 @@ export default function UpdateConvenioModal({
                 codigo: convenio.codigo || "",
                 api_consulta_id: convenio.api_consulta_id || convenio.api_url_id || undefined,
                 tipo_descuento: (convenio.tipo_descuento as TipoDescuento) || undefined,
-                valor_descuento: convenio.valor_descuento ?? undefined,
+                valor_descuento: convenio.valor_descuento !== null && convenio.valor_descuento !== undefined ? Number(convenio.valor_descuento) : undefined,
                 tipo_alcance: (convenio.tipo_alcance as TipoAlcance) || "Global",
-                tope_monto_descuento: convenio.tope_monto_descuento ?? undefined,
-                tope_cantidad_tickets: convenio.tope_cantidad_tickets ?? undefined,
+                tope_monto_descuento: convenio.tope_monto_descuento !== null && convenio.tope_monto_descuento !== undefined ? Number(convenio.tope_monto_descuento) : undefined,
+                tope_cantidad_tickets: convenio.tope_cantidad_tickets !== null && convenio.tope_cantidad_tickets !== undefined ? Number(convenio.tope_cantidad_tickets) : undefined,
                 limitar_por_stock: convenio.limitar_por_stock ?? undefined,
                 limitar_por_monto: convenio.limitar_por_monto ?? undefined,
                 beneficio: convenio.beneficio ?? false,
@@ -322,9 +322,7 @@ export default function UpdateConvenioModal({
         setRutas(newRutas)
     }
     const handleRemoveConfigRuta = (rutaIndex: number, configIndex: number) => {
-        const newRutas = [...rutas]
-        newRutas[rutaIndex].configuraciones = (newRutas[rutaIndex].configuraciones || []).filter((_, i) => i !== configIndex)
-        setRutas(newRutas)
+        // Enforce single config rule
     }
 
     const getValorDescuentoLabel = (tipo?: string) => {
@@ -363,7 +361,7 @@ export default function UpdateConvenioModal({
                 fecha_inicio: data.fecha_inicio || null,
                 fecha_termino: data.fecha_termino || null,
                 rutas: rutasSinConfig,
-                configuraciones: configuracionesGlobal.length > 0 ? configuracionesGlobal : null,
+                configuraciones: (configuracionesGlobal || []).slice(0, 1),
             })
             toast.success("Convenio actualizado correctamente")
             onSuccess?.()
@@ -584,66 +582,104 @@ export default function UpdateConvenioModal({
                                             </Button>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {/* Origen */}
                                             <div className="space-y-1">
                                                 <Label className="text-xs">Ciudad Origen</Label>
-                                                <Select value={ruta.origen_ciudad}
-                                                    onValueChange={(val) => {
-                                                        const city = cities.find(c => c.name === val)
-                                                        handleUpdateRuta(rutaIndex, { origen_ciudad: val, origen_codigo: city ? String(city.id) : ruta.origen_codigo })
-                                                    }}>
-                                                    <SelectTrigger className="text-xs"><SelectValue placeholder="Seleccionar origen" /></SelectTrigger>
-                                                    <SelectContent>
-                                                        {cities.length > 0
-                                                            ? [...new Map(cities.map(c => [c.name, c])).values()].map((city) => (
-                                                                <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
-                                                            ))
-                                                            : ruta.origen_ciudad && (
-                                                                <SelectItem value={ruta.origen_ciudad}>{ruta.origen_ciudad}</SelectItem>
-                                                            )
-                                                        }
-                                                    </SelectContent>
-                                                </Select>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            role="combobox"
+                                                            className={cn("w-full h-8 text-xs justify-between px-3", !ruta.origen_ciudad && "text-muted-foreground")}
+                                                        >
+                                                            {ruta.origen_ciudad || "Seleccionar origen"}
+                                                            <Icon.ChevronsUpDownIcon className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-[300px] p-0" align="start">
+                                                        <Command>
+                                                            <CommandInput placeholder="Buscar ciudad..." className="h-8 text-xs" />
+                                                            <CommandList>
+                                                                <CommandEmpty>No se encontraron ciudades.</CommandEmpty>
+                                                                <CommandGroup>
+                                                                    {cities.map((city) => (
+                                                                        <CommandItem
+                                                                            key={city.id}
+                                                                            value={city.name}
+                                                                            onSelect={() => {
+                                                                                handleUpdateRuta(rutaIndex, { origen_ciudad: city.name, origen_codigo: String(city.id) })
+                                                                            }}
+                                                                            className="text-xs"
+                                                                        >
+                                                                            <Icon.CheckIcon className={cn("mr-2 h-3 w-3", ruta.origen_ciudad === city.name ? "opacity-100" : "opacity-0")} />
+                                                                            {city.name}
+                                                                        </CommandItem>
+                                                                    ))}
+                                                                </CommandGroup>
+                                                            </CommandList>
+                                                        </Command>
+                                                    </PopoverContent>
+                                                </Popover>
                                             </div>
 
+                                            {/* Destino */}
                                             <div className="space-y-1">
                                                 <Label className="text-xs">Ciudad Destino</Label>
-                                                <Select value={ruta.destino_ciudad}
-                                                    onValueChange={(val) => {
-                                                        const city = cities.find(c => c.name === val)
-                                                        handleUpdateRuta(rutaIndex, { destino_ciudad: val, destino_codigo: city ? String(city.id) : ruta.destino_codigo })
-                                                    }}>
-                                                    <SelectTrigger className="text-xs"><SelectValue placeholder="Seleccionar destino" /></SelectTrigger>
-                                                    <SelectContent>
-                                                        {cities.length > 0
-                                                            ? [...new Map(cities.filter(c => c.name !== ruta.origen_ciudad).map(c => [c.name, c])).values()].map((city) => (
-                                                                <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
-                                                            ))
-                                                            : ruta.destino_ciudad && (
-                                                                <SelectItem value={ruta.destino_ciudad}>{ruta.destino_ciudad}</SelectItem>
-                                                            )
-                                                        }
-                                                    </SelectContent>
-                                                </Select>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            role="combobox"
+                                                            className={cn("w-full h-8 text-xs justify-between px-3", !ruta.destino_ciudad && "text-muted-foreground")}
+                                                        >
+                                                            {ruta.destino_ciudad || "Seleccionar destino"}
+                                                            <Icon.ChevronsUpDownIcon className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-[300px] p-0" align="start">
+                                                        <Command>
+                                                            <CommandInput placeholder="Buscar ciudad..." className="h-8 text-xs" />
+                                                            <CommandList>
+                                                                <CommandEmpty>No se encontraron ciudades.</CommandEmpty>
+                                                                <CommandGroup>
+                                                                    {cities.filter(c => c.name !== ruta.origen_ciudad).map((city) => (
+                                                                        <CommandItem
+                                                                            key={city.id}
+                                                                            value={city.name}
+                                                                            onSelect={() => {
+                                                                                handleUpdateRuta(rutaIndex, { destino_ciudad: city.name, destino_codigo: String(city.id) })
+                                                                            }}
+                                                                            className="text-xs"
+                                                                        >
+                                                                            <Icon.CheckIcon className={cn("mr-2 h-3 w-3", ruta.destino_ciudad === city.name ? "opacity-100" : "opacity-0")} />
+                                                                            {city.name}
+                                                                        </CommandItem>
+                                                                    ))}
+                                                                </CommandGroup>
+                                                            </CommandList>
+                                                        </Command>
+                                                    </PopoverContent>
+                                                </Popover>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-2">
+                                        {(ruta.configuraciones || []).length === 0 && (
                                             <div className="flex items-center justify-between">
-                                                <Label className="text-xs font-medium text-muted-foreground">Configuraciones</Label>
+                                                <Label className="text-xs font-medium text-muted-foreground">Tarifa</Label>
                                                 <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => handleAddConfigToRuta(rutaIndex)}>
-                                                    <Icon.PlusIcon className="h-3 w-3 mr-1" />Agregar
+                                                    <Icon.PlusIcon className="h-3 w-3 mr-1" />Configurar Tarifa
                                                 </Button>
                                             </div>
-                                            {(ruta.configuraciones || []).map((config, configIndex) => (
-                                                <RutaConfiguracionForm
-                                                    key={configIndex}
-                                                    config={config}
-                                                    onUpdate={(c) => handleUpdateConfigRuta(rutaIndex, configIndex, c)}
-                                                    onRemove={() => handleRemoveConfigRuta(rutaIndex, configIndex)}
-                                                />
-                                            ))}
-                                        </div>
+                                        )}
+                                        {(ruta.configuraciones || []).slice(0, 1).map((config, configIndex) => (
+                                            <RutaConfiguracionForm
+                                                key={configIndex}
+                                                config={config}
+                                                onUpdate={(c) => handleUpdateConfigRuta(rutaIndex, configIndex, c)}
+                                                onRemove={() => handleRemoveConfigRuta(rutaIndex, configIndex)}
+                                            />
+                                        ))}
                                     </div>
                                 ))}
                             </div>

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, memo } from "react"
 import * as Dialog from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import * as Icon from "lucide-react"
-import { ConveniosService, type Convenio, type RutaConfiguracion } from "@/services/convenio.service"
+import { ConveniosService, type Convenio, type RutaConfiguracion, type Ruta, type TipoDescuento } from "@/services/convenio.service"
 import { toast } from "sonner"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -129,52 +129,38 @@ export default function PreciosModal({ open, onOpenChange, convenio, onSuccess }
     const handleSave = async () => {
         setIsLoading(true)
         try {
-            // Lógica simplificada: Enviamos solo la configuración actual
-            const config = configuraciones[0];
-            const finalConfigs: RutaConfiguracion[] = [];
-
-            if (config) {
-                // El backend a veces prefiere objetos separados por tipo_viaje
-                if (config.precio_solo_ida !== undefined && config.precio_solo_ida !== null) {
-                    finalConfigs.push({
-                        tipo_viaje: "Solo Ida",
-                        tipo_asiento: config.tipo_asiento,
-                        precio_solo_ida: Number(config.precio_solo_ida),
-                        max_pasajes: Number(config.max_pasajes) || 1
-                    });
-                }
-                // Si hay precio de ida y vuelta, agregamos la otra configuración
-                if (config.precio_ida_vuelta !== undefined && config.precio_ida_vuelta !== null && Number(config.precio_ida_vuelta) > 0) {
-                    finalConfigs.push({
-                        tipo_viaje: "Ida y Vuelta",
-                        tipo_asiento: config.tipo_asiento,
-                        precio_ida_vuelta: Number(config.precio_ida_vuelta),
-                        max_pasajes: Number(config.max_pasajes) || 1
-                    });
-                }
-            }
+            const finalConfigs = configuraciones.slice(0, 1).map(c => ({
+                tipo_viaje: c.tipo_viaje || "Solo Ida",
+                tipo_asiento: c.tipo_asiento || "Semi Cama",
+                precio_solo_ida: c.precio_solo_ida !== null && c.precio_solo_ida !== undefined ? Number(c.precio_solo_ida) : undefined,
+                precio_ida_vuelta: c.precio_ida_vuelta !== null && c.precio_ida_vuelta !== undefined ? Number(c.precio_ida_vuelta) : undefined,
+                max_pasajes: c.max_pasajes !== null && c.max_pasajes !== undefined ? Number(c.max_pasajes) : undefined
+            }))
 
             // Payload optimizado siguiendo el esquema del backend
+            const empresaId = typeof convenio.empresa === 'object' && convenio.empresa !== null
+                ? convenio.empresa.id
+                : (typeof convenio.empresa_id === 'number' ? convenio.empresa_id : null);
+
             await ConveniosService.updateConvenio(convenio.id, {
                 nombre: convenio.nombre,
                 status: convenio.status,
-                empresa_id: convenio.empresa_id || null,
-                configuraciones: finalConfigs.length > 0 ? finalConfigs : [],
-                rutas: convenio.rutas || null,
+                empresa_id: empresaId,
                 tipo_alcance: convenio.tipo_alcance || "Global",
-                // Mantenemos los campos existentes
+                configuraciones: finalConfigs,
+                rutas: convenio.rutas || [],
                 codigo: convenio.codigo || null,
-                tipo_descuento: convenio.tipo_descuento || null,
-                valor_descuento: convenio.valor_descuento ?? null,
                 api_consulta_id: convenio.api_consulta_id || null,
-                fecha_inicio: convenio.fecha_inicio || null,
-                fecha_termino: convenio.fecha_termino || null,
+                tipo_descuento: (convenio.tipo_descuento as TipoDescuento) || null,
+                valor_descuento: convenio.valor_descuento !== null && convenio.valor_descuento !== undefined ? Number(convenio.valor_descuento) : null,
+                tope_monto_descuento: convenio.tope_monto_descuento !== null && convenio.tope_monto_descuento !== undefined ? Number(convenio.tope_monto_descuento) : null,
+                tope_cantidad_tickets: convenio.tope_cantidad_tickets !== null && convenio.tope_cantidad_tickets !== undefined ? Number(convenio.tope_cantidad_tickets) : null,
                 limitar_por_stock: convenio.limitar_por_stock ?? null,
                 limitar_por_monto: convenio.limitar_por_monto ?? null,
-                tope_cantidad_tickets: convenio.tope_cantidad_tickets || null,
-                tope_monto_descuento: convenio.tope_monto_descuento || null,
                 beneficio: !!convenio.beneficio,
                 imagenes: convenio.imagenes || [],
+                fecha_inicio: convenio.fecha_inicio || null,
+                fecha_termino: convenio.fecha_termino || null,
             })
 
             toast.success("Precios actualizados correctamente")
