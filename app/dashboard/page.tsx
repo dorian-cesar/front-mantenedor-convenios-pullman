@@ -35,6 +35,7 @@ import {
     ChartTooltipContent,
     type ChartConfig,
 } from "@/components/ui/chart"
+import { formatNumber } from "@/utils/helpers"
 
 const actions = [
     { icon: Plus, label: "Nuevo proyecto", variant: "default" as const },
@@ -52,7 +53,6 @@ const selectOptions = [
     { value: "trimestral", label: "Trimestral" },
     { value: "semestral", label: "Semestral" },
     { value: "anual", label: "Anual" },
-    { value: "quinquenal", label: "Quinquenal" },
 ]
 
 const chartConfig = {
@@ -145,8 +145,7 @@ export default function DashboardPage() {
 
             <PageHeader
                 title="Dashboard"
-                description="Resumen de la actividad."
-                // actionButtons={actionButtons}
+                description="Resumen de rendimiento y actividad del sistema."
                 showRefreshButton={true}
                 onRefresh={handleRefresh}
             />
@@ -182,15 +181,6 @@ export default function DashboardPage() {
                     </Card.CardContent>
                 </Card.Card>
 
-                {/* <Card.Card className="md:col-span-3 row-span-1">
-                    <Card.CardHeader>
-                        <Card.CardTitle>Pasajeros</Card.CardTitle>
-                        <Card.CardAction><IdCard className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
-                    </Card.CardHeader>
-                    <Card.CardContent>
-                        <p>123456789</p>
-                    </Card.CardContent>
-                </Card.Card> */}
 
                 <Card.Card className="md:col-span-12 row-span-2 flex">
                     <Card.CardHeader>
@@ -290,34 +280,8 @@ export default function DashboardPage() {
                             </ChartContainer>
                         )}
                     </Card.CardContent>
-
                 </Card.Card>
-
-                {/* <Card.Card className="md:col-span-4 row-span-2">
-                    <Card.CardHeader>
-                        <Card.CardTitle className="text-card-foreground">Acciones rápidas</Card.CardTitle>
-                    </Card.CardHeader>
-                    <Card.CardContent>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {actions.map((action) => (
-                                <Button
-                                    key={action.label}
-                                    variant={action.variant}
-                                    className="h-auto flex-col gap-2 py-4"
-                                >
-                                    <action.icon className="h-5 w-5" />
-                                    <span className="text-xs font-medium">{action.label}</span>
-                                </Button>
-                            ))}
-                        </div>
-                    </Card.CardContent>
-                </Card.Card> */}
             </div>
-
-            {/* <ExportModal
-                open={openExport}
-                onOpenChange={setOpenExport}
-            /> */}
         </div>
     );
 }

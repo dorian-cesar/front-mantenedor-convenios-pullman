@@ -14,6 +14,7 @@ import AddConvenioModal from "@/components/modals/add-convenio"
 import UpdateConvenioModal from "@/components/modals/update-convenio"
 import DetailsConvenioModal from "@/components/modals/details-convenio"
 import RutasModal from "@/components/modals/rutas-modal"
+import PreciosModal from "@/components/modals/precios-modal"
 import { ConveniosService, type Convenio, type GetConveniosParams } from "@/services/convenio.service"
 import { EmpresasService, type Empresa } from "@/services/empresa.service"
 import { ApisService, type Api } from "@/services/api.service"
@@ -40,6 +41,7 @@ export default function ConveniosPage() {
     const [openUpdate, setOpenUpdate] = useState(false)
     const [openDetails, setOpenDetails] = useState(false)
     const [openRutas, setOpenRutas] = useState(false)
+    const [openPrecios, setOpenPrecios] = useState(false)
     const [selectedConvenio, setSelectedConvenio] = useState<Convenio | null>(null)
     const [selectedEmpresa, setSelectedEmpresa] = useState<number | null>(null)
     const [user, setUser] = useState<CurrentUser | null>(null)
@@ -187,6 +189,11 @@ export default function ConveniosPage() {
         setOpenRutas(true)
     }
 
+    const handleManagePrecios = (convenio: Convenio) => {
+        setSelectedConvenio(convenio)
+        setOpenPrecios(true)
+    }
+
     const handleConvenioUpdated = () => {
         fetchConvenios()
     }
@@ -322,6 +329,7 @@ export default function ConveniosPage() {
                             <Table.TableHead>Tipo Consulta</Table.TableHead>
                             <Table.TableHead>Descuento</Table.TableHead>
                             <Table.TableHead>Alcance</Table.TableHead>
+                            <Table.TableHead>Precios/Config</Table.TableHead>
                             <Table.TableHead>Beneficio</Table.TableHead>
                             <Table.TableHead>Tope Monto</Table.TableHead>
                             <Table.TableHead>Tope Tickets</Table.TableHead>
@@ -390,7 +398,22 @@ export default function ConveniosPage() {
                                             )}
                                             onClick={() => handleManageRutas(convenio)}
                                         >
-                                            {convenio.tipo_alcance === "Rutas Especificas" ? "Rutas" : "Global (Sin rutas)"}
+                                            {convenio.tipo_alcance === "Rutas Especificas" ? "Rutas" : "Global"}
+                                        </Button>
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className={cn(
+                                                "h-7 px-2 text-xs rounded-full",
+                                                (convenio.configuraciones && convenio.configuraciones.length > 0)
+                                                    ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                                                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                                            )}
+                                            onClick={() => handleManagePrecios(convenio)}
+                                        >
+                                            {(convenio.configuraciones && convenio.configuraciones.length > 0) ? "Configurado" : "Sin Config"}
                                         </Button>
                                     </Table.TableCell>
                                     <Table.TableCell>
@@ -494,6 +517,15 @@ export default function ConveniosPage() {
                 <RutasModal
                     open={openRutas}
                     onOpenChange={setOpenRutas}
+                    convenio={selectedConvenio}
+                    onSuccess={fetchConvenios}
+                />
+            )}
+
+            {selectedConvenio && (
+                <PreciosModal
+                    open={openPrecios}
+                    onOpenChange={setOpenPrecios}
                     convenio={selectedConvenio}
                     onSuccess={fetchConvenios}
                 />

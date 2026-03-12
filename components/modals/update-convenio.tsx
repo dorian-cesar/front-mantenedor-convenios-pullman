@@ -68,14 +68,14 @@ const rutaSchema = z.object({
 
 const convenioSchema = z.object({
     nombre: z.string().min(3, "Al menos 3 caracteres").max(100, "Demasiado largo"),
-    empresa_id: z.union([z.number(), z.null()]).optional(),
+    empresa_id: z.number().nullable().optional(),
     status: z.enum(["ACTIVO", "INACTIVO"]),
     tipo_consulta: z.enum(["CODIGO_DESCUENTO", "API_EXTERNA"], { message: "Seleccione un tipo" }),
     codigo: z.string().optional(),
     api_consulta_id: z.number().optional().nullable(),
     tipo_descuento: z.enum(["Porcentaje", "Monto Fijo", "Tarifa Plana"]).optional(),
     valor_descuento: z.number().min(0).optional(),
-    tipo_alcance: z.enum(["Global", "Rutas Especificas"]).default("Global"),
+    tipo_alcance: z.enum(["Global", "Rutas Especificas"]),
     tope_monto_descuento: z.number().min(1).optional(),
     tope_cantidad_tickets: z.number().min(1).optional(),
     limitar_por_stock: z.boolean().nullable().optional(),
@@ -87,15 +87,15 @@ const convenioSchema = z.object({
     rutas: z.array(rutaSchema).optional(),
 })
     .refine((data) => {
-        if (data.tipo_consulta === "CODIGO_DESCUENTO") return data.codigo && data.codigo.length >= 3
+        if (data.tipo_consulta === "CODIGO_DESCUENTO") return !!data.codigo && data.codigo.length >= 3
         return true
     }, { message: "El código debe tener al menos 3 caracteres", path: ["codigo"] })
     .refine((data) => {
-        if (data.tipo_consulta === "CODIGO_DESCUENTO") return data.codigo && /^[A-Z0-9]+$/.test(data.codigo)
+        if (data.tipo_consulta === "CODIGO_DESCUENTO") return !!data.codigo && /^[A-Z0-9]+$/.test(data.codigo)
         return true
     }, { message: "El código debe estar en mayúsculas y sin espacios", path: ["codigo"] })
     .refine((data) => {
-        if (data.tipo_consulta === "API_EXTERNA") return data.api_consulta_id && data.api_consulta_id > 0
+        if (data.tipo_consulta === "API_EXTERNA") return !!data.api_consulta_id && data.api_consulta_id > 0
         return true
     }, { message: "Debe seleccionar una API", path: ["api_consulta_id"] })
 
@@ -243,8 +243,8 @@ export default function UpdateConvenioModal({
                 status: convenio.status || "ACTIVO",
                 tipo_consulta: convenio.tipo_consulta || "CODIGO_DESCUENTO",
                 codigo: convenio.codigo || "",
-                api_consulta_id: convenio.api_consulta_id ?? undefined,
-                tipo_descuento: convenio.tipo_descuento as TipoDescuento | undefined,
+                api_consulta_id: convenio.api_consulta_id || convenio.api_url_id || undefined,
+                tipo_descuento: (convenio.tipo_descuento as TipoDescuento) || undefined,
                 valor_descuento: convenio.valor_descuento ?? undefined,
                 tipo_alcance: (convenio.tipo_alcance as TipoAlcance) || "Global",
                 tope_monto_descuento: convenio.tope_monto_descuento ?? undefined,
