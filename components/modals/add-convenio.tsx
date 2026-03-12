@@ -94,7 +94,7 @@ export const convenioSchema = z.object({
     tipo_descuento: z.enum(["Porcentaje", "Monto Fijo", "Tarifa Plana"]).optional(),
     valor_descuento: z.number().min(0, "Debe ser un valor positivo").optional(),
 
-    tipo_alcance: z.enum(["Global", "Rutas Especificas"]).default("Global"),
+    tipo_alcance: z.enum(["Global", "Rutas Especificas"]),
 
     tope_monto_descuento: z
         .number()
@@ -109,7 +109,7 @@ export const convenioSchema = z.object({
     limitar_por_stock: z.boolean().nullable().optional(),
     limitar_por_monto: z.boolean().nullable().optional(),
 
-    beneficio: z.boolean(),
+    beneficio: z.boolean().optional(),
 
     imagenes: z.array(z.string()).optional(),
 
@@ -227,7 +227,7 @@ export default function AddConvenioModal({
         defaultValues: {
             nombre: "",
             empresa_id: undefined,
-            tipo_consulta: undefined,
+            tipo_consulta: "CODIGO_DESCUENTO",
             codigo: "",
             api_consulta_id: undefined,
             tipo_descuento: undefined,
