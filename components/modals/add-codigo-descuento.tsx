@@ -21,6 +21,14 @@ import { CodigosDescuentoService } from "@/services/codigo-descuento.service"
 import { toast } from "sonner"
 import { Calendar } from "@/components/ui/calendar"
 import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command"
+import {
     Popover,
     PopoverContent,
     PopoverTrigger,
@@ -79,6 +87,7 @@ export default function AddCodigoDescuentoModal({
     const [isLoading, setIsLoading] = useState(false)
     const [convenios, setConvenios] = useState<Convenio[]>([])
     const [isLoadingConvenios, setIsLoadingConvenios] = useState(true)
+    const [openConvenioPopover, setOpenConvenioPopover] = useState(false)
 
     const form = useForm<CodigoDescuentoFormValues>({
         resolver: zodResolver(codigoDescuentoSchema),
@@ -117,6 +126,7 @@ export default function AddCodigoDescuentoModal({
     useEffect(() => {
         if (!open) {
             form.reset()
+            setOpenConvenioPopover(false)
         }
     }, [open, form])
 
@@ -172,38 +182,65 @@ export default function AddCodigoDescuentoModal({
                             control={form.control}
                             name="convenio_id"
                             render={({ field }) => (
-                                <Form.FormItem>
+                                <Form.FormItem className="flex flex-col">
                                     <Form.FormLabel>Convenio</Form.FormLabel>
-                                    <Select
-                                        onValueChange={(value) => field.onChange(Number(value))}
-                                        disabled={isLoadingConvenios}
-                                    >
-                                        <Form.FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Seleccionar convenio" />
-                                            </SelectTrigger>
-                                        </Form.FormControl>
-                                        <SelectContent>
-                                            {isLoadingConvenios ? (
-                                                <SelectItem value="loading" disabled>
-                                                    Cargando convenios...
-                                                </SelectItem>
-                                            ) : convenios.length === 0 ? (
-                                                <SelectItem value="empty" disabled>
-                                                    No hay convenios disponibles
-                                                </SelectItem>
-                                            ) : (
-                                                convenios.map((convenio, index) => (
-                                                    <SelectItem
-                                                        key={`convenio-${convenio.id}-${index}`}
-                                                        value={`${convenio.id}-${index}`}
-                                                    >
-                                                        {convenio.nombre} {convenio.empresa ? `- ${convenio.empresa.nombre}` : ""}
-                                                    </SelectItem>
-                                                ))
-                                            )}
-                                        </SelectContent>
-                                    </Select>
+                                    <Popover open={openConvenioPopover} onOpenChange={setOpenConvenioPopover}>
+                                        <PopoverTrigger asChild>
+                                            <Form.FormControl>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    disabled={isLoadingConvenios}
+                                                    className={cn(
+                                                        "w-full justify-between",
+                                                        !field.value && "text-muted-foreground"
+                                                    )}
+                                                >
+                                                    {convenioSeleccionado 
+                                                        ? `${convenioSeleccionado.nombre}${convenioSeleccionado.empresa ? ` - ${convenioSeleccionado.empresa.nombre}` : ""}`
+                                                        : "Seleccionar convenio"}
+                                                    <Icon.ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </Form.FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[500px] p-0" align="start">
+                                            <Command>
+                                                <CommandInput placeholder="Buscar convenio..." />
+                                                <CommandList>
+                                                    <CommandEmpty>
+                                                        {isLoadingConvenios ? "Cargando convenios..." : "No se encontró el convenio."}
+                                                    </CommandEmpty>
+                                                    <CommandGroup>
+                                                        {convenios.map((c) => (
+                                                            <CommandItem
+                                                                key={c.id}
+                                                                value={`${c.nombre} ${c.empresa?.nombre || ""}`}
+                                                                onSelect={() => {
+                                                                    field.onChange(c.id)
+                                                                    setOpenConvenioPopover(false)
+                                                                }}
+                                                            >
+                                                                <Icon.CheckIcon
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        c.id === field.value ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                <div>
+                                                                    <div className="font-medium">{c.nombre}</div>
+                                                                    {c.empresa && (
+                                                                        <div className="text-xs text-muted-foreground">
+                                                                            {c.empresa.nombre}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
                                     <Form.FormMessage />
                                 </Form.FormItem>
                             )}

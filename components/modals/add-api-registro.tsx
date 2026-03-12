@@ -44,7 +44,7 @@ interface AddApiRegistroModalProps {
 const schema = z.object({
     nombre: z.string().min(1, "El nombre es requerido").max(100),
     endpoint: z.string().min(1, "El endpoint es requerido").max(500),
-    empresa_id: z.number().positive("Debe seleccionar una empresa"),
+    empresa_id: z.number().nullable(),
     status: z.enum(["ACTIVO", "INACTIVO"]),
 })
 
@@ -57,7 +57,7 @@ export default function AddApiRegistroModal({ open, onOpenChange, onSuccess, emp
     const form = useForm<FormValues>({
         resolver: zodResolver(schema),
         mode: "onChange",
-        defaultValues: { nombre: "", endpoint: "", empresa_id: undefined, status: "ACTIVO" },
+        defaultValues: { nombre: "", endpoint: "", empresa_id: null, status: "ACTIVO" },
     })
 
     const empresaSeleccionadaId = form.watch("empresa_id")
@@ -119,7 +119,7 @@ export default function AddApiRegistroModal({ open, onOpenChange, onSuccess, emp
                                     <PopoverTrigger asChild>
                                         <Form.FormControl>
                                             <Button variant="outline" role="combobox" className={cn("w-full justify-between", !field.value && "text-muted-foreground")}>
-                                                {empresaSeleccionada ? empresaSeleccionada.nombre : "Seleccionar empresa"}
+                                                {empresaSeleccionada ? empresaSeleccionada.nombre : "Sin empresa"}
                                                 <Icon.ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
                                         </Form.FormControl>
@@ -130,6 +130,16 @@ export default function AddApiRegistroModal({ open, onOpenChange, onSuccess, emp
                                             <CommandList>
                                                 <CommandEmpty>No se encontró.</CommandEmpty>
                                                 <CommandGroup>
+                                                    <CommandItem
+                                                        value="Sin empresa"
+                                                        onSelect={() => {
+                                                            field.onChange(null)
+                                                            setOpenEmpresaPopover(false)
+                                                        }}
+                                                    >
+                                                        <Icon.CheckIcon className={cn("mr-2 h-4 w-4", field.value === null ? "opacity-100" : "opacity-0")} />
+                                                        Sin empresa (Público)
+                                                    </CommandItem>
                                                     {empresas.map(e => (
                                                         <CommandItem key={e.id} value={e.nombre}
                                                             onSelect={() => { field.onChange(e.id); setOpenEmpresaPopover(false) }}>

@@ -24,27 +24,44 @@ export async function GET(request: Request) {
         const apiKey = process.env.NEXT_PUBLIC_KUPOS_API_KEY_PROD;
         const URL_KUPOS = process.env.NEXT_PUBLIC_URL_KUPOS_PROD;
 
+        // Log para depuración en Netlify (aparecerá en Function Logs)
+        console.log("Kupos API Configuration:", {
+            hasUrl: !!URL_KUPOS,
+            url: URL_KUPOS,
+            hasKey: !!apiKey,
+        });
+
         if (!apiKey || !URL_KUPOS) {
+            console.error("KUPOS API environment variables are missing");
             return NextResponse.json(
-                { error: "KUPOS API no configurada" },
+                { error: "KUPOS API no configurada", details: "Faltan variables de entorno en el servidor" },
                 { status: 500 },
             );
         }
 
+        console.log(`Fetching cities from: ${URL_KUPOS}/cities.json`);
+
         const res = await fetch(`${URL_KUPOS}/cities.json?api_key=${apiKey}`, {
-            cache: "no-cache",
+            cache: "no-store", // Cambiado de no-cache por si acaso
         });
 
         if (!res.ok) {
-            console.error(`KUPOS API error: ${res.status} ${res.statusText}`);
+            const errorText = await res.text().catch(() => "No error text");
+            console.error(`KUPOS API error: ${res.status} ${res.statusText}`, errorText);
             return NextResponse.json(
-                { error: "Error en la respuesta de KUPOS" },
+                { 
+                    error: "Error en la respuesta de KUPOS", 
+                    status: res.status,
+                    statusText: res.statusText,
+                    details: errorText.substring(0, 100)
+                },
                 { status: res.status === 401 ? 401 : 502 },
             );
         }
 
         const data = await res.json();
         if (!data || !data.result) {
+            console.warn("Kupos returned empty result");
             return NextResponse.json({ cities: [] });
         }
 
@@ -70,9 +87,13 @@ export async function GET(request: Request) {
 
         return NextResponse.json({ cities });
     } catch (error) {
-        console.error("Kupos error:", error);
+        console.error("Kupos catch-all error:", error);
         return NextResponse.json(
-            { error: "Error al obtener ciudades" },
+            { 
+                error: "Error al obtener ciudades",
+                details: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack?.split('\n')[0] : null
+            },
             { status: 500 },
         );
     }

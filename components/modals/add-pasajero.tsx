@@ -6,6 +6,16 @@ import * as Form from "@/components/ui/form"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -69,6 +79,8 @@ export default function AddPasajeroModal({
     tiposPasajero,
 }: AddPasajeroModalProps) {
     const [isLoading, setIsLoading] = useState(false)
+    const [openEmpresaPopover, setOpenEmpresaPopover] = useState(false)
+    const [openConvenioPopover, setOpenConvenioPopover] = useState(false)
 
     const form = useForm<PasajeroFormValues>({
         resolver: zodResolver(pasajeroSchema),
@@ -87,9 +99,17 @@ export default function AddPasajeroModal({
         },
     })
 
+    const empresaId = form.watch("empresa_id")
+    const empresaSeleccionada = empresas.find(e => e.id === empresaId)
+
+    const convenioId = form.watch("convenio_id")
+    const convenioSeleccionado = convenios.find(c => c.id === convenioId)
+
     useEffect(() => {
         if (!open) {
             form.reset()
+            setOpenEmpresaPopover(false)
+            setOpenConvenioPopover(false)
         }
     }, [open, form])
 
@@ -99,6 +119,9 @@ export default function AddPasajeroModal({
         try {
             await PasajerosService.createPasajero({
                 ...data,
+                tipo_pasajero_id: data.tipo_pasajero_id ? Number(data.tipo_pasajero_id) : undefined,
+                empresa_id: data.empresa_id ? Number(data.empresa_id) : undefined,
+                convenio_id: data.convenio_id ? Number(data.convenio_id) : undefined,
                 nombres: data.nombres || undefined,
                 apellidos: data.apellidos || undefined,
                 correo: data.correo || undefined,
@@ -259,25 +282,53 @@ export default function AddPasajeroModal({
                                 control={form.control}
                                 name="empresa_id"
                                 render={({ field }) => (
-                                    <Form.FormItem>
+                                    <Form.FormItem className="flex flex-col">
                                         <Form.FormLabel>Empresa</Form.FormLabel>
-                                        <Select
-                                            onValueChange={(v) => field.onChange(Number(v))}
-                                            value={field.value ? String(field.value) : ""}
-                                        >
-                                            <Form.FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Seleccione empresa" />
-                                                </SelectTrigger>
-                                            </Form.FormControl>
-                                            <SelectContent>
-                                                {empresas.map((e) => (
-                                                    <SelectItem key={e.id} value={String(e.id)}>
-                                                        {e.nombre}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <Popover open={openEmpresaPopover} onOpenChange={setOpenEmpresaPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Form.FormControl>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        className={cn(
+                                                            "w-full justify-between",
+                                                            !field.value && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        {empresaSeleccionada ? empresaSeleccionada.nombre : "Seleccione empresa"}
+                                                        <Icon.ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </Form.FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[260px] p-0" align="start">
+                                                <Command>
+                                                    <CommandInput placeholder="Buscar empresa..." />
+                                                    <CommandList>
+                                                        <CommandEmpty>No se encontró.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {empresas.map((e) => (
+                                                                <CommandItem
+                                                                    key={e.id}
+                                                                    value={e.nombre}
+                                                                    onSelect={() => {
+                                                                        field.onChange(e.id)
+                                                                        setOpenEmpresaPopover(false)
+                                                                    }}
+                                                                >
+                                                                    <Icon.CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            e.id === field.value ? "opacity-100" : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {e.nombre}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
                                         <Form.FormMessage />
                                     </Form.FormItem>
                                 )}
@@ -288,25 +339,53 @@ export default function AddPasajeroModal({
                                 control={form.control}
                                 name="convenio_id"
                                 render={({ field }) => (
-                                    <Form.FormItem>
+                                    <Form.FormItem className="flex flex-col">
                                         <Form.FormLabel>Convenio</Form.FormLabel>
-                                        <Select
-                                            onValueChange={(v) => field.onChange(Number(v))}
-                                            value={field.value ? String(field.value) : ""}
-                                        >
-                                            <Form.FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Seleccione convenio" />
-                                                </SelectTrigger>
-                                            </Form.FormControl>
-                                            <SelectContent>
-                                                {convenios.map((c) => (
-                                                    <SelectItem key={c.id} value={String(c.id)}>
-                                                        {c.nombre}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <Popover open={openConvenioPopover} onOpenChange={setOpenConvenioPopover}>
+                                            <PopoverTrigger asChild>
+                                                <Form.FormControl>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        className={cn(
+                                                            "w-full justify-between",
+                                                            !field.value && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        {convenioSeleccionado ? convenioSeleccionado.nombre : "Seleccione convenio"}
+                                                        <Icon.ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </Form.FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[260px] p-0" align="start">
+                                                <Command>
+                                                    <CommandInput placeholder="Buscar convenio..." />
+                                                    <CommandList>
+                                                        <CommandEmpty>No se encontró.</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {convenios.map((c) => (
+                                                                <CommandItem
+                                                                    key={c.id}
+                                                                    value={c.nombre}
+                                                                    onSelect={() => {
+                                                                        field.onChange(c.id)
+                                                                        setOpenConvenioPopover(false)
+                                                                    }}
+                                                                >
+                                                                    <Icon.CheckIcon
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            c.id === field.value ? "opacity-100" : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    {c.nombre}
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
                                         <Form.FormMessage />
                                     </Form.FormItem>
                                 )}
