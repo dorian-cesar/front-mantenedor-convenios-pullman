@@ -77,7 +77,12 @@ function ConveniosPage() {
             }
 
             if (debouncedSearch.trim()) {
-                params.nombre = debouncedSearch.trim()
+                const isNumeric = /^\d+$/.test(debouncedSearch.trim())
+                if (isNumeric) {
+                    params.id = debouncedSearch.trim()
+                } else {
+                    params.nombre = debouncedSearch.trim()
+                }
             }
 
             if (selectedEmpresa) {

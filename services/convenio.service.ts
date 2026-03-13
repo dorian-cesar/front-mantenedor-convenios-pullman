@@ -82,6 +82,7 @@ export interface GetConveniosParams {
     order?: "ASC" | "DESC";
     status?: "ACTIVO" | "INACTIVO";
     nombre?: string;
+    id?: number | string;
     empresa_id?: number;
 }
 
