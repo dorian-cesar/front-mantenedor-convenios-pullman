@@ -80,11 +80,11 @@ export default function UpdateEstudianteModal({
         if (estudiante && open) {
             // Reset con los valores actuales del estudiante
             form.reset({
-                nombre: estudiante.nombre,
-                rut: estudiante.rut,
-                telefono: estudiante.telefono,
-                correo: estudiante.correo,
-                direccion: estudiante.direccion,
+                nombre: estudiante.nombre || "",
+                rut: estudiante.rut || "",
+                telefono: estudiante.telefono || "",
+                correo: estudiante.correo || "",
+                direccion: estudiante.direccion || "",
                 status: estudiante.status,
                 imagen_cedula_identidad: estudiante.imagen_cedula_identidad || undefined,
                 imagen_certificado_alumno_regular: estudiante.imagen_certificado_alumno_regular || undefined,

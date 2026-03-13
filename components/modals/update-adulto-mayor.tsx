@@ -76,11 +76,11 @@ export default function UpdateAdultoMayorModal({
     useEffect(() => {
         if (adultoMayor) {
             form.reset({
-                nombre: adultoMayor.nombre,
-                rut: adultoMayor.rut,
-                telefono: adultoMayor.telefono,
-                correo: adultoMayor.correo,
-                direccion: adultoMayor.direccion,
+                nombre: adultoMayor.nombre || "",
+                rut: adultoMayor.rut || "",
+                telefono: adultoMayor.telefono || "",
+                correo: adultoMayor.correo || "",
+                direccion: adultoMayor.direccion || "",
                 status: adultoMayor.status,
                 imagen_cedula_identidad: adultoMayor.imagen_cedula_identidad || "",
             })

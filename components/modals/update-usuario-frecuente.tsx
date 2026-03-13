@@ -78,11 +78,11 @@ export default function UpdateUsuarioFrecuenteModal({
     useEffect(() => {
         if (usuarioFrecuente) {
             form.reset({
-                nombre: usuarioFrecuente.nombre,
-                rut: usuarioFrecuente.rut,
-                telefono: usuarioFrecuente.telefono,
-                correo: usuarioFrecuente.correo,
-                direccion: usuarioFrecuente.direccion,
+                nombre: usuarioFrecuente.nombre || "",
+                rut: usuarioFrecuente.rut || "",
+                telefono: usuarioFrecuente.telefono || "",
+                correo: usuarioFrecuente.correo || "",
+                direccion: usuarioFrecuente.direccion || "",
                 status: usuarioFrecuente.status,
                 imagen_cedula_identidad: usuarioFrecuente.imagen_cedula_identidad || undefined,
                 imagen_certificado: usuarioFrecuente.imagen_certificado || undefined,
