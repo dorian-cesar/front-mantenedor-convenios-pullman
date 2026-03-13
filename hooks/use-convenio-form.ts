@@ -12,8 +12,9 @@ export function useConvenioForm() {
         try {
             const full = await ConveniosService.getConvenioById(id)
 
-            // Normalize global configurations
-            const normalizedRootConfigs = (full.configuraciones || []).map(c => ({
+            // Normalize global configurations - Enforce SINGLE configuration to avoid duplication
+            const rawRootConfigs = full.configuraciones || []
+            const normalizedRootConfigs = rawRootConfigs.slice(0, 1).map(c => ({
                 ...c,
                 tipo_viaje: normalizeStr(c.tipo_viaje),
                 tipo_asiento: normalizeStr(c.tipo_asiento)
@@ -28,8 +29,8 @@ export function useConvenioForm() {
                 if (configs.length === 0 && normalizedRootConfigs.length > 0) {
                     configs = normalizedRootConfigs
                 } else {
-                    // Normalize existing route configs
-                    configs = configs.map(c => ({
+                    // Normalize existing route configs - Also enforce single config per route
+                    configs = configs.slice(0, 1).map(c => ({
                         ...c,
                         tipo_viaje: normalizeStr(c.tipo_viaje),
                         tipo_asiento: normalizeStr(c.tipo_asiento)
@@ -51,9 +52,9 @@ export function useConvenioForm() {
     }, [])
 
     const handleAddRuta = useCallback(() => {
-        // Use global configs as a base for new routes
-        const initialConfigs = configuraciones.length > 0 ? configuraciones : []
-
+        // Use global configs as a base for new routes - Clone ONLY the first one to be safe
+        const initialConfigs = configuraciones.length > 0 ? [configuraciones[0]] : []
+        
         setRutas(prev => [...prev, {
             origen_codigo: "",
             origen_ciudad: "",
@@ -78,35 +79,39 @@ export function useConvenioForm() {
 
         setRutas(prev => {
             const newRutas = [...prev]
-            newRutas[rutaIndex].configuraciones = [
-                ...(newRutas[rutaIndex].configuraciones || []),
-                defaultConfig
-            ]
+            // Enforce single config per route to match global singleton rule
+            newRutas[rutaIndex].configuraciones = [defaultConfig]
             return newRutas
         })
     }, [configuraciones])
 
+    const handleUpdateGlobalConfig = useCallback((index: number, updates: Partial<RutaConfiguracion>) => {
+        // We only care about the first one (Singleton)
+        if (index > 0) return;
+
+        const updatedConfig = configuraciones[0] ? { ...configuraciones[0], ...updates } : updates as RutaConfiguracion;
+        const singleton = [updatedConfig];
+
+        // Sync Root
+        setConfiguraciones(singleton);
+        
+        // Sync All Routes visually
+        setRutas(prev => prev.map(r => ({ ...r, configuraciones: singleton })));
+    }, [configuraciones]);
+
     const handleUpdateRutaConfig = useCallback((rutaIndex: number, configIndex: number, config: RutaConfiguracion) => {
-        setRutas(prev => {
-            const newRutas = [...prev]
-            if (newRutas[rutaIndex].configuraciones) {
-                const configs = [...newRutas[rutaIndex].configuraciones!]
-                configs[configIndex] = config
-                newRutas[rutaIndex].configuraciones = configs
-            }
-            return newRutas
-        })
-    }, [])
+        // Enforce singleton sync: whatever we edit in a route, it becomes the global configuration
+        const singleton = [config];
+        
+        setConfiguraciones(singleton);
+        setRutas(prev => prev.map(r => ({ ...r, configuraciones: singleton })));
+    }, []);
 
     const handleRemoveRutaConfig = useCallback((rutaIndex: number, configIndex: number) => {
-        setRutas(prev => {
-            const newRutas = [...prev]
-            if (newRutas[rutaIndex].configuraciones) {
-                newRutas[rutaIndex].configuraciones = newRutas[rutaIndex].configuraciones!.filter((_, i) => i !== configIndex)
-            }
-            return newRutas
-        })
-    }, [])
+        // Following singleton rule: if we remove it, it's removed everywhere
+        setConfiguraciones([]);
+        setRutas(prev => prev.map(r => ({ ...r, configuraciones: [] })));
+    }, []);
 
     const [isSaving, setIsSaving] = useState(false)
 
@@ -118,15 +123,36 @@ export function useConvenioForm() {
             const full = await ConveniosService.getConvenioById(convenioId)
             const basePayload = ConveniosService.mapConvenioToUpdateData(full)
 
+            const isRutasEspecificas = (data?.tipo_alcance !== undefined ? data.tipo_alcance : basePayload.tipo_alcance) === "Rutas Especificas";
+
+            let extractedConfigs: any[] = [];
+
             const cleanRutas = (rutas || []).map((ruta: any) => {
                 const r = { ...ruta }
+                
+                // Extract configurations from specific routes before deleting them from the payload
+                // IMPORTANT: We DO NOT add "origen_codigo" or "destino_codigo" to these configs anymore,
+                // as the backend strictly forbids them in the root "configuraciones" array.
+                if (isRutasEspecificas && r.configuraciones && Array.isArray(r.configuraciones)) {
+                    const normalizedRouteConfigs = r.configuraciones.map((c: any) => ({
+                        tipo_viaje: normalizeStr(c.tipo_viaje),
+                        tipo_asiento: normalizeStr(c.tipo_asiento),
+                        precio_solo_ida: c.precio_solo_ida ? Number(c.precio_solo_ida) : 0,
+                        precio_ida_vuelta: c.precio_ida_vuelta ? Number(c.precio_ida_vuelta) : 0,
+                        max_pasajes: c.max_pasajes ? Number(c.max_pasajes) : 1
+                    }));
+                    extractedConfigs = [...extractedConfigs, ...normalizedRouteConfigs];
+                }
+                
+                // Backend strictly forbids passing "configuraciones" inside "body.rutas", it will 400
                 delete r.configuraciones
+                
                 return r
             })
-            // Normalize global configs from hook state, but prefer configs passed in `data` if they exist (e.g. from Main Edit Modal)
-            const rawConfigs = data?.configuraciones || configuraciones || []
-            const globalConfigs = rawConfigs.map((c: any) => ({
-                ...c,
+
+            // ENFORCE SINGLETON: Take from wherever is most current
+            const rawConfigs = data?.configuraciones || configuraciones || (isRutasEspecificas && rutas.length > 0 ? rutas[0].configuraciones : []) || []
+            const finalConfigs = rawConfigs.slice(0, 1).map((c: any) => ({
                 tipo_viaje: normalizeStr(c.tipo_viaje),
                 tipo_asiento: normalizeStr(c.tipo_asiento),
                 precio_solo_ida: c.precio_solo_ida ? Number(c.precio_solo_ida) : 0,
@@ -139,7 +165,7 @@ export function useConvenioForm() {
                 ...data, // Sobrescribir con data específica si viene (ej. del Form)
                 empresa_id: data?.empresa_id !== undefined ? data.empresa_id : basePayload.empresa_id,
                 rutas: cleanRutas,
-                configuraciones: globalConfigs.slice(0, 1),
+                configuraciones: finalConfigs,
             }
 
             // Eliminar campos prohibidos por el backend en el update
@@ -171,6 +197,15 @@ export function useConvenioForm() {
             });
 
             await ConveniosService.updateConvenio(convenioId, finalPayload)
+            
+            // UPDATE LOCAL STATE AFTER SUCCESS to avoid "duplicates piling up" from stale state
+            // and ensure normalized types are reflected in UI
+            setConfiguraciones(finalConfigs)
+            setRutas(cleanRutas.map(r => ({
+                ...r,
+                configuraciones: finalConfigs // All routes share the same config now
+            })))
+
             toast.success("Convenio actualizado correctamente")
             onSuccess?.()
             return true
@@ -198,6 +233,7 @@ export function useConvenioForm() {
         handleAddConfigToRuta,
         handleUpdateRutaConfig,
         handleRemoveRutaConfig,
+        handleUpdateGlobalConfig,
         normalizeStr
     }
 }

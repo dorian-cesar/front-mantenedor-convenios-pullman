@@ -222,6 +222,7 @@ export default function AddConvenioModal({
     const [cities, setCities] = useState<City[]>([])
     const [loadingCities, setLoadingCities] = useState(false)
     const [rutas, setRutas] = useState<Ruta[]>([])
+    const [openPopoverRuta, setOpenPopoverRuta] = useState<{ index: number, field: 'origen' | 'destino' } | null>(null)
 
     const form = useForm<ConvenioFormValues>({
         resolver: zodResolver(convenioSchema),
@@ -320,10 +321,12 @@ export default function AddConvenioModal({
         setRutas([...rutas, { origen_codigo: "", origen_ciudad: "", destino_codigo: "", destino_ciudad: "", configuraciones: [] }])
     }
     const handleRemoveRuta = (index: number) => setRutas(rutas.filter((_, i) => i !== index))
-    const handleUpdateRuta = (index: number, field: keyof Ruta, value: any) => {
-        const newRutas = [...rutas]
-        newRutas[index] = { ...newRutas[index], [field]: value }
-        setRutas(newRutas)
+    const handleUpdateRuta = (index: number, updates: Partial<Ruta>) => {
+        setRutas(prev => {
+            const newRutas = [...prev]
+            newRutas[index] = { ...newRutas[index], ...updates }
+            return newRutas
+        })
     }
     const handleAddConfigToRuta = (rutaIndex: number) => {
         const newRutas = [...rutas]
@@ -697,7 +700,8 @@ export default function AddConvenioModal({
                                                     {/* Origen */}
                                                     <div className="space-y-1">
                                                         <Label className="text-xs">Ciudad Origen</Label>
-                                                        <Popover>
+                                                        <Popover open={openPopoverRuta?.index === rutaIndex && openPopoverRuta?.field === 'origen'} 
+                                                                 onOpenChange={(open) => setOpenPopoverRuta(open ? { index: rutaIndex, field: 'origen' } : null)}>
                                                             <PopoverTrigger asChild>
                                                                 <Button
                                                                     variant="outline"
@@ -719,8 +723,11 @@ export default function AddConvenioModal({
                                                                                     key={city.id}
                                                                                     value={city.name}
                                                                                     onSelect={() => {
-                                                                                        handleUpdateRuta(rutaIndex, "origen_ciudad", city.name)
-                                                                                        handleUpdateRuta(rutaIndex, "origen_codigo", String(city.id))
+                                                                                        handleUpdateRuta(rutaIndex, {
+                                                                                            origen_ciudad: city.name,
+                                                                                            origen_codigo: String(city.id)
+                                                                                        })
+                                                                                        setOpenPopoverRuta(null)
                                                                                     }}
                                                                                     className="text-xs"
                                                                                 >
@@ -738,7 +745,8 @@ export default function AddConvenioModal({
                                                     {/* Destino */}
                                                     <div className="space-y-1">
                                                         <Label className="text-xs">Ciudad Destino</Label>
-                                                        <Popover>
+                                                        <Popover open={openPopoverRuta?.index === rutaIndex && openPopoverRuta?.field === 'destino'} 
+                                                                 onOpenChange={(open) => setOpenPopoverRuta(open ? { index: rutaIndex, field: 'destino' } : null)}>
                                                             <PopoverTrigger asChild>
                                                                 <Button
                                                                     variant="outline"
@@ -760,8 +768,11 @@ export default function AddConvenioModal({
                                                                                     key={city.id}
                                                                                     value={city.name}
                                                                                     onSelect={() => {
-                                                                                        handleUpdateRuta(rutaIndex, "destino_ciudad", city.name)
-                                                                                        handleUpdateRuta(rutaIndex, "destino_codigo", String(city.id))
+                                                                                        handleUpdateRuta(rutaIndex, {
+                                                                                            destino_ciudad: city.name,
+                                                                                            destino_codigo: String(city.id)
+                                                                                        })
+                                                                                        setOpenPopoverRuta(null)
                                                                                     }}
                                                                                     className="text-xs"
                                                                                 >

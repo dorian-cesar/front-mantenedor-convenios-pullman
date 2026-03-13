@@ -6,7 +6,8 @@ import * as Table from "@/components/ui/table"
 import * as Icon from "lucide-react"
 import { BadgeStatus } from "@/components/ui/badge-status"
 import * as Card from "@/components/ui/card"
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import useSWR from "swr"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
 import ExportModal from "@/components/modals/export"
@@ -24,8 +25,6 @@ import RechazarModal from "@/components/modals/rechazar"
 
 export default function AdultosMayoresPage() {
     const [searchValue, setSearchValue] = useState("")
-    const [adultosMayores, setAdultosMayores] = useState<AdultoMayor[]>([])
-    const [isLoading, setIsLoading] = useState(true)
     const [openExport, setOpenExport] = useState(false)
     const [openAdd, setOpenAdd] = useState(false)
     const [openUpdate, setOpenUpdate] = useState(false)
@@ -36,50 +35,36 @@ export default function AdultosMayoresPage() {
     const [pagination, setPagination] = useState({
         page: 1,
         limit: 10,
-        total: 0,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPrevPage: false,
     })
 
     const debouncedSearch = useDebounce(searchValue, 500)
 
-    const fetchAdultosMayores = async () => {
-        setIsLoading(true)
-        try {
-            const params: GetAdultosMayoresParams = {
-                page: pagination.page,
-                limit: pagination.limit,
-            }
-
-            if (debouncedSearch.trim()) {
-                params.nombre = debouncedSearch.trim()
-            }
-
-            const response = await AdultosMayoresService.getAdultosMayores(params)
-            
-            const rows = response?.rows || (response as any)?.data || (Array.isArray(response) ? response : []);
-
-            setAdultosMayores(rows ?? [])
-
-            setPagination(prev => ({
-                ...prev,
-                total: response.totalItems || (response as any).total || rows.length,
-                totalPages: response.totalPages || (response as any).lastPage || 1,
-                hasPrevPage: (response.currentPage || 1) > 1,
-                hasNextPage: (response.currentPage || 1) < (response.totalPages || (response as any).lastPage || 1)
-            }))
-        } catch (error) {
-            console.error('Error fetching adultos mayores:', error)
-            toast.error("No se pudieron cargar los adultos mayores")
-        } finally {
-            setIsLoading(false)
+    const fetcher = async () => {
+        const params: GetAdultosMayoresParams = {
+            page: pagination.page,
+            limit: pagination.limit,
         }
+
+        if (debouncedSearch.trim()) {
+            params.nombre = debouncedSearch.trim()
+        }
+
+        return AdultosMayoresService.getAdultosMayores(params)
     }
 
-    useEffect(() => {
-        fetchAdultosMayores()
-    }, [pagination.page, pagination.limit, debouncedSearch])
+    const { data: response, error, isLoading, mutate } = useSWR(
+        ['beneficiarios', 'adultos-mayores', pagination.page, pagination.limit, debouncedSearch],
+        fetcher,
+        { keepPreviousData: true }
+    )
+
+    const adultosMayores: AdultoMayor[] = (response?.rows || (response as any)?.data || (Array.isArray(response) ? response : [])) ?? [];
+    
+    const totalItems = Number(response?.totalItems ?? (response as any)?.total ?? adultosMayores.length);
+    const totalPages = response?.totalPages ? Number(response.totalPages) : Math.ceil(totalItems / pagination.limit) || 1;
+    const currentPage = Number(response?.currentPage ?? pagination.page);
+    const hasPrevPage = currentPage > 1;
+    const hasNextPage = currentPage < totalPages;
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -106,7 +91,7 @@ export default function AdultosMayoresPage() {
                     : "Adulto Mayor activado correctamente"
             )
 
-            fetchAdultosMayores()
+            mutate()
         } catch (error) {
             console.error('Error toggling status:', error)
             toast.error("No se pudo actualizar el estado")
@@ -114,7 +99,7 @@ export default function AdultosMayoresPage() {
     }
 
     const handleAdultoMayorAdded = () => {
-        fetchAdultosMayores()
+        mutate()
         setOpenAdd(false)
     }
 
@@ -130,7 +115,7 @@ export default function AdultosMayoresPage() {
     }
 
     const handleAdultoMayorUpdated = () => {
-        fetchAdultosMayores()
+        mutate()
     }
 
     const handleDetailsAdultoMayor = async (adultoMayor: AdultoMayor) => {
@@ -148,7 +133,7 @@ export default function AdultosMayoresPage() {
         try {
             await AdultosMayoresService.rechazarAdultoMayor(id, { razon_rechazo, status: "RECHAZADO" })
             toast.success("Se rechazó la solicitud correctamente")
-            fetchAdultosMayores()
+            mutate()
         } catch (error) {
             console.error('Error rechazando adulto mayor:', error)
             toast.error("No se pudo rechazar la solicitud")
@@ -161,7 +146,7 @@ export default function AdultosMayoresPage() {
     }
 
     const handleRefresh = () => {
-        fetchAdultosMayores();
+        mutate();
     }
 
     const handleExport = async (type: "csv" | "excel") => {
@@ -243,11 +228,11 @@ export default function AdultosMayoresPage() {
                 paginationComponent={
                     <Pagination
                         currentPage={pagination.page}
-                        totalPages={pagination.totalPages}
-                        totalItems={pagination.total}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
                         onPageChange={handlePageChange}
-                        hasPrevPage={pagination.hasPrevPage}
-                        hasNextPage={pagination.hasNextPage}
+                        hasPrevPage={hasPrevPage}
+                        hasNextPage={hasNextPage}
                         className="w-full"
                         limit={pagination.limit}
                         onLimitChange={handleLimitChange}

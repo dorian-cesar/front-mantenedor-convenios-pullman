@@ -6,7 +6,8 @@ import * as Table from "@/components/ui/table"
 import * as Icon from "lucide-react"
 import { BadgeStatus } from "@/components/ui/badge-status"
 import * as Card from "@/components/ui/card"
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import useSWR from "swr"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
 import ExportModal from "@/components/modals/export"
@@ -24,8 +25,6 @@ import { exportToExcel } from "@/utils/exportXLSX"
 
 export default function EstudiantesPage() {
     const [searchValue, setSearchValue] = useState("")
-    const [estudiantes, setEstudiantes] = useState<Estudiante[]>([])
-    const [isLoading, setIsLoading] = useState(true)
     const [openExport, setOpenExport] = useState(false)
     const [openAdd, setOpenAdd] = useState(false)
     const [openUpdate, setOpenUpdate] = useState(false)
@@ -36,50 +35,36 @@ export default function EstudiantesPage() {
     const [pagination, setPagination] = useState({
         page: 1,
         limit: 10,
-        total: 0,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPrevPage: false,
     })
 
     const debouncedSearch = useDebounce(searchValue, 500)
 
-    const fetchEstudiantes = async () => {
-        setIsLoading(true)
-        try {
-            const params: GetEstudiantesParams = {
-                page: pagination.page,
-                limit: pagination.limit,
-            }
-
-            if (debouncedSearch.trim()) {
-                params.nombre = debouncedSearch.trim()
-            }
-
-            const response = await EstudiantesService.getEstudiantes(params)
-            
-            const rows = response?.rows || (response as any)?.data || (Array.isArray(response) ? response : []);
-
-            setEstudiantes(rows ?? [])
-
-            setPagination(prev => ({
-                ...prev,
-                total: response.totalItems || (response as any).total || rows.length,
-                totalPages: response.totalPages || (response as any).lastPage || 1,
-                hasPrevPage: (response.currentPage || 1) > 1,
-                hasNextPage: (response.currentPage || 1) < (response.totalPages || (response as any).lastPage || 1)
-            }))
-        } catch (error) {
-            console.error('Error fetching estudiantes:', error)
-            toast.error("No se pudieron cargar los estudiantes")
-        } finally {
-            setIsLoading(false)
+    const fetcher = async () => {
+        const params: GetEstudiantesParams = {
+            page: pagination.page,
+            limit: pagination.limit,
         }
+
+        if (debouncedSearch.trim()) {
+            params.nombre = debouncedSearch.trim()
+        }
+
+        return EstudiantesService.getEstudiantes(params)
     }
 
-    useEffect(() => {
-        fetchEstudiantes()
-    }, [pagination.page, pagination.limit, debouncedSearch])
+    const { data: response, error, isLoading, mutate } = useSWR(
+        ['beneficiarios', 'estudiantes', pagination.page, pagination.limit, debouncedSearch],
+        fetcher,
+        { keepPreviousData: true }
+    )
+
+    const estudiantes: Estudiante[] = (response?.rows || (response as any)?.data || (Array.isArray(response) ? response : [])) ?? [];
+    
+    const totalItems = Number(response?.totalItems ?? (response as any)?.total ?? estudiantes.length);
+    const totalPages = response?.totalPages ? Number(response.totalPages) : Math.ceil(totalItems / pagination.limit) || 1;
+    const currentPage = Number(response?.currentPage ?? pagination.page);
+    const hasPrevPage = currentPage > 1;
+    const hasNextPage = currentPage < totalPages;
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -106,7 +91,7 @@ export default function EstudiantesPage() {
                     : "Estudiante activado correctamente"
             )
 
-            fetchEstudiantes()
+            mutate()
         } catch (error) {
             console.error('Error toggling status:', error)
             toast.error("No se pudo actualizar el estado")
@@ -120,7 +105,7 @@ export default function EstudiantesPage() {
         try {
             await EstudiantesService.rechazarEstudiante(id, { razon_rechazo, status: "RECHAZADO" })
             toast.success("Se rechazo la solicitud exitosamente")
-            fetchEstudiantes()
+            mutate()
         } catch (error) {
             console.error('Error rechazando solicitud:', error)
             toast.error("No se pudo rechazar la solicitud")
@@ -133,7 +118,7 @@ export default function EstudiantesPage() {
     }
 
     const handleEstudianteAdded = () => {
-        fetchEstudiantes()
+        mutate()
         setOpenAdd(false)
     }
 
@@ -149,7 +134,7 @@ export default function EstudiantesPage() {
     }
 
     const handleEstudianteUpdated = () => {
-        fetchEstudiantes()
+        mutate()
     }
 
     const handleDetailsEstudiante = async (estudiante: Estudiante) => {
@@ -164,7 +149,7 @@ export default function EstudiantesPage() {
     }
 
     const handleRefresh = () => {
-        fetchEstudiantes();
+        mutate();
     }
 
     const handleExport = async (type: "csv" | "excel") => {
@@ -246,11 +231,11 @@ export default function EstudiantesPage() {
                 paginationComponent={
                     <Pagination
                         currentPage={pagination.page}
-                        totalPages={pagination.totalPages}
-                        totalItems={pagination.total}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
                         onPageChange={handlePageChange}
-                        hasPrevPage={pagination.hasPrevPage}
-                        hasNextPage={pagination.hasNextPage}
+                        hasPrevPage={hasPrevPage}
+                        hasNextPage={hasNextPage}
                         className="w-full"
                         limit={pagination.limit}
                         onLimitChange={handleLimitChange}

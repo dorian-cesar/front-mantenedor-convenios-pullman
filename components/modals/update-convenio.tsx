@@ -271,7 +271,7 @@ export default function UpdateConvenioModal({
             api_consulta_id: updateData.api_consulta_id || undefined,
             fecha_inicio: full.fecha_inicio?.split("T")[0] || "",
             fecha_termino: full.fecha_termino?.split("T")[0] || "",
-            configuraciones: (full.configuraciones || []).map(c => ({
+            configuraciones: (full.configuraciones || []).slice(0, 1).map(c => ({
                 ...c,
                 tipo_viaje: normalizeStr(c.tipo_viaje),
                 tipo_asiento: normalizeStr(c.tipo_asiento)
@@ -304,6 +304,17 @@ export default function UpdateConvenioModal({
             setOpenApiPopover(false)
         }
     }, [open])
+
+    // Sync form with global configurations from context (useful when PreciosModal updates them)
+    useEffect(() => {
+        if (open && configuraciones.length > 0) {
+            const currentFormConfigs = form.getValues("configuraciones");
+            // Only sync if they are actually different to avoid unnecessary form resets
+            if (JSON.stringify(currentFormConfigs) !== JSON.stringify(configuraciones)) {
+                form.setValue("configuraciones", configuraciones, { shouldDirty: true });
+            }
+        }
+    }, [configuraciones, form, open]);
 
     // â€”â€”â€” Helpers imágenes â€”â€”â€”
     const handleAddImagen = () => setImagenesInputs([...imagenesInputs, ""])

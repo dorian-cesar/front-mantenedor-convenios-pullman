@@ -108,6 +108,7 @@ export default function PreciosModal({ open, onOpenChange, convenio, onSuccess }
         setConfiguraciones,
         fetchFullConvenio: fetchFull,
         handleSave: unifiedSave,
+        handleUpdateGlobalConfig,
         isSaving: isLoading,
         normalizeStr
     } = useConvenio()
@@ -129,12 +130,12 @@ export default function PreciosModal({ open, onOpenChange, convenio, onSuccess }
     }, [open, convenio, currentId, fetchFullConvenio])
 
     const handleUpdateConfig = useCallback((index: number, updates: Partial<RutaConfiguracion>) => {
-        setConfiguraciones(prev => prev.map((c, i) => i === index ? { ...c, ...updates } : c))
-    }, [])
+        handleUpdateGlobalConfig(index, updates)
+    }, [handleUpdateGlobalConfig])
 
     const handleSave = async () => {
         // En PreciosModal, enviamos las configuraciones globales actuales (están en el hook)
-        const success = await unifiedSave(convenio.id, {}, () => {
+        const success = await unifiedSave(convenio.id, { configuraciones }, () => {
             onSuccess?.()
             onOpenChange(false)
         })

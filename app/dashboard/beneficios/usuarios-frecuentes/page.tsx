@@ -6,7 +6,8 @@ import * as Table from "@/components/ui/table"
 import * as Icon from "lucide-react"
 import { BadgeStatus } from "@/components/ui/badge-status"
 import * as Card from "@/components/ui/card"
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import useSWR from "swr"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
 import ExportModal from "@/components/modals/export"
@@ -24,8 +25,6 @@ import { exportToExcel } from "@/utils/exportXLSX"
 
 export default function UsuariosFrecuentesPage() {
     const [searchValue, setSearchValue] = useState("")
-    const [usuariosFrecuentes, setUsuariosFrecuentes] = useState<UsuarioFrecuente[]>([])
-    const [isLoading, setIsLoading] = useState(true)
     const [openExport, setOpenExport] = useState(false)
     const [openAdd, setOpenAdd] = useState(false)
     const [openUpdate, setOpenUpdate] = useState(false)
@@ -36,50 +35,36 @@ export default function UsuariosFrecuentesPage() {
     const [pagination, setPagination] = useState({
         page: 1,
         limit: 10,
-        total: 0,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPrevPage: false,
     })
 
     const debouncedSearch = useDebounce(searchValue, 500)
 
-    const fetchUsuariosFrecuentes = async () => {
-        setIsLoading(true)
-        try {
-            const params: GetUsuariosFrecuentesParams = {
-                page: pagination.page,
-                limit: pagination.limit,
-            }
-
-            if (debouncedSearch.trim()) {
-                params.nombre = debouncedSearch.trim()
-            }
-
-            const response = await UsuariosFrecuentesService.getUsuariosFrecuentes(params)
-            
-            const rows = response?.rows || (response as any)?.data || (Array.isArray(response) ? response : []);
-
-            setUsuariosFrecuentes(rows ?? [])
-
-            setPagination(prev => ({
-                ...prev,
-                total: response.totalItems || (response as any).total || rows.length,
-                totalPages: response.totalPages || (response as any).lastPage || 1,
-                hasPrevPage: (response.currentPage || 1) > 1,
-                hasNextPage: (response.currentPage || 1) < (response.totalPages || (response as any).lastPage || 1)
-            }))
-        } catch (error) {
-            console.error('Error fetching usuarios frecuentes:', error)
-            toast.error("No se pudieron cargar los usuarios frecuentes")
-        } finally {
-            setIsLoading(false)
+    const fetcher = async () => {
+        const params: GetUsuariosFrecuentesParams = {
+            page: pagination.page,
+            limit: pagination.limit,
         }
+
+        if (debouncedSearch.trim()) {
+            params.nombre = debouncedSearch.trim()
+        }
+
+        return UsuariosFrecuentesService.getUsuariosFrecuentes(params)
     }
 
-    useEffect(() => {
-        fetchUsuariosFrecuentes()
-    }, [pagination.page, pagination.limit, debouncedSearch])
+    const { data: response, error, isLoading, mutate } = useSWR(
+        ['beneficiarios', 'usuarios-frecuentes', pagination.page, pagination.limit, debouncedSearch],
+        fetcher,
+        { keepPreviousData: true }
+    )
+
+    const usuariosFrecuentes: UsuarioFrecuente[] = (response?.rows || (response as any)?.data || (Array.isArray(response) ? response : [])) ?? [];
+    
+    const totalItems = Number(response?.totalItems ?? (response as any)?.total ?? usuariosFrecuentes.length);
+    const totalPages = response?.totalPages ? Number(response.totalPages) : Math.ceil(totalItems / pagination.limit) || 1;
+    const currentPage = Number(response?.currentPage ?? pagination.page);
+    const hasPrevPage = currentPage > 1;
+    const hasNextPage = currentPage < totalPages;
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -106,7 +91,7 @@ export default function UsuariosFrecuentesPage() {
                     : "Usuario Frecuente activado correctamente"
             )
 
-            fetchUsuariosFrecuentes()
+            mutate()
         } catch (error) {
             console.error('Error toggling status:', error)
             toast.error("No se pudo actualizar el estado")
@@ -114,7 +99,7 @@ export default function UsuariosFrecuentesPage() {
     }
 
     const handleUsuarioFrecuenteAdded = () => {
-        fetchUsuariosFrecuentes()
+        mutate()
         setOpenAdd(false)
     }
 
@@ -130,7 +115,7 @@ export default function UsuariosFrecuentesPage() {
     }
 
     const handleUsuarioFrecuenteUpdated = () => {
-        fetchUsuariosFrecuentes()
+        mutate()
     }
 
     const handleDetailsUsuarioFrecuente = async (usuarioFrecuente: UsuarioFrecuente) => {
@@ -151,7 +136,7 @@ export default function UsuariosFrecuentesPage() {
         try {
             await UsuariosFrecuentesService.rechazarUsuarioFrecuente(id, { razon_rechazo, status: "RECHAZADO" })
             toast.success("Se rechazo la solicitud exitosamente")
-            fetchUsuariosFrecuentes()
+            mutate()
         } catch (error) {
             console.error('Error rechazando solicitud:', error)
             toast.error("No se pudo rechazar la solicitud")
@@ -164,7 +149,7 @@ export default function UsuariosFrecuentesPage() {
     }
 
     const handleRefresh = () => {
-        fetchUsuariosFrecuentes();
+        mutate();
     }
 
     const handleExport = async (type: "csv" | "excel") => {
@@ -246,11 +231,11 @@ export default function UsuariosFrecuentesPage() {
                 paginationComponent={
                     <Pagination
                         currentPage={pagination.page}
-                        totalPages={pagination.totalPages}
-                        totalItems={pagination.total}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
                         onPageChange={handlePageChange}
-                        hasPrevPage={pagination.hasPrevPage}
-                        hasNextPage={pagination.hasNextPage}
+                        hasPrevPage={hasPrevPage}
+                        hasNextPage={hasNextPage}
                         className="w-full"
                         limit={pagination.limit}
                         onLimitChange={handleLimitChange}

@@ -186,11 +186,11 @@ export class ConveniosService {
             fecha_termino: convenio.fecha_termino || null,
             rutas: (convenio.rutas || []).map((ruta: any) => {
                 const r = { ...ruta }
+                // No eliminamos origen_codigo/destino_codigo ya que el usuario los necesita
                 delete r.configuraciones
                 return r
             }),
-            configuraciones: (convenio.configuraciones || []).map((c: any) => ({
-                ...c,
+            configuraciones: (convenio.configuraciones || []).slice(0, 1).map((c: any) => ({
                 tipo_viaje: normalizeStr(c.tipo_viaje),
                 tipo_asiento: normalizeStr(c.tipo_asiento),
                 precio_solo_ida: c.precio_solo_ida ? Number(c.precio_solo_ida) : 0,
