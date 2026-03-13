@@ -47,6 +47,7 @@ export default function AdultosMayoresPage() {
 
         if (debouncedSearch.trim()) {
             params.nombre = debouncedSearch.trim()
+            params.rut = debouncedSearch.trim()
         }
 
         return AdultosMayoresService.getAdultosMayores(params)
@@ -158,6 +159,7 @@ export default function AdultosMayoresPage() {
 
             if (debouncedSearch.trim()) {
                 params.nombre = debouncedSearch.trim()
+                params.rut = debouncedSearch.trim()
             }
 
             const response = await AdultosMayoresService.getAdultosMayores(params)

@@ -64,6 +64,7 @@ export default function FachPage() {
 
             if (debouncedSearch.trim()) {
                 params.search = debouncedSearch.trim()
+                params.rut = debouncedSearch.trim()
             }
 
             const response = await FachService.getFach(params)
@@ -159,6 +160,7 @@ export default function FachPage() {
 
             if (debouncedSearch.trim()) {
                 params.search = debouncedSearch.trim()
+                params.rut = debouncedSearch.trim()
             }
 
             const response = await FachService.getFach(params)

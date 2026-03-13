@@ -28,6 +28,14 @@ export default function DetailsEstudianteModal({
         setOpenFileViewer(true)
     }
 
+    const getVal = (obj: any, keys: string[]) => {
+        if (!obj) return null;
+        for (const key of keys) {
+            if (obj[key]) return obj[key];
+        }
+        return null;
+    }
+
     const renderFilePreview = (fileSrc: string | undefined, title: string, onClick: () => void) => {
         if (!fileSrc) {
             return (
@@ -83,28 +91,7 @@ export default function DetailsEstudianteModal({
                         </Dialog.DialogDescription>
                     </Dialog.DialogHeader>
 
-                    <div className="grid grid-cols-2 gap-6 mb-6">
-                        <div>
-                            <p className="text-sm font-medium mb-2">Cédula de Identidad</p>
-                            {renderFilePreview(
-                                estudiante?.imagen_cedula_identidad,
-                                `Cédula de ${estudiante?.nombre}`,
-                                () => estudiante?.imagen_cedula_identidad &&
-                                    handleFileClick(estudiante.imagen_cedula_identidad, `Cédula de ${estudiante?.nombre}`)
-                            )}
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium mb-2">Certificado Alumno Regular</p>
-                            {renderFilePreview(
-                                estudiante?.imagen_certificado_alumno_regular,
-                                `Certificado de ${estudiante?.nombre}`,
-                                () => estudiante?.imagen_certificado_alumno_regular &&
-                                    handleFileClick(estudiante.imagen_certificado_alumno_regular, `Certificado de ${estudiante?.nombre}`)
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="grid gap-4 grid-cols-2">
+                    <div className="grid gap-4 grid-cols-2 mb-6">
                         <div>
                             <p className="text-sm font-medium leading-none text-muted-foreground">Nombre</p>
                             <p className="text-sm">{estudiante?.nombre}</p>
@@ -141,6 +128,47 @@ export default function DetailsEstudianteModal({
                                 <p className="text-sm">{estudiante?.razon_rechazo}</p>
                             </div>
                         )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <p className="text-sm font-medium mb-2">Foto frontal de Carnet de Identidad</p>
+                            {renderFilePreview(
+                                getVal(estudiante?.imagenes, ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]) || estudiante?.imagen_cedula_identidad,
+                                `Carnet de ${estudiante?.nombre}`,
+                                () => {
+                                    const src = getVal(estudiante?.imagenes, ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]) || estudiante?.imagen_cedula_identidad;
+                                    if (src) handleFileClick(src, `Carnet de ${estudiante?.nombre}`);
+                                }
+                            )}
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium mb-2">Certificado Alumno Regular</p>
+                            {renderFilePreview(
+                                getVal(estudiante?.imagenes, ["Certificado de Estudios", "Certificado", "Certificado Alumno Regular"]) || estudiante?.imagen_certificado_alumno_regular,
+                                `Certificado de ${estudiante?.nombre}`,
+                                () => {
+                                    const src = getVal(estudiante?.imagenes, ["Certificado de Estudios", "Certificado", "Certificado Alumno Regular"]) || estudiante?.imagen_certificado_alumno_regular;
+                                    if (src) handleFileClick(src, `Certificado de ${estudiante?.nombre}`);
+                                }
+                            )}
+                        </div>
+                        {/* Render any additional images found in the 'imagenes' object */}
+                        {estudiante?.imagenes && Object.entries(estudiante.imagenes).map(([key, src]) => {
+                            const handledKeys = ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity", "Certificado de Estudios", "Certificado", "Certificado Alumno Regular"];
+                            if (handledKeys.includes(key)) return null;
+                            if (!src) return null;
+                            return (
+                                <div key={key}>
+                                    <p className="text-sm font-medium mb-2">{key}</p>
+                                    {renderFilePreview(
+                                        src,
+                                        `${key} de ${estudiante?.nombre}`,
+                                        () => handleFileClick(src, `${key} de ${estudiante?.nombre}`)
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </Dialog.DialogContent>
             </Dialog.Dialog>

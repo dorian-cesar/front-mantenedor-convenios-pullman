@@ -47,6 +47,7 @@ export default function EstudiantesPage() {
 
         if (debouncedSearch.trim()) {
             params.nombre = debouncedSearch.trim()
+            params.rut = debouncedSearch.trim()
         }
 
         return EstudiantesService.getEstudiantes(params)
@@ -140,6 +141,8 @@ export default function EstudiantesPage() {
     const handleDetailsEstudiante = async (estudiante: Estudiante) => {
         try {
             const usuario = await EstudiantesService.getEstudianteById(estudiante.id)
+            console.log("DIAGNOSTIC - Estudiante Object:", usuario);
+            if (usuario.imagenes) console.log("DIAGNOSTIC - Imagenes Keys:", Object.keys(usuario.imagenes));
             setSelectedEstudiante(usuario)
             setOpenDetails(true)
         } catch (error) {
@@ -161,6 +164,7 @@ export default function EstudiantesPage() {
 
             if (debouncedSearch.trim()) {
                 params.nombre = debouncedSearch.trim()
+                params.rut = debouncedSearch.trim()
             }
 
             const response = await EstudiantesService.getEstudiantes(params)

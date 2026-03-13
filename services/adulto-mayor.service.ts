@@ -9,6 +9,7 @@ export interface AdultoMayor {
     direccion: string;
     imagen_cedula_identidad?: string;
     imagen_certificado_residencia?: string;
+    imagenes?: Record<string, string>;
     status: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     razon_rechazo?: string;
     createdAt?: string;
@@ -67,22 +68,22 @@ export class AdultosMayoresService {
     }
 
     static async getAdultoMayorById(id: number): Promise<AdultoMayor> {
-        const response = await api.get<AdultoMayor>(`/adultos-mayores/${id}`);
+        const response = await api.get<AdultoMayor>(`/beneficiarios/${id}`);
         return response.data;
     }
 
     static async createAdultoMayor(data: CreateAdultoMayorData): Promise<AdultoMayor> {
-        const response = await api.post<AdultoMayor>('/adultos-mayores', data);
+        const response = await api.post<AdultoMayor>('/beneficiarios', data);
         return response.data;
     }
 
     static async updateAdultoMayor(id: number, data: UpdateAdultoMayorData): Promise<AdultoMayor> {
-        const response = await api.put<AdultoMayor>(`/adultos-mayores/${id}`, data);
+        const response = await api.put<AdultoMayor>(`/beneficiarios/${id}`, data);
         return response.data;
     }
 
     static async deleteAdultoMayor(id: number): Promise<void> {
-        await api.delete(`/adultos-mayores/${id}`);
+        await api.delete(`/beneficiarios/${id}`);
     }
 
     static async toggleStatus(id: number, currentStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO"): Promise<AdultoMayor> {
@@ -96,7 +97,7 @@ export class AdultosMayoresService {
     }
 
     static async rechazarAdultoMayor(id: number, data: RechazarAdultoMayorData): Promise<AdultoMayor> {
-        const response = await api.patch(`/adultos-mayores/rechazar/${id}`, data);
+        const response = await api.patch(`/beneficiarios/rechazar/${id}`, data);
         return response.data;
     }
 }

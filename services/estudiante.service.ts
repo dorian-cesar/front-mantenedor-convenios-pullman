@@ -9,6 +9,7 @@ export interface Estudiante {
     direccion: string;
     imagen_cedula_identidad?: string;
     imagen_certificado_alumno_regular?: string;
+    imagenes?: Record<string, string>;
     razon_rechazo?: string;
     status: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     createdAt?: string;
@@ -22,6 +23,7 @@ export interface GetEstudiantesParams {
     order?: "ASC" | "DESC";
     status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     nombre?: string;
+    rut?: string;
 }
 
 export interface EstudiantesResponse {
@@ -67,22 +69,22 @@ export class EstudiantesService {
     }
 
     static async getEstudianteById(id: number): Promise<Estudiante> {
-        const response = await api.get<Estudiante>(`/estudiantes/${id}`);
+        const response = await api.get<Estudiante>(`/beneficiarios/${id}`);
         return response.data;
     }
 
     static async createEstudiante(data: CreateEstudianteData): Promise<Estudiante> {
-        const response = await api.post<Estudiante>('/estudiantes', data);
+        const response = await api.post<Estudiante>('/beneficiarios', data);
         return response.data;
     }
 
     static async updateEstudiante(id: number, data: UpdateEstudianteData): Promise<Estudiante> {
-        const response = await api.put<Estudiante>(`/estudiantes/${id}`, data);
+        const response = await api.put<Estudiante>(`/beneficiarios/${id}`, data);
         return response.data;
     }
 
     static async deleteEstudiante(id: number): Promise<void> {
-        await api.delete(`/estudiantes/${id}`);
+        await api.delete(`/beneficiarios/${id}`);
     }
 
     static async toggleStatus(id: number, currentStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO"): Promise<Estudiante> {
@@ -96,7 +98,7 @@ export class EstudiantesService {
     }
 
     static async rechazarEstudiante(id: number, data: RechazarEstudianteData): Promise<Estudiante> {
-        const response = await api.patch(`/estudiantes/rechazar/${id}`, data);
+        const response = await api.patch(`/beneficiarios/rechazar/${id}`, data);
         return response.data;
     }
 }

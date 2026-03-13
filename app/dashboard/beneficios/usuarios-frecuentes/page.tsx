@@ -47,6 +47,7 @@ export default function UsuariosFrecuentesPage() {
 
         if (debouncedSearch.trim()) {
             params.nombre = debouncedSearch.trim()
+            params.rut = debouncedSearch.trim()
         }
 
         return UsuariosFrecuentesService.getUsuariosFrecuentes(params)
@@ -161,6 +162,7 @@ export default function UsuariosFrecuentesPage() {
 
             if (debouncedSearch.trim()) {
                 params.nombre = debouncedSearch.trim()
+                params.rut = debouncedSearch.trim()
             }
 
             const response = await UsuariosFrecuentesService.getUsuariosFrecuentes(params)

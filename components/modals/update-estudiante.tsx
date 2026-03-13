@@ -365,7 +365,7 @@ export default function UpdateEstudianteModal({
                                 name="imagen_cedula_identidad"
                                 render={() => (
                                     <Form.FormItem>
-                                        <Form.FormLabel>Cédula de Identidad</Form.FormLabel>
+                                        <Form.FormLabel>Foto frontal de Carnet de Identidad</Form.FormLabel>
                                         <Form.FormControl>
                                             <div
                                                 className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition min-h-[200px] flex items-center justify-center"
@@ -392,7 +392,7 @@ export default function UpdateEstudianteModal({
                                                 ) : (
                                                     <div className="flex flex-col items-center text-muted-foreground">
                                                         <UploadIcon className="h-8 w-8 mb-2" />
-                                                        <p>Haz click para subir la cédula</p>
+                                                        <p>Haz click para subir el carnet</p>
                                                         <p className="text-xs mt-1">Imagen o PDF (Máximo 5MB)</p>
                                                     </div>
                                                 )}

@@ -10,6 +10,7 @@ export interface UsuarioFrecuente {
     status: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     imagen_cedula_identidad?: string;
     imagen_certificado?: string;
+    imagenes?: Record<string, string>;
     razon_rechazo?: string;
     createdAt?: string;
     updatedAt?: string;
@@ -67,22 +68,22 @@ export class UsuariosFrecuentesService {
     }
 
     static async getUsuarioFrecuenteById(id: number): Promise<UsuarioFrecuente> {
-        const response = await api.get<UsuarioFrecuente>(`/pasajeros-frecuentes/${id}`);
+        const response = await api.get<UsuarioFrecuente>(`/beneficiarios/${id}`);
         return response.data;
     }
 
     static async createUsuarioFrecuente(data: CreateUsuarioFrecuenteData): Promise<UsuarioFrecuente> {
-        const response = await api.post<UsuarioFrecuente>('/pasajeros-frecuentes', data);
+        const response = await api.post<UsuarioFrecuente>('/beneficiarios', data);
         return response.data;
     }
 
     static async updateUsuarioFrecuente(id: number, data: UpdateUsuarioFrecuenteData): Promise<UsuarioFrecuente> {
-        const response = await api.put<UsuarioFrecuente>(`/pasajeros-frecuentes/${id}`, data);
+        const response = await api.put<UsuarioFrecuente>(`/beneficiarios/${id}`, data);
         return response.data;
     }
 
     static async deleteUsuarioFrecuente(id: number): Promise<void> {
-        await api.delete(`/pasajeros-frecuentes/${id}`);
+        await api.delete(`/beneficiarios/${id}`);
     }
 
     static async toggleStatus(id: number, currentStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO"): Promise<UsuarioFrecuente> {
@@ -96,7 +97,7 @@ export class UsuariosFrecuentesService {
     }
 
     static async rechazarUsuarioFrecuente(id: number, data: RechazarUsuarioFrecuenteData): Promise<UsuarioFrecuente> {
-        const response = await api.patch(`/pasajeros-frecuentes/rechazar/${id}`, data);
+        const response = await api.patch(`/beneficiarios/rechazar/${id}`, data);
         return response.data;
     }
 }

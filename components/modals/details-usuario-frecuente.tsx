@@ -28,6 +28,14 @@ export default function DetailsUsuarioFrecuenteModal({
         setOpenFileViewer(true)
     }
 
+    const getVal = (obj: any, keys: string[]) => {
+        if (!obj) return null;
+        for (const key of keys) {
+            if (obj[key]) return obj[key];
+        }
+        return null;
+    }
+
     const renderFilePreview = (fileSrc: string | undefined, title: string, onClick: () => void) => {
         if (!fileSrc) {
             return (
@@ -83,28 +91,7 @@ export default function DetailsUsuarioFrecuenteModal({
                         </Dialog.DialogDescription>
                     </Dialog.DialogHeader>
 
-                    <div className="grid grid-cols-2 gap-6 mb-6">
-                        <div>
-                            <p className="text-sm font-medium mb-2">Cédula de Identidad</p>
-                            {renderFilePreview(
-                                usuarioFrecuente?.imagen_cedula_identidad,
-                                `Cédula de ${usuarioFrecuente?.nombre}`,
-                                () => usuarioFrecuente?.imagen_cedula_identidad &&
-                                    handleFileClick(usuarioFrecuente.imagen_cedula_identidad, `Cédula de ${usuarioFrecuente?.nombre}`)
-                            )}
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium mb-2">Certificado</p>
-                            {renderFilePreview(
-                                usuarioFrecuente?.imagen_certificado,
-                                `Certificado de ${usuarioFrecuente?.nombre}`,
-                                () => usuarioFrecuente?.imagen_certificado &&
-                                    handleFileClick(usuarioFrecuente.imagen_certificado, `Certificado de ${usuarioFrecuente?.nombre}`)
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="grid gap-4 grid-cols-2">
+                    <div className="grid gap-4 grid-cols-2 mb-6">
                         <div>
                             <p className="text-sm font-medium leading-none text-muted-foreground">Nombre</p>
                             <p className="text-sm">{usuarioFrecuente?.nombre}</p>
@@ -143,6 +130,47 @@ export default function DetailsUsuarioFrecuenteModal({
                                 </p>
                             </div>
                         )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <p className="text-sm font-medium mb-2">Foto frontal de Carnet de Identidad</p>
+                            {renderFilePreview(
+                                getVal(usuarioFrecuente?.imagenes, ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]) || usuarioFrecuente?.imagen_cedula_identidad,
+                                `Carnet de ${usuarioFrecuente?.nombre}`,
+                                () => {
+                                    const src = getVal(usuarioFrecuente?.imagenes, ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]) || usuarioFrecuente?.imagen_cedula_identidad;
+                                    if (src) handleFileClick(src, `Carnet de ${usuarioFrecuente?.nombre}`);
+                                }
+                            )}
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium mb-2">Certificado</p>
+                            {renderFilePreview(
+                                getVal(usuarioFrecuente?.imagenes, ["Certificado de Estudios", "Certificado"]) || usuarioFrecuente?.imagen_certificado,
+                                `Certificado de ${usuarioFrecuente?.nombre}`,
+                                () => {
+                                    const src = getVal(usuarioFrecuente?.imagenes, ["Certificado de Estudios", "Certificado"]) || usuarioFrecuente?.imagen_certificado;
+                                    if (src) handleFileClick(src, `Certificado de ${usuarioFrecuente?.nombre}`);
+                                }
+                            )}
+                        </div>
+                        {/* Render any additional images found in the 'imagenes' object */}
+                        {usuarioFrecuente?.imagenes && Object.entries(usuarioFrecuente.imagenes).map(([key, src]) => {
+                            const handledKeys = ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity", "Certificado de Estudios", "Certificado"];
+                            if (handledKeys.includes(key)) return null;
+                            if (!src) return null;
+                            return (
+                                <div key={key}>
+                                    <p className="text-sm font-medium mb-2">{key}</p>
+                                    {renderFilePreview(
+                                        src,
+                                        `${key} de ${usuarioFrecuente?.nombre}`,
+                                        () => handleFileClick(src, `${key} de ${usuarioFrecuente?.nombre}`)
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </Dialog.DialogContent>
             </Dialog.Dialog>

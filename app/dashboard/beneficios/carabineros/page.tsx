@@ -53,6 +53,7 @@ export default function CarabinerosPage() {
 
             if (debouncedSearch.trim()) {
                 params.nombre_completo = debouncedSearch.trim()
+                params.rut = debouncedSearch.trim()
             }
 
             const response = await CarabinerosService.getCarabineros(params)
@@ -144,6 +145,7 @@ export default function CarabinerosPage() {
 
             if (debouncedSearch.trim()) {
                 params.nombre_completo = debouncedSearch.trim()
+                params.rut = debouncedSearch.trim()
             }
 
             const response = await CarabinerosService.getCarabineros(params)
