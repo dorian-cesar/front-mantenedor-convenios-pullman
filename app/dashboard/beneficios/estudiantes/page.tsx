@@ -23,6 +23,8 @@ import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
 
 
+import { useConvenios } from "@/hooks/use-convenios"
+
 export default function EstudiantesPage() {
     const [searchValue, setSearchValue] = useState("")
     const [openExport, setOpenExport] = useState(false)
@@ -31,6 +33,8 @@ export default function EstudiantesPage() {
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedEstudiante, setSelectedEstudiante] = useState<Estudiante | null>(null)
     const [openRechazar, setOpenRechazar] = useState(false)
+
+    const { convenioMap } = useConvenios()
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -258,6 +262,7 @@ export default function EstudiantesPage() {
                             <Table.TableHead>RUT</Table.TableHead>
                             <Table.TableHead>Correo</Table.TableHead>
                             <Table.TableHead>Teléfono</Table.TableHead>
+                            <Table.TableHead>Convenio</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
@@ -285,6 +290,9 @@ export default function EstudiantesPage() {
                                     <Table.TableCell>{formatRut(estudiante.rut)}</Table.TableCell>
                                     <Table.TableCell>{estudiante.correo}</Table.TableCell>
                                     <Table.TableCell>{estudiante.telefono}</Table.TableCell>
+                                    <Table.TableCell>
+                                        {estudiante.convenio?.nombre || (estudiante.convenio_id ? convenioMap[estudiante.convenio_id] : null) || "Sin convenio"}
+                                    </Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={estudiante.status === "ACTIVO" ? "active" : "inactive"}>
                                             {estudiante.status === "ACTIVO" ? "Activo" : estudiante.status === "INACTIVO" ? "Inactivo" : "Rechazado"}

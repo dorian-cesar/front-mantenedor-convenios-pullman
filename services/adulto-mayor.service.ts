@@ -12,6 +12,10 @@ export interface AdultoMayor {
     imagenes?: Record<string, string>;
     status: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     razon_rechazo?: string;
+    convenio_id?: number;
+    convenio?: {
+        nombre: string;
+    };
     createdAt?: string;
     updatedAt?: string;
 }

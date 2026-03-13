@@ -12,6 +12,10 @@ export interface Estudiante {
     imagenes?: Record<string, string>;
     razon_rechazo?: string;
     status: "ACTIVO" | "INACTIVO" | "RECHAZADO";
+    convenio_id?: number;
+    convenio?: {
+        nombre: string;
+    };
     createdAt?: string;
     updatedAt?: string;
 }

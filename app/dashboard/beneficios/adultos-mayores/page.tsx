@@ -21,6 +21,7 @@ import { formatRut } from "@/utils/helpers"
 import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
 import RechazarModal from "@/components/modals/rechazar"
+import { useConvenios } from "@/hooks/use-convenios"
 
 
 export default function AdultosMayoresPage() {
@@ -31,6 +32,8 @@ export default function AdultosMayoresPage() {
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedAdultoMayor, setSelectedAdultoMayor] = useState<AdultoMayor | null>(null)
     const [openRechazar, setOpenRechazar] = useState(false)
+
+    const { convenioMap } = useConvenios()
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -253,6 +256,7 @@ export default function AdultosMayoresPage() {
                             <Table.TableHead>RUT</Table.TableHead>
                             <Table.TableHead>Correo</Table.TableHead>
                             <Table.TableHead>Teléfono</Table.TableHead>
+                            <Table.TableHead>Convenio</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
@@ -280,6 +284,9 @@ export default function AdultosMayoresPage() {
                                     <Table.TableCell>{formatRut(adultoMayor.rut)}</Table.TableCell>
                                     <Table.TableCell>{adultoMayor.correo}</Table.TableCell>
                                     <Table.TableCell>{adultoMayor.telefono}</Table.TableCell>
+                                    <Table.TableCell>
+                                        {adultoMayor.convenio?.nombre || (adultoMayor.convenio_id ? convenioMap[adultoMayor.convenio_id] : null) || "Sin convenio"}
+                                    </Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={adultoMayor.status === "ACTIVO" ? "active" : "inactive"}>
                                             {adultoMayor.status === "ACTIVO" ? "Activo" : adultoMayor.status === "INACTIVO" ? "Inactivo" : "Rechazado"}

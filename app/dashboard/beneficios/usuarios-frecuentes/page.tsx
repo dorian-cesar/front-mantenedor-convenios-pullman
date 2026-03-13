@@ -21,6 +21,7 @@ import { useDebounce } from "@/hooks/use-debounce"
 import { formatRut } from "@/utils/helpers"
 import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
+import { useConvenios } from "@/hooks/use-convenios"
 
 
 export default function UsuariosFrecuentesPage() {
@@ -31,6 +32,8 @@ export default function UsuariosFrecuentesPage() {
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedUsuarioFrecuente, setSelectedUsuarioFrecuente] = useState<UsuarioFrecuente | null>(null)
     const [openRechazar, setOpenRechazar] = useState(false)
+
+    const { convenioMap } = useConvenios()
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -256,6 +259,7 @@ export default function UsuariosFrecuentesPage() {
                             <Table.TableHead>RUT</Table.TableHead>
                             <Table.TableHead>Correo</Table.TableHead>
                             <Table.TableHead>Teléfono</Table.TableHead>
+                            <Table.TableHead>Convenio</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
@@ -283,6 +287,9 @@ export default function UsuariosFrecuentesPage() {
                                     <Table.TableCell>{formatRut(usuarioFrecuente.rut)}</Table.TableCell>
                                     <Table.TableCell>{usuarioFrecuente.correo}</Table.TableCell>
                                     <Table.TableCell>{usuarioFrecuente.telefono}</Table.TableCell>
+                                    <Table.TableCell>
+                                        {usuarioFrecuente.convenio?.nombre || (usuarioFrecuente.convenio_id ? convenioMap[usuarioFrecuente.convenio_id] : null) || "Sin convenio"}
+                                    </Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={usuarioFrecuente.status === "ACTIVO" ? "active" : "inactive"}>
                                             {usuarioFrecuente.status === "ACTIVO" ? "Activo" : usuarioFrecuente.status === "INACTIVO" ? "Inactivo" : "Rechazado"}

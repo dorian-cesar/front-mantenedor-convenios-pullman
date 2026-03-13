@@ -12,6 +12,10 @@ export interface UsuarioFrecuente {
     imagen_certificado?: string;
     imagenes?: Record<string, string>;
     razon_rechazo?: string;
+    convenio_id?: number;
+    convenio?: {
+        nombre: string;
+    };
     createdAt?: string;
     updatedAt?: string;
 }
