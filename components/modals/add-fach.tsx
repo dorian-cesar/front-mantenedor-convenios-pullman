@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { CarabinerosService, Carabinero } from "@/services/carabineros.service"
+import { FachService } from "@/services/fach.service"
 import { toast } from "sonner"
 import {
     Select,
@@ -18,15 +18,16 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { Empresa } from "@/services/empresa.service"
 
-interface UpdateCarabineroModalProps {
+interface AddFachModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    carabinero: Carabinero | null;
-    onSuccess?: () => void
+    onSuccess?: () => void;
+    empresas: Empresa[];
 }
 
-const carabineroSchema = z.object({
+const fachSchema = z.object({
     nombre_completo: z
         .string()
         .min(3, "El nombre debe tener al menos 3 caracteres")
@@ -34,55 +35,47 @@ const carabineroSchema = z.object({
     rut: z
         .string()
         .min(7, "RUT inválido")
-        .max(8, "RUT inválido")
-        .transform((val) => val.replace(/\./g, ""))
-        .refine((val) => /^[0-9]+$/.test(val), {
-            message: "El RUT no debe incluir dígito verificador ni guión",
-        }),
+        .max(12, "RUT inválido"),
+    empresa_id: z.number().positive("Debe seleccionar una empresa"),
     status: z.enum(["ACTIVO", "INACTIVO"]),
 })
 
-type CarabineroFormValues = z.infer<typeof carabineroSchema>
+type FachFormValues = z.infer<typeof fachSchema>
 
-export default function UpdateCarabineroModal({
+export default function AddFachModal({
     open,
     onOpenChange,
-    carabinero,
     onSuccess,
-}: UpdateCarabineroModalProps) {
+    empresas,
+}: AddFachModalProps) {
     const [loading, setLoading] = useState(false)
 
-    const form = useForm<CarabineroFormValues>({
-        resolver: zodResolver(carabineroSchema),
+    const form = useForm<FachFormValues>({
+        resolver: zodResolver(fachSchema),
         defaultValues: {
             nombre_completo: "",
             rut: "",
+            empresa_id: undefined,
             status: "ACTIVO",
         },
     })
 
     useEffect(() => {
-        if (carabinero) {
-            form.reset({
-                nombre_completo: carabinero.nombre_completo,
-                rut: carabinero.rut,
-                status: carabinero.status,
-            })
+        if (!open) {
+            form.reset()
         }
-    }, [carabinero, form])
+    }, [open, form])
 
-    const onSubmit = async (data: CarabineroFormValues) => {
-        if (!carabinero) return
-
+    const onSubmit = async (data: FachFormValues) => {
         setLoading(true)
         try {
-            await CarabinerosService.updateCarabinero(carabinero.rut, data)
-            toast.success("Carabinero actualizado correctamente")
+            await FachService.createFach(data)
+            toast.success("Registro Fach creado correctamente")
             onSuccess?.()
             onOpenChange(false)
         } catch (error) {
-            console.error("Error updating carabinero:", error)
-            toast.error("No se pudo actualizar el carabinero")
+            console.error("Error creating fach:", error)
+            toast.error("No se pudo crear el registro")
         } finally {
             setLoading(false)
         }
@@ -92,9 +85,9 @@ export default function UpdateCarabineroModal({
         <Dialog.Dialog open={open} onOpenChange={onOpenChange}>
             <Dialog.DialogContent className="max-w-2xl">
                 <Dialog.DialogHeader>
-                    <Dialog.DialogTitle>Editar Carabinero</Dialog.DialogTitle>
+                    <Dialog.DialogTitle>Agregar Nuevo Fach</Dialog.DialogTitle>
                     <Dialog.DialogDescription>
-                        Modifique los datos del carabinero.
+                        Complete los datos para agregar un nuevo registro Fach.
                     </Dialog.DialogDescription>
                 </Dialog.DialogHeader>
 
@@ -106,7 +99,7 @@ export default function UpdateCarabineroModal({
                                 name="nombre_completo"
                                 render={({ field }) => (
                                     <Form.FormItem>
-                                        <Form.FormLabel>Nombre</Form.FormLabel>
+                                        <Form.FormLabel>Nombre Completo</Form.FormLabel>
                                         <Form.FormControl>
                                             <Input placeholder="Nombre completo" {...field} />
                                         </Form.FormControl>
@@ -122,11 +115,39 @@ export default function UpdateCarabineroModal({
                                     <Form.FormItem>
                                         <Form.FormLabel>RUT</Form.FormLabel>
                                         <Form.FormControl>
-                                            <Input placeholder="12345678" {...field} disabled />
+                                            <Input placeholder="12345678-9" {...field} />
                                         </Form.FormControl>
                                         <Form.FormDescription>
-                                            Ingrese el RUT sin puntos ni dígito verificador.
+                                            Ingrese el RUT con guión y dígito verificador.
                                         </Form.FormDescription>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
+
+                            <Form.FormField
+                                control={form.control}
+                                name="empresa_id"
+                                render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel>Empresa</Form.FormLabel>
+                                        <Select
+                                            onValueChange={(v) => field.onChange(Number(v))}
+                                            value={field.value?.toString()}
+                                        >
+                                            <Form.FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Seleccione empresa" />
+                                                </SelectTrigger>
+                                            </Form.FormControl>
+                                            <SelectContent>
+                                                {empresas.map((empresa) => (
+                                                    <SelectItem key={empresa.id} value={empresa.id.toString()}>
+                                                        {empresa.nombre}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                         <Form.FormMessage />
                                     </Form.FormItem>
                                 )}
@@ -147,7 +168,6 @@ export default function UpdateCarabineroModal({
                                                     <SelectValue placeholder="Seleccione estado" />
                                                 </SelectTrigger>
                                             </Form.FormControl>
-
                                             <SelectContent>
                                                 <SelectItem value="ACTIVO">Activo</SelectItem>
                                                 <SelectItem value="INACTIVO">Inactivo</SelectItem>
@@ -172,9 +192,9 @@ export default function UpdateCarabineroModal({
                                 {loading ? (
                                     <Icon.Loader2Icon className="h-4 w-4 animate-spin mr-2" />
                                 ) : (
-                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                    <Icon.PlusIcon className="h-4 w-4 mr-2" />
                                 )}
-                                Guardar Cambios
+                                Crear Registro
                             </Button>
                         </div>
                     </form>

@@ -10,8 +10,9 @@ import { useState, useEffect } from "react"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
 import ExportModal from "@/components/modals/export"
-// import AddFachModal from "@/components/modals/add-fach"
-// import UpdateFachModal from "@/components/modals/update-fach"
+import AddFachModal from "@/components/modals/add-fach"
+import UpdateFachModal from "@/components/modals/update-fach"
+import DetailsFachModal from "@/components/modals/details-fach"
 
 import { FachService, type Fach, type GetFachParams } from "@/services/fach.service"
 import { EmpresasService, type Empresa } from "@/services/empresa.service"
@@ -244,7 +245,7 @@ export default function FachPage() {
                             <Table.TableHead>Nombre</Table.TableHead>
                             <Table.TableHead>Empresa</Table.TableHead>
                             <Table.TableHead>Estado</Table.TableHead>
-                            <Table.TableHead>Convenio ID</Table.TableHead>
+                            <Table.TableHead>Convenio</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
                     </Table.TableHeader>
@@ -328,7 +329,7 @@ export default function FachPage() {
                 onExport={handleExport}
             />
 
-            {/* <AddFachModal
+            <AddFachModal
                 open={openAdd}
                 onOpenChange={setOpenAdd}
                 onSuccess={handleFachAdded}
@@ -341,7 +342,13 @@ export default function FachPage() {
                 fach={selectedFach}
                 onSuccess={handleFachUpdated}
                 empresas={empresas}
-            /> */}
+            />
+
+            <DetailsFachModal
+                open={openDetails}
+                onOpenChange={setOpenDetails}
+                fach={selectedFach}
+            />
         </div>
     )
 }

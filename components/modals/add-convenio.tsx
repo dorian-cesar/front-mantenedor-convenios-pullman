@@ -30,7 +30,7 @@ import {
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ConveniosService, type Ruta, type RutaConfiguracion, type TipoAlcance, type TipoDescuento } from "@/services/convenio.service"
+import { ConveniosService, type Ruta, type RutaConfiguracion, type TipoAlcance, type TipoDescuento, normalizeStr } from "@/services/convenio.service"
 import { toast } from "sonner"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
@@ -43,6 +43,7 @@ interface Empresa {
 interface Api {
     id: number
     nombre: string
+    endpoint?: string
 }
 
 interface City {
@@ -93,7 +94,7 @@ export const convenioSchema = z.object({
 
     tipo_descuento: z.enum(["Porcentaje", "Monto Fijo", "Tarifa Plana"]).optional(),
     valor_descuento: z.number().min(0, "Debe ser un valor positivo").optional(),
-
+    porcentaje_descuento: z.number().min(0).optional(),
     tipo_alcance: z.enum(["Global", "Rutas Especificas"]),
 
     tope_monto_descuento: z
@@ -117,6 +118,7 @@ export const convenioSchema = z.object({
     fecha_termino: z.string().optional(),
 
     rutas: z.array(rutaSchema).optional(),
+    configuraciones: z.array(z.any()).optional(),
 })
     .refine((data) => {
         if (data.tipo_consulta === "CODIGO_DESCUENTO") {
@@ -146,7 +148,7 @@ function RutaConfiguracionForm({
     onUpdate,
     onRemove,
 }: {
-    rutaIndex: number
+    rutaIndex?: number
     config: RutaConfiguracion
     onUpdate: (c: RutaConfiguracion) => void
     onRemove: () => void
@@ -235,6 +237,7 @@ export default function AddConvenioModal({
             api_consulta_id: undefined,
             tipo_descuento: undefined,
             valor_descuento: undefined,
+            porcentaje_descuento: 0,
             tipo_alcance: "Global",
             tope_monto_descuento: undefined,
             tope_cantidad_tickets: undefined,
@@ -330,16 +333,18 @@ export default function AddConvenioModal({
     }
     const handleAddConfigToRuta = (rutaIndex: number) => {
         const newRutas = [...rutas]
+        // Restrict to ONE configuration per route
         newRutas[rutaIndex].configuraciones = [
-            ...(newRutas[rutaIndex].configuraciones || []),
-            { tipo_viaje: "", tipo_asiento: "" }
+            { tipo_viaje: "Solo Ida", tipo_asiento: "Semi Cama", precio_solo_ida: 0, precio_ida_vuelta: 0, max_pasajes: 1 }
         ]
         setRutas(newRutas)
     }
     const handleUpdateConfigRuta = (rutaIndex: number, configIndex: number, config: RutaConfiguracion) => {
         const newRutas = [...rutas]
         const configs = [...(newRutas[rutaIndex].configuraciones || [])]
-        configs[configIndex] = config
+        // Strip precio_ida_vuelta if tipo_viaje is "Solo Ida"
+        const { precio_ida_vuelta, ...rest } = config
+        configs[configIndex] = config.tipo_viaje === "Solo Ida" ? rest as RutaConfiguracion : config
         newRutas[rutaIndex].configuraciones = configs
         setRutas(newRutas)
     }
@@ -358,43 +363,96 @@ export default function AddConvenioModal({
     const onSubmit = async (data: ConvenioFormValues) => {
         setIsLoading(true)
         try {
-            // Las configuraciones van a nivel raíz (aplican a todas las rutas)
-            // Las rutas solo llevan origen/destino sin configuraciones
-            const configuracionesGlobal = rutas.flatMap(r => r.configuraciones || []).filter(Boolean)
-            const rutasSinConfig = tipoAlcance === "Rutas Especificas"
-                ? rutas.map(({ configuraciones: _, ...r }) => r)
-                : undefined
+            const mapRutaConfig = (c: any) => {
+                const base = {
+                    tipo_viaje: normalizeStr(c.tipo_viaje || ""),
+                    tipo_asiento: normalizeStr(c.tipo_asiento || ""),
+                    precio_solo_ida: c.precio_solo_ida ? Number(c.precio_solo_ida) : 0,
+                    max_pasajes: c.max_pasajes ? Number(c.max_pasajes) : 1
+                }
+                // Only include precio_ida_vuelta for "Ida y Vuelta"
+                if (c.tipo_viaje !== "Solo Ida" && c.precio_ida_vuelta) {
+                    return { ...base, precio_ida_vuelta: Number(c.precio_ida_vuelta) }
+                }
+                return base
+            }
 
-            await ConveniosService.createConvenio({
+            const isRutasEspecificas = data.tipo_alcance === "Rutas Especificas"
+            
+            // Mirror-POST strategy for routes
+            const finalRutas = (rutas || []).map(r => ({
+                origen_codigo: String(r.origen_codigo),
+                destino_codigo: String(r.destino_codigo),
+                origen_ciudad: r.origen_ciudad,
+                destino_ciudad: r.destino_ciudad,
+                configuraciones: (Array.isArray(r.configuraciones) && r.configuraciones.length > 0)
+                    ? [mapRutaConfig(r.configuraciones[0])]
+                    : []
+            }));
+
+            // Mirror-POST strategy for root configs
+            const rootConfigs = (data.configuraciones || []).map(mapRutaConfig);
+
+            const selectedApi = apis.find(a => a.id === data.api_consulta_id)
+
+            const cleanPayload: any = {
                 nombre: data.nombre,
                 empresa_id: data.empresa_id,
                 tipo_consulta: data.tipo_consulta,
                 codigo: data.codigo || undefined,
-                tipo_descuento: data.tipo_descuento as TipoDescuento | undefined,
+                api_consulta_id: data.api_consulta_id || undefined,
+                endpoint: selectedApi?.endpoint || undefined,
+                tipo_descuento: data.tipo_descuento,
                 valor_descuento: data.valor_descuento !== undefined ? Number(data.valor_descuento) : undefined,
-                tipo_alcance: data.tipo_alcance as TipoAlcance,
+                porcentaje_descuento: data.porcentaje_descuento !== undefined ? Number(data.porcentaje_descuento) : 0,
+                tipo_alcance: data.tipo_alcance,
                 tope_monto_descuento: data.tope_monto_descuento !== undefined ? Number(data.tope_monto_descuento) : undefined,
                 tope_cantidad_tickets: data.tope_cantidad_tickets !== undefined ? Number(data.tope_cantidad_tickets) : undefined,
-                api_consulta_id: data.api_consulta_id || undefined,
                 limitar_por_stock: data.limitar_por_stock || undefined,
                 limitar_por_monto: data.limitar_por_monto || undefined,
                 beneficio: data.beneficio,
                 imagenes: data.imagenes?.filter(img => img.trim() !== "") || [],
-                fecha_inicio: data.fecha_inicio || undefined,
-                fecha_termino: data.fecha_termino || undefined,
-                rutas: rutasSinConfig,
-                configuraciones: configuracionesGlobal.slice(0, 1), // Enforce single config
-            })
+                rutas: isRutasEspecificas ? finalRutas : [],
+                configuraciones: isRutasEspecificas ? [] : rootConfigs,
+            }
+
+            // Clean Dates to strict ISO-8601 UTC
+            const ensureUTC = (dateStr: string, isEnd = false) => {
+                if (!dateStr) return undefined;
+                return `${dateStr}T${isEnd ? '23:59:59' : '00:00:00'}Z`;
+            };
+
+            if (data.fecha_inicio) cleanPayload.fecha_inicio = ensureUTC(data.fecha_inicio);
+            if (data.fecha_termino) cleanPayload.fecha_termino = ensureUTC(data.fecha_termino, true);
+
+            // Final pruning of falsy values
+            Object.keys(cleanPayload).forEach(key => {
+                if (cleanPayload[key] === null || cleanPayload[key] === "") {
+                    delete cleanPayload[key];
+                }
+            });
+
+
+            await ConveniosService.createConvenio(cleanPayload)
             toast.success("Convenio creado correctamente")
             form.reset()
             setRutas([])
             onSuccess?.()
             onOpenChange(false)
-        } catch (error) {
-            console.error(error)
+        } catch (error: any) {
+            if (error.response) {
+                console.error("Error al crear convenio:", error.response.data);
+            }
             toast.error("No se pudo crear el convenio")
         } finally {
             setIsLoading(false)
+        }
+    }
+
+    const onError = (errors: any) => {
+        const firstError = Object.keys(errors)[0];
+        if (firstError) {
+            toast.error(`Error en el campo: ${firstError}`);
         }
     }
 
@@ -407,7 +465,7 @@ export default function AddConvenioModal({
                 </Dialog.DialogHeader>
 
                 <Form.Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-4">
 
                         {/* Nombre */}
                         <Form.FormField control={form.control} name="nombre" render={({ field }) => (
@@ -668,6 +726,66 @@ export default function AddConvenioModal({
                                     </Form.FormItem>
                                 )} />
 
+                                {/* Configuración Global (Solo si es Global) */}
+                                {tipoAlcance === "Global" && (
+                                    <div className="space-y-3 p-4 border rounded-md bg-amber-50/10 border-amber-200/50">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-sm font-semibold">Configuración de Tarifa Global</Label>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="xs"
+                                                onClick={() => {
+                                                    const current = form.getValues("configuraciones") || []
+                                                    form.setValue("configuraciones", [...current, { tipo_viaje: "Solo Ida", tipo_asiento: "Semi Cama", precio_solo_ida: 0, precio_ida_vuelta: 0, max_pasajes: 1 }])
+                                                }}
+                                            >
+                                                <Icon.PlusIcon className="h-3 w-3 mr-1" />Añadir Config
+                                            </Button>
+                                        </div>
+                                        <Form.FormField
+                                            control={form.control}
+                                            name="configuraciones"
+                                            render={({ field }) => {
+                                                const configs = field.value || []
+                                                if (configs.length === 0) {
+                                                    return (
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="w-full border-dashed"
+                                                            onClick={() => field.onChange([{ tipo_viaje: "Solo Ida", tipo_asiento: "Semi Cama", precio_solo_ida: 0, precio_ida_vuelta: 0, max_pasajes: 1 }])}
+                                                        >
+                                                            <Icon.PlusIcon className="h-4 w-4 mr-2" />
+                                                            Habilitar Configuración de Tarifa
+                                                        </Button>
+                                                    )
+                                                }
+                                                return (
+                                                    <div className="space-y-4">
+                                                        {configs.map((config: any, index: number) => (
+                                                            <RutaConfiguracionForm
+                                                                key={index}
+                                                                config={config}
+                                                                onUpdate={(newConfig) => {
+                                                                    const newConfigs = [...configs]
+                                                                    newConfigs[index] = newConfig
+                                                                    field.onChange(newConfigs)
+                                                                }}
+                                                                onRemove={() => {
+                                                                    const newConfigs = configs.filter((_: any, i: number) => i !== index)
+                                                                    field.onChange(newConfigs)
+                                                                }}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )
+                                            }}
+                                        />
+                                    </div>
+                                )}
+
                                 {/* Rutas (condicional si tipo_alcance = Rutas Especificas) */}
                                 {tipoAlcance === "Rutas Especificas" && (
                                     <div className="space-y-4 border rounded-md p-4">
@@ -795,7 +913,7 @@ export default function AddConvenioModal({
                                                         </Button>
                                                     </div>
                                                 )}
-                                                {(ruta.configuraciones || []).slice(0, 1).map((config, configIndex) => (
+                                                {(Array.isArray(ruta.configuraciones) ? ruta.configuraciones : []).map((config, configIndex) => (
                                                     <RutaConfiguracionForm
                                                         key={configIndex}
                                                         rutaIndex={rutaIndex}

@@ -421,13 +421,16 @@ function ConveniosPage() {
                                             size="sm"
                                             className={cn(
                                                 "h-7 px-2 text-xs rounded-full",
-                                                (convenio.configuraciones && convenio.configuraciones.length > 0)
+                                                ((convenio.configuraciones && convenio.configuraciones.length > 0) || 
+                                                 (convenio.rutas && convenio.rutas.some((r: any) => r.precio_solo_ida || (r.configuraciones && r.configuraciones.length > 0))))
                                                     ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
                                                     : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                                             )}
                                             onClick={() => handleManagePrecios(convenio)}
                                         >
-                                            {(convenio.configuraciones && convenio.configuraciones.length > 0) ? "Configurado" : "Sin Config"}
+                                            {((convenio.configuraciones && convenio.configuraciones.length > 0) || 
+                                              (convenio.rutas && convenio.rutas.some((r: any) => r.precio_solo_ida || (r.configuraciones && r.configuraciones.length > 0)))) 
+                                                ? "Configurado" : "Sin Config"}
                                         </Button>
                                     </Table.TableCell>
                                     <Table.TableCell>

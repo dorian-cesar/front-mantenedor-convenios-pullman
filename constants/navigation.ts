@@ -13,7 +13,7 @@ import {
     BadgeCheck,
     GraduationCap,
     ShieldUser,
-    Plane,
+    Swords,
     BookUser
 } from "lucide-react"
 
@@ -135,10 +135,10 @@ export const NAVIGATION: NavItem[] = [
             },
             {
                 id: "fach",
-                title: "Fach",
+                title: "Armada de Chile",
                 href: "/dashboard/beneficios/fach",
-                icon: Plane,
-                description: "beneficios · alianzas · fach · descuentos",
+                icon: Swords,
+                description: "beneficios · alianzas · armada · descuentos",
                 group: "Convenios y Beneficios",
                 section: "sub",
             },

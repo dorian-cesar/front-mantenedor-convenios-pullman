@@ -100,8 +100,8 @@ export default function CarabinerosPage() {
 
             toast.success(
                 currentStatus === "ACTIVO"
-                    ? "Adulto Mayor desactivado correctamente"
-                    : "Adulto Mayor activado correctamente"
+                    ? "Carabinero desactivado correctamente"
+                    : "Carabinero activado correctamente"
             )
 
             fetchCarabineros()
@@ -158,6 +158,7 @@ export default function CarabinerosPage() {
             const formattedData = response.rows.map(ca => ({
                 Nombre: ca.nombre_completo,
                 RUT: formatRut(ca.rut),
+                Convenio: ca.convenio?.nombre || "-",
                 Estado: ca.status,
             }))
 
@@ -227,6 +228,7 @@ export default function CarabinerosPage() {
                         <Table.TableRow>
                             <Table.TableHead>Nombre</Table.TableHead>
                             <Table.TableHead>RUT</Table.TableHead>
+                            <Table.TableHead>Convenio</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
@@ -242,7 +244,7 @@ export default function CarabinerosPage() {
                             </Table.TableRow>
                         ) : carabineros.length === 0 ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={4} className="text-center py-8">
+                                <Table.TableCell colSpan={5} className="text-center py-8">
                                     No se encontraron carabineros
                                 </Table.TableCell>
                             </Table.TableRow>
@@ -250,7 +252,8 @@ export default function CarabinerosPage() {
                             carabineros.map((carabinero, index) => (
                                 <Table.TableRow key={`${carabinero.rut}-${index}`}>
                                     <Table.TableCell className="font-medium">{carabinero.nombre_completo}</Table.TableCell>
-                                    <Table.TableCell>{carabinero.rut}</Table.TableCell>
+                                    <Table.TableCell>{formatRut(carabinero.rut)}</Table.TableCell>
+                                    <Table.TableCell>{carabinero.convenio?.nombre || "-"}</Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={carabinero.status === "ACTIVO" ? "active" : "inactive"}>
                                             {carabinero.status === "ACTIVO" ? "Activo" : "Inactivo"}

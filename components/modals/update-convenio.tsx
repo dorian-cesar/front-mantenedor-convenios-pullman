@@ -43,7 +43,7 @@ interface UpdateConvenioModalProps {
     onOpenChange: (open: boolean) => void
     convenio: Convenio | null
     empresas: Empresa[]
-    apis: Array<{ id: number; nombre: string }>
+    apis: Array<{ id: number; nombre: string; endpoint?: string }>
     onSuccess?: () => void
 }
 
@@ -78,8 +78,9 @@ const convenioSchema = z.object({
     api_consulta_id: z.number().optional().nullable(),
     tipo_descuento: z.enum(["Porcentaje", "Monto Fijo", "Tarifa Plana"]).nullable().optional(),
     valor_descuento: z.number().min(0).nullable().optional(),
+    porcentaje_descuento: z.number().min(0).nullable().optional(),
     tipo_alcance: z.enum(["Global", "Rutas Especificas"]),
-    tope_monto_descuento: z.number().min(1).nullable().optional(),
+    tope_monto_descuento: z.number().min(0).nullable().optional(),
     tope_cantidad_tickets: z.number().min(1).nullable().optional(),
     limitar_por_stock: z.boolean().nullable().optional(),
     limitar_por_monto: z.boolean().nullable().optional(),
@@ -214,6 +215,7 @@ export default function UpdateConvenioModal({
             api_consulta_id: undefined,
             tipo_descuento: undefined,
             valor_descuento: undefined,
+            porcentaje_descuento: 0,
             tipo_alcance: "Global",
             tope_monto_descuento: undefined,
             tope_cantidad_tickets: undefined,
@@ -264,6 +266,24 @@ export default function UpdateConvenioModal({
 
         const updateData = ConveniosService.mapConvenioToUpdateData(full)
 
+        // Normalize root configurations for the form
+        let rawConfigs = full.configuraciones;
+        if (rawConfigs && !Array.isArray(rawConfigs)) {
+            rawConfigs = [rawConfigs];
+        } else if (!rawConfigs || (Array.isArray(rawConfigs) && rawConfigs.length === 0)) {
+            if (full.tipo_viaje || full.precio_solo_ida || full.valor_ida) {
+                rawConfigs = [{
+                    tipo_viaje: full.tipo_viaje || "",
+                    tipo_asiento: full.tipo_asiento || "",
+                    precio_solo_ida: full.precio_solo_ida ?? full.valor_ida,
+                    precio_ida_vuelta: full.precio_ida_vuelta ?? full.valor_ida_vuelta,
+                    max_pasajes: full.max_pasajes
+                }];
+            } else {
+                rawConfigs = [];
+            }
+        }
+
         // Update form with normalized prices and strings
         form.reset({
             ...(updateData as any),
@@ -271,10 +291,10 @@ export default function UpdateConvenioModal({
             api_consulta_id: updateData.api_consulta_id || undefined,
             fecha_inicio: full.fecha_inicio?.split("T")[0] || "",
             fecha_termino: full.fecha_termino?.split("T")[0] || "",
-            configuraciones: (full.configuraciones || []).slice(0, 1).map(c => ({
+            configuraciones: (rawConfigs as any[]).map(c => ({
                 ...c,
-                tipo_viaje: normalizeStr(c.tipo_viaje),
-                tipo_asiento: normalizeStr(c.tipo_asiento)
+                tipo_viaje: normalizeStr(c.tipo_viaje || ""),
+                tipo_asiento: normalizeStr(c.tipo_asiento || "")
             }))
         })
 
@@ -290,7 +310,6 @@ export default function UpdateConvenioModal({
             // Guard para evitar resets infinitos: solo cargar si el ID cambia
             if (loadedConvenioIdRef.current === convenio.id) return;
 
-            console.log("Modal Open - Cargando convenio:", convenio.id);
             loadedConvenioIdRef.current = convenio.id;
             fetchFullConvenio(convenio.id)
         } else if (!open) {
@@ -305,16 +324,6 @@ export default function UpdateConvenioModal({
         }
     }, [open])
 
-    // Sync form with global configurations from context (useful when PreciosModal updates them)
-    useEffect(() => {
-        if (open && configuraciones.length > 0) {
-            const currentFormConfigs = form.getValues("configuraciones");
-            // Only sync if they are actually different to avoid unnecessary form resets
-            if (JSON.stringify(currentFormConfigs) !== JSON.stringify(configuraciones)) {
-                form.setValue("configuraciones", configuraciones, { shouldDirty: true });
-            }
-        }
-    }, [configuraciones, form, open]);
 
     // â€”â€”â€” Helpers imágenes â€”â€”â€”
     const handleAddImagen = () => setImagenesInputs([...imagenesInputs, ""])
@@ -359,10 +368,29 @@ export default function UpdateConvenioModal({
 
     const onSubmit = async (data: ConvenioFormValues) => {
         if (!convenio) return
-        const success = await unifiedSave(convenio.id, data, () => {
+
+        const selectedApi = apis.find(a => a.id === data.api_consulta_id)
+
+        // Ensure price values are numbers and api_consulta_id/endpoint is handled correctly
+        const submissionData = {
+            ...data,
+            // porcentaje_descuento: data.porcentaje_descuento !== undefined ? Number(data.porcentaje_descuento) : 0,
+            api_consulta_id: data.api_consulta_id || undefined,
+            endpoint: selectedApi?.endpoint || convenio.endpoint,
+        }
+
+        const success = await unifiedSave(convenio.id, submissionData, () => {
             onSuccess?.()
             onOpenChange(false)
         })
+    }
+
+    // Monitor for validation errors
+    const onError = (errors: any) => {
+        const firstError = Object.keys(errors)[0];
+        if (firstError) {
+            toast.error(`Error en el campo: ${firstError}`);
+        }
     }
 
     return (
@@ -374,7 +402,7 @@ export default function UpdateConvenioModal({
                 </Dialog.DialogHeader>
 
                 <Form.Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-4">
 
                         {/* Nombre */}
                         <Form.FormField control={form.control} name="nombre" render={({ field }) => (
@@ -552,6 +580,17 @@ export default function UpdateConvenioModal({
                             <div className="space-y-3 p-4 border rounded-md bg-amber-50/10 border-amber-200/50">
                                 <div className="flex items-center justify-between">
                                     <Label className="text-sm font-semibold">Configuración de Tarifa Global</Label>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="xs"
+                                        onClick={() => {
+                                            const current = form.getValues("configuraciones") || []
+                                            form.setValue("configuraciones", [...current, { tipo_viaje: "Solo Ida", tipo_asiento: "Semi Cama", precio_solo_ida: 0, precio_ida_vuelta: 0, max_pasajes: 1 }])
+                                        }}
+                                    >
+                                        <Icon.PlusIcon className="h-3 w-3 mr-1" />Añadir Config
+                                    </Button>
                                 </div>
                                 <Form.FormField
                                     control={form.control}
@@ -573,11 +612,23 @@ export default function UpdateConvenioModal({
                                             )
                                         }
                                         return (
-                                            <RutaConfiguracionForm
-                                                config={configs[0]}
-                                                onUpdate={(newConfig) => field.onChange([newConfig])}
-                                                onRemove={() => field.onChange([])}
-                                            />
+                                            <div className="space-y-4">
+                                                {configs.map((config: any, index: number) => (
+                                                    <RutaConfiguracionForm
+                                                        key={index}
+                                                        config={config}
+                                                        onUpdate={(newConfig) => {
+                                                            const newConfigs = [...configs]
+                                                            newConfigs[index] = newConfig
+                                                            field.onChange(newConfigs)
+                                                        }}
+                                                        onRemove={() => {
+                                                            const newConfigs = configs.filter((_: any, i: number) => i !== index)
+                                                            field.onChange(newConfigs)
+                                                        }}
+                                                    />
+                                                ))}
+                                            </div>
                                         )
                                     }}
                                 />
@@ -703,7 +754,7 @@ export default function UpdateConvenioModal({
                                                 </Button>
                                             </div>
                                         )}
-                                        {(ruta.configuraciones || []).slice(0, 1).map((config, configIndex) => (
+                                        {(Array.isArray(ruta.configuraciones) ? ruta.configuraciones : []).map((config, configIndex) => (
                                             <RutaConfiguracionForm
                                                 key={configIndex}
                                                 config={config}

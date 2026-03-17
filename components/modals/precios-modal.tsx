@@ -105,10 +105,12 @@ ConfigPrecioItem.displayName = "ConfigPrecioItem"
 export default function PreciosModal({ open, onOpenChange, convenio, onSuccess }: PreciosModalProps) {
     const {
         configuraciones,
+        rutas,
         setConfiguraciones,
         fetchFullConvenio: fetchFull,
         handleSave: unifiedSave,
         handleUpdateGlobalConfig,
+        handleUpdateRutaConfig,
         isSaving: isLoading,
         normalizeStr
     } = useConvenio()
@@ -135,7 +137,7 @@ export default function PreciosModal({ open, onOpenChange, convenio, onSuccess }
 
     const handleSave = async () => {
         // En PreciosModal, enviamos las configuraciones globales actuales (están en el hook)
-        const success = await unifiedSave(convenio.id, { configuraciones }, () => {
+        const success = await unifiedSave(convenio.id, { configuraciones, rutas }, () => {
             onSuccess?.()
             onOpenChange(false)
         })
@@ -150,26 +152,63 @@ export default function PreciosModal({ open, onOpenChange, convenio, onSuccess }
                         Configuración de Precios - {convenio.nombre}
                     </Dialog.DialogTitle>
                     <Dialog.DialogDescription>
-                        Define las tarifas globales que se aplicarán a este convenio.
+                        Define las tarifas que se aplicarán a este convenio.
                     </Dialog.DialogDescription>
                 </Dialog.DialogHeader>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                         <div className="space-y-0.5">
-                            <h3 className="text-sm font-bold text-gray-900">Tarifa Única</h3>
-                            <p className="text-xs text-gray-400">Configura los precios base para este convenio</p>
+                            <h3 className="text-sm font-bold text-gray-900">
+                                {convenio.tipo_alcance === "Rutas Especificas" ? "Tarifas por Ruta" : "Tarifa Global"}
+                            </h3>
+                            <p className="text-xs text-gray-400">
+                                {convenio.tipo_alcance === "Rutas Especificas" 
+                                    ? "Configura los precios para cada trayecto habilitado" 
+                                    : "Configura los precios base para este convenio"}
+                            </p>
                         </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-6">
+                        {configuraciones.length === 0 && rutas.length === 0 && (
+                            <div className="py-12 text-center border-2 border-dashed rounded-2xl bg-white border-gray-100">
+                                <Icon.InfoIcon className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                                <p className="text-sm text-gray-400">No hay configuraciones de precio definidas.</p>
+                            </div>
+                        )}
+
+                        {/* Global Configs */}
                         {configuraciones.map((config, idx) => (
                             <ConfigPrecioItem
-                                key={idx}
+                                key={`global-${idx}`}
                                 config={config}
                                 onUpdate={(updates) => handleUpdateConfig(idx, updates)}
                                 showRemove={false}
                             />
+                        ))}
+
+                        {/* Route Configs */}
+                        {rutas.map((ruta, rIdx) => (
+                            <div key={`ruta-${rIdx}`} className="space-y-3">
+                                <div className="flex items-center gap-2 px-1">
+                                    <Icon.MapPinIcon className="h-3 w-3 text-primary" />
+                                    <h4 className="text-xs font-bold text-gray-700">
+                                        {ruta.origen_ciudad} → {ruta.destino_ciudad}
+                                    </h4>
+                                </div>
+                                {(ruta.configuraciones || []).map((config: any, cIdx: number) => (
+                                    <ConfigPrecioItem
+                                        key={`r-${rIdx}-c-${cIdx}`}
+                                        config={config}
+                                        onUpdate={(updates) => handleUpdateRutaConfig(rIdx, cIdx, { ...config, ...updates })}
+                                        showRemove={false}
+                                    />
+                                ))}
+                                {(ruta.configuraciones || []).length === 0 && (
+                                    <p className="text-[10px] text-gray-400 italic px-6">Sin tarifa configurada para esta ruta.</p>
+                                )}
+                            </div>
                         ))}
                     </div>
                 </div>
