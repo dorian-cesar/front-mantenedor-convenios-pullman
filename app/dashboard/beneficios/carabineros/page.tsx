@@ -116,18 +116,30 @@ export default function CarabinerosPage() {
         setOpenAdd(false)
     }
 
-    const handleEditCarabinero = (carabinero: Carabinero) => {
-        setSelectedCarabinero(carabinero)
-        setOpenUpdate(true)
+    const handleEditCarabinero = async (carabinero: Carabinero) => {
+        try {
+            const fullData = await CarabinerosService.getCarabineroByRut(carabinero.rut)
+            setSelectedCarabinero(fullData)
+            setOpenUpdate(true)
+        } catch (error) {
+            console.error('Error fetching carabinero for edit:', error)
+            toast.error("No se pudo cargar el registro para editar")
+        }
     }
 
     const handleCarabineroUpdated = () => {
         fetchCarabineros()
     }
 
-    const handleDetailsCarabinero = (carabinero: Carabinero) => {
-        setSelectedCarabinero(carabinero)
-        setOpenDetails(true)
+    const handleDetailsCarabinero = async (carabinero: Carabinero) => {
+        try {
+            const fullData = await CarabinerosService.getCarabineroByRut(carabinero.rut)
+            setSelectedCarabinero(fullData)
+            setOpenDetails(true)
+        } catch (error) {
+            console.error('Error fetching carabinero details:', error)
+            toast.error("No se pudieron cargar los detalles del carabinero")
+        }
     }
 
     const handleRefresh = () => {

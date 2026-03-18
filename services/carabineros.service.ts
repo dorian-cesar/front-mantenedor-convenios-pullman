@@ -46,6 +46,11 @@ export class CarabinerosService {
         return response.data;
     }
 
+    static async getCarabineroByRut(rut: string): Promise<Carabinero> {
+        const response = await api.get<Carabinero>(`/carabineros/${rut}`);
+        return response.data;
+    }
+
     static async createCarabinero(data: CreateCarabineroParams): Promise<Carabinero> {
         const response = await api.post('/carabineros', data);
         return response.data;

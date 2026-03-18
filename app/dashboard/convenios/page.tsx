@@ -463,22 +463,21 @@ function ConveniosPage() {
                                                     Editar
                                                 </Dropdown.DropdownMenuItem>
                                                 <Dropdown.DropdownMenuSeparator />
-                                                {convenio.status === "ACTIVO" ? (
-                                                    <Dropdown.DropdownMenuItem
-                                                        variant="destructive"
-                                                        onClick={() => handleToggleStatus(convenio.id, convenio.status)}
-                                                    >
-                                                        <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                        Desactivar
-                                                    </Dropdown.DropdownMenuItem>
-                                                ) : (
-                                                    <Dropdown.DropdownMenuItem
-                                                        onClick={() => handleToggleStatus(convenio.id, convenio.status)}
-                                                    >
-                                                        <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                        Activar
-                                                    </Dropdown.DropdownMenuItem>
-                                                )}
+                                                <Dropdown.DropdownMenuItem
+                                                    disabled={convenio.status === "ACTIVO"}
+                                                    onClick={() => handleToggleStatus(convenio.id, "INACTIVO")}
+                                                >
+                                                    <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                    Activar
+                                                </Dropdown.DropdownMenuItem>
+                                                <Dropdown.DropdownMenuItem
+                                                    disabled={convenio.status === "INACTIVO"}
+                                                    variant="destructive"
+                                                    onClick={() => handleToggleStatus(convenio.id, "ACTIVO")}
+                                                >
+                                                    <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                    Desactivar
+                                                </Dropdown.DropdownMenuItem>
 
                                                 {(convenio.status === "INACTIVO" && user?.rol === "SUPER_USUARIO") && (
                                                     <Dropdown.DropdownMenuItem

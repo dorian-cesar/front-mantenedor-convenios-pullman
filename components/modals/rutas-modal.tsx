@@ -136,9 +136,9 @@ RutaItem.displayName = "RutaItem"
 // --- Componente Principal ---
 
 export default function RutasModal({ open, onOpenChange, convenio, onSuccess }: RutasModalProps) {
-    const { 
-        rutas, 
-        setRutas, 
+    const {
+        rutas,
+        setRutas,
         fetchFullConvenio: fetchFull,
         handleSave: unifiedSave,
         isSaving: isLoading, // Reusamos isLoading del hook
@@ -147,7 +147,7 @@ export default function RutasModal({ open, onOpenChange, convenio, onSuccess }: 
         handleUpdateRuta,
         normalizeStr
     } = useConvenio()
-    
+
     const [cities, setCities] = useState<{ id: string, name: string }[]>([])
 
     const fetchCities = useCallback(async () => {

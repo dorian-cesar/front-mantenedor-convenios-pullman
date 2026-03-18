@@ -328,22 +328,20 @@ export default function UsuariosFrecuentesPage() {
                                                     </>
                                                 ) : (
                                                     <>
+                                                        <Dropdown.DropdownMenuItem
+                                                            onClick={() => handleToggleStatus(usuarioFrecuente.id, usuarioFrecuente.status)}
+                                                        >
+                                                            <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                            Activar
+                                                        </Dropdown.DropdownMenuItem>
                                                         {usuarioFrecuente.status !== "RECHAZADO" && (
-                                                            <>
-                                                                <Dropdown.DropdownMenuItem
-                                                                    onClick={() => handleToggleStatus(usuarioFrecuente.id, usuarioFrecuente.status)}
-                                                                >
-                                                                    <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                                    Activar
-                                                                </Dropdown.DropdownMenuItem>
-                                                                <Dropdown.DropdownMenuItem
-                                                                    variant="destructive"
-                                                                    onClick={() => handleRechazar(usuarioFrecuente)}
-                                                                >
-                                                                    <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                                    Rechazar
-                                                                </Dropdown.DropdownMenuItem>
-                                                            </>
+                                                            <Dropdown.DropdownMenuItem
+                                                                variant="destructive"
+                                                                onClick={() => handleRechazar(usuarioFrecuente)}
+                                                            >
+                                                                <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                                Rechazar
+                                                            </Dropdown.DropdownMenuItem>
                                                         )}
                                                     </>
                                                 )}

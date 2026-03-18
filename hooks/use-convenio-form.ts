@@ -16,7 +16,6 @@ export function useConvenioForm() {
         setConfiguraciones([])
         try {
             const full = await ConveniosService.getConvenioById(id)
-            console.log(">>> DATA FROM GET (Full Convenio):", JSON.stringify(full, null, 2));
 
             // Normalize global configurations - Enforce SINGLE configuration to avoid duplication
             let rawRootConfigs = full.configuraciones;
@@ -257,6 +256,18 @@ export function useConvenioForm() {
                 configuraciones: isRutasEspecificas ? [] : finalConfigs,
             }
 
+            // --- TARIFA PLANA LOGIC ---
+            // If it's a flat rate, root valor_descuento should match the price of the first config
+            if (finalPayload.tipo_descuento === "Tarifa Plana") {
+                let flatPrice = 0;
+                if (isRutasEspecificas && cleanRutas.length > 0 && cleanRutas[0].configuraciones?.length > 0) {
+                    flatPrice = Number(cleanRutas[0].configuraciones[0].precio_solo_ida) || 0;
+                } else if (!isRutasEspecificas && finalConfigs.length > 0) {
+                    flatPrice = Number(finalConfigs[0].precio_solo_ida) || 0;
+                }
+                finalPayload.valor_descuento = flatPrice;
+            }
+
             // --- STRICT CLEANUP FOR UPDATE (PUT) ---
             // Backend is extremely sensitive to extra fields during PUT
             delete (finalPayload as any).api_url_id;
@@ -296,6 +307,9 @@ export function useConvenioForm() {
             // Pruning final de campos null/empty/array-vacio que el back rechaza
             Object.keys(finalPayload).forEach(key => {
                 const value = (finalPayload as any)[key];
+                // EXEMPT configuration arrays from being deleted when empty, so the back can clear them
+                if (key === 'rutas' || key === 'configuraciones') return;
+
                 if (value === null || value === "" || (Array.isArray(value) && value.length === 0)) {
                     delete (finalPayload as any)[key];
                 }
@@ -303,8 +317,9 @@ export function useConvenioForm() {
 
             await ConveniosService.updateConvenio(convenioId, finalPayload)
 
-            setConfiguraciones(finalConfigs)
-            setRutas(cleanRutas)
+            // CRITICAL: Re-fetch full data after SAVE to ensure ALL modals (Precios, Rutas, Edit) 
+            // share the exact same fresh state from the backend.
+            await fetchFullConvenio(convenioId)
 
             toast.success("Convenio actualizado correctamente")
             onSuccess?.()

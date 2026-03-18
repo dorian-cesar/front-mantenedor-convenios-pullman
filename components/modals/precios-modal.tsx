@@ -136,8 +136,8 @@ export default function PreciosModal({ open, onOpenChange, convenio, onSuccess }
     }, [handleUpdateGlobalConfig])
 
     const handleSave = async () => {
-        // En PreciosModal, enviamos las configuraciones globales actuales (están en el hook)
         const success = await unifiedSave(convenio.id, { configuraciones, rutas }, () => {
+            setCurrentId(null) // Force re-fetch next time this convenio is opened
             onSuccess?.()
             onOpenChange(false)
         })
@@ -178,8 +178,8 @@ export default function PreciosModal({ open, onOpenChange, convenio, onSuccess }
                             </div>
                         )}
 
-                        {/* Global Configs */}
-                        {configuraciones.map((config, idx) => (
+                        {/* Global Configs - Only show if scope is Global */}
+                        {convenio.tipo_alcance === "Global" && configuraciones.map((config, idx) => (
                             <ConfigPrecioItem
                                 key={`global-${idx}`}
                                 config={config}
@@ -188,8 +188,8 @@ export default function PreciosModal({ open, onOpenChange, convenio, onSuccess }
                             />
                         ))}
 
-                        {/* Route Configs */}
-                        {rutas.map((ruta, rIdx) => (
+                        {/* Route Configs - Only show if scope is Rutas Especificas */}
+                        {convenio.tipo_alcance === "Rutas Especificas" && rutas.map((ruta, rIdx) => (
                             <div key={`ruta-${rIdx}`} className="space-y-3">
                                 <div className="flex items-center gap-2 px-1">
                                     <Icon.MapPinIcon className="h-3 w-3 text-primary" />

@@ -331,22 +331,20 @@ export default function EstudiantesPage() {
                                                     </>
                                                 ) : (
                                                     <>
+                                                        <Dropdown.DropdownMenuItem
+                                                            onClick={() => handleToggleStatus(estudiante.id, estudiante.status)}
+                                                        >
+                                                            <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                            Activar
+                                                        </Dropdown.DropdownMenuItem>
                                                         {estudiante.status !== "RECHAZADO" && (
-                                                            <>
-                                                                <Dropdown.DropdownMenuItem
-                                                                    onClick={() => handleToggleStatus(estudiante.id, estudiante.status)}
-                                                                >
-                                                                    <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                                    Activar
-                                                                </Dropdown.DropdownMenuItem>
-                                                                <Dropdown.DropdownMenuItem
-                                                                    variant="destructive"
-                                                                    onClick={() => handleRechazar(estudiante)}
-                                                                >
-                                                                    <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                                    Rechazar
-                                                                </Dropdown.DropdownMenuItem>
-                                                            </>
+                                                            <Dropdown.DropdownMenuItem
+                                                                variant="destructive"
+                                                                onClick={() => handleRechazar(estudiante)}
+                                                            >
+                                                                <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                                Rechazar
+                                                            </Dropdown.DropdownMenuItem>
                                                         )}
                                                     </>
                                                 )}

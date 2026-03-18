@@ -325,22 +325,20 @@ export default function AdultosMayoresPage() {
                                                     </>
                                                 ) : (
                                                     <>
+                                                        <Dropdown.DropdownMenuItem
+                                                            onClick={() => handleToggleStatus(adultoMayor.id, adultoMayor.status)}
+                                                        >
+                                                            <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                            Activar
+                                                        </Dropdown.DropdownMenuItem>
                                                         {adultoMayor.status !== "RECHAZADO" && (
-                                                            <>
-                                                                <Dropdown.DropdownMenuItem
-                                                                    onClick={() => handleToggleStatus(adultoMayor.id, adultoMayor.status)}
-                                                                >
-                                                                    <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                                    Activar
-                                                                </Dropdown.DropdownMenuItem>
-                                                                <Dropdown.DropdownMenuItem
-                                                                    variant="destructive"
-                                                                    onClick={() => handleRechazar(adultoMayor)}
-                                                                >
-                                                                    <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                                    Rechazar
-                                                                </Dropdown.DropdownMenuItem>
-                                                            </>
+                                                            <Dropdown.DropdownMenuItem
+                                                                variant="destructive"
+                                                                onClick={() => handleRechazar(adultoMayor)}
+                                                            >
+                                                                <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                                Rechazar
+                                                            </Dropdown.DropdownMenuItem>
                                                         )}
                                                     </>
                                                 )}

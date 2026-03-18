@@ -132,18 +132,30 @@ export default function FachPage() {
         setOpenAdd(false)
     }
 
-    const handleEditFach = (fach: Fach) => {
-        setSelectedFach(fach)
-        setOpenUpdate(true)
+    const handleEditFach = async (fach: Fach) => {
+        try {
+            const fullData = await FachService.getFachById(fach.id)
+            setSelectedFach(fullData)
+            setOpenUpdate(true)
+        } catch (error) {
+            console.error('Error fetching fach for edit:', error)
+            toast.error("No se pudo cargar el registro para editar")
+        }
     }
 
     const handleFachUpdated = () => {
         fetchFach()
     }
 
-    const handleDetailsFach = (fach: Fach) => {
-        setSelectedFach(fach)
-        setOpenDetails(true)
+    const handleDetailsFach = async (fach: Fach) => {
+        try {
+            const fullData = await FachService.getFachById(fach.id)
+            setSelectedFach(fullData)
+            setOpenDetails(true)
+        } catch (error) {
+            console.error('Error fetching fach details:', error)
+            toast.error("No se pudieron cargar los detalles del registro")
+        }
     }
 
     const handleRefresh = () => {
