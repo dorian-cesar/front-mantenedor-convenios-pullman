@@ -24,6 +24,7 @@ import { exportToExcel } from "@/utils/exportXLSX"
 
 
 import { useConvenios } from "@/hooks/use-convenios"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function EstudiantesPage() {
     const [searchValue, setSearchValue] = useState("")
@@ -35,6 +36,7 @@ export default function EstudiantesPage() {
     const [openRechazar, setOpenRechazar] = useState(false)
 
     const { convenioMap } = useConvenios()
+    const { user } = useAuth()
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -207,7 +209,7 @@ export default function EstudiantesPage() {
         }
     }
 
-    const actionButtons = [
+    const actionButtons = user?.rol === "SISTEMA" ? [] : [
         {
             label: "Nuevo Estudiante",
             onClick: () => setOpenAdd(true),
@@ -312,12 +314,15 @@ export default function EstudiantesPage() {
                                                     <Icon.EyeIcon className="h-4 w-4 mr-2" />
                                                     Ver detalles
                                                 </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuItem
-                                                    onClick={() => handleEditEstudiante(estudiante)}
-                                                >
-                                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
-                                                    Editar
-                                                </Dropdown.DropdownMenuItem>
+
+                                                {user?.rol !== "SISTEMA" && (
+                                                    <Dropdown.DropdownMenuItem
+                                                        onClick={() => handleEditEstudiante(estudiante)}
+                                                    >
+                                                        <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                                        Editar
+                                                    </Dropdown.DropdownMenuItem>
+                                                )}
                                                 {estudiante.status === "ACTIVO" ? (
                                                     <>
                                                         <Dropdown.DropdownMenuSeparator />

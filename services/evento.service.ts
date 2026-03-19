@@ -26,9 +26,10 @@ export interface Evento {
     fecha_compra?: string;
     codigo_autorizacion?: string;
     token?: string;
-    estado?: "CONFIRMADO" | "ANULADO" | "REVERTIDO";
+    estado?: "confirmado" | "anulado";
     created_at?: string;
     updated_at?: string;
+    status?: string;
     pasajero?: {
         id: number;
         rut: string;
@@ -57,6 +58,8 @@ export interface GetEventosParams {
     convenio_id?: number;
     fecha_inicio?: string;
     fecha_fin?: string;
+    estado?: "confirmado" | "anulado";
+    status?: string;
 }
 
 export interface EventosResponse {

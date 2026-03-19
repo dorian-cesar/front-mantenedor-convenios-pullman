@@ -376,7 +376,7 @@ export default function PasajerosPage() {
                             <Table.TableHead>Empresa</Table.TableHead>
                             <Table.TableHead>Convenio</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
-                            {user?.rol === "SUPER_USUARIO" && <Table.TableHead className="text-right">Acciones</Table.TableHead>}
+                            {(user?.rol === "SUPER_USUARIO" || user?.rol === "SISTEMA") && <Table.TableHead className="text-right">Acciones</Table.TableHead>}
                         </Table.TableRow>
                     </Table.TableHeader>
 
@@ -416,7 +416,7 @@ export default function PasajerosPage() {
                                             {pasajero.status === "ACTIVO" ? "Activo" : "Inactivo"}
                                         </BadgeStatus>
                                     </Table.TableCell>
-                                    {user?.rol === "SUPER_USUARIO" && (
+                                    {(user?.rol === "SUPER_USUARIO" || user?.rol === "SISTEMA") && (
                                         <Table.TableCell className="text-right">
                                             <Dropdown.DropdownMenu>
                                                 <Dropdown.DropdownMenuTrigger asChild>
@@ -431,28 +431,33 @@ export default function PasajerosPage() {
                                                         <Icon.EyeIcon className="h-4 w-4 mr-2" />
                                                         Ver detalles
                                                     </Dropdown.DropdownMenuItem>
-                                                    <Dropdown.DropdownMenuItem
-                                                        onClick={() => handleEditPasajero(pasajero)}
-                                                    >
-                                                        <Icon.PencilIcon className="h-4 w-4 mr-2" />
-                                                        Editar
-                                                    </Dropdown.DropdownMenuItem>
-                                                    <Dropdown.DropdownMenuSeparator />
-                                                    {pasajero.status === "ACTIVO" ? (
-                                                        <Dropdown.DropdownMenuItem
-                                                            variant="destructive"
-                                                            onClick={() => handleToggleStatus(pasajero.id, pasajero.status)}
-                                                        >
-                                                            <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                            Desactivar
-                                                        </Dropdown.DropdownMenuItem>
-                                                    ) : (
-                                                        <Dropdown.DropdownMenuItem
-                                                            onClick={() => handleToggleStatus(pasajero.id, pasajero.status)}
-                                                        >
-                                                            <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                            Activar
-                                                        </Dropdown.DropdownMenuItem>
+
+                                                    {user?.rol !== "SISTEMA" && (
+                                                        <>
+                                                            <Dropdown.DropdownMenuItem
+                                                                onClick={() => handleEditPasajero(pasajero)}
+                                                            >
+                                                                <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                                                Editar
+                                                            </Dropdown.DropdownMenuItem>
+                                                            <Dropdown.DropdownMenuSeparator />
+                                                            {pasajero.status === "ACTIVO" ? (
+                                                                <Dropdown.DropdownMenuItem
+                                                                    variant="destructive"
+                                                                    onClick={() => handleToggleStatus(pasajero.id, pasajero.status)}
+                                                                >
+                                                                    <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                                    Desactivar
+                                                                </Dropdown.DropdownMenuItem>
+                                                            ) : (
+                                                                <Dropdown.DropdownMenuItem
+                                                                    onClick={() => handleToggleStatus(pasajero.id, pasajero.status)}
+                                                                >
+                                                                    <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                                    Activar
+                                                                </Dropdown.DropdownMenuItem>
+                                                            )}
+                                                        </>
                                                     )}
                                                 </Dropdown.DropdownMenuContent>
                                             </Dropdown.DropdownMenu>

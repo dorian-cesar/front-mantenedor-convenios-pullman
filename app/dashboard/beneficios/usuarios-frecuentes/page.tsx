@@ -22,6 +22,7 @@ import { formatRut } from "@/utils/helpers"
 import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
 import { useConvenios } from "@/hooks/use-convenios"
+import { useAuth } from "@/hooks/useAuth"
 
 
 export default function UsuariosFrecuentesPage() {
@@ -32,6 +33,7 @@ export default function UsuariosFrecuentesPage() {
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedUsuarioFrecuente, setSelectedUsuarioFrecuente] = useState<UsuarioFrecuente | null>(null)
     const [openRechazar, setOpenRechazar] = useState(false)
+    const { user } = useAuth()
 
     const { convenioMap } = useConvenios()
 
@@ -204,7 +206,7 @@ export default function UsuariosFrecuentesPage() {
         }
     }
 
-    const actionButtons = [
+    const actionButtons = user?.rol === "SISTEMA" ? [] : [
         {
             label: "Nuevo Usuario Frecuente",
             onClick: () => setOpenAdd(true),
@@ -309,12 +311,15 @@ export default function UsuariosFrecuentesPage() {
                                                     <Icon.EyeIcon className="h-4 w-4 mr-2" />
                                                     Ver detalles
                                                 </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuItem
-                                                    onClick={() => handleEditUsuarioFrecuente(usuarioFrecuente)}
-                                                >
-                                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
-                                                    Editar
-                                                </Dropdown.DropdownMenuItem>
+
+                                                {user?.rol !== "SISTEMA" && (
+                                                    <Dropdown.DropdownMenuItem
+                                                        onClick={() => handleEditUsuarioFrecuente(usuarioFrecuente)}
+                                                    >
+                                                        <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                                        Editar
+                                                    </Dropdown.DropdownMenuItem>
+                                                )}
                                                 {usuarioFrecuente.status === "ACTIVO" ? (
                                                     <>
                                                         <Dropdown.DropdownMenuSeparator />

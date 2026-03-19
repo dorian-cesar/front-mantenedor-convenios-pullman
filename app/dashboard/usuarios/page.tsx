@@ -269,7 +269,7 @@ export default function UsuariosPage() {
                     <Table.TableCell className="font-medium">{usuario.correo}</Table.TableCell>
                     <Table.TableCell>{usuario.nombre || "Sin nombre"}</Table.TableCell>
                     <Table.TableCell>
-                      {usuario.rol === "SUPER_USUARIO" ? "Super Usuario" : "Usuario"}
+                      {usuario.rol || "Sin rol"}
                     </Table.TableCell>
                     <Table.TableCell>
                       <BadgeStatus status={usuario.status === "ACTIVO" ? "active" : "inactive"}>

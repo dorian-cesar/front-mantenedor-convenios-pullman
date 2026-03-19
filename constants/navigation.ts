@@ -40,6 +40,7 @@ export const NAVIGATION: NavItem[] = [
         description: "Resumen del sistema",
         group: "General",
         section: "main",
+        roles: ["SUPER_USUARIO"]
     },
     {
         id: "boletos",
@@ -58,6 +59,7 @@ export const NAVIGATION: NavItem[] = [
         description: "empresas · compañias · organizaciones · clientes",
         group: "Empresas",
         section: "main",
+        roles: ["SUPER_USUARIO", "USUARIO"]
     },
     {
         id: "convenios",
@@ -95,7 +97,7 @@ export const NAVIGATION: NavItem[] = [
         description: "gestión de beneficios y convenios",
         group: "Convenios y Beneficios",
         section: "secondary",
-        roles: ["SUPER_USUARIO"],
+        roles: ["SUPER_USUARIO", "SISTEMA"],
         children: [
             {
                 id: "mayores",

@@ -271,7 +271,7 @@ function ConveniosPage() {
         }
     }
 
-    const actionButtons = [
+    const actionButtons = user?.rol === "SISTEMA" ? [] : [
         {
             label: "Nuevo Convenio",
             onClick: () => setOpenAdd(true),
@@ -456,37 +456,42 @@ function ConveniosPage() {
                                                     <Icon.EyeIcon className="h-4 w-4 mr-2" />
                                                     Ver detalles
                                                 </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuItem
-                                                    onClick={() => handleEditConvenio(convenio)}
-                                                >
-                                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
-                                                    Editar
-                                                </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuSeparator />
-                                                <Dropdown.DropdownMenuItem
-                                                    disabled={convenio.status === "ACTIVO"}
-                                                    onClick={() => handleToggleStatus(convenio.id, "INACTIVO")}
-                                                >
-                                                    <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                    Activar
-                                                </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuItem
-                                                    disabled={convenio.status === "INACTIVO"}
-                                                    variant="destructive"
-                                                    onClick={() => handleToggleStatus(convenio.id, "ACTIVO")}
-                                                >
-                                                    <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                    Desactivar
-                                                </Dropdown.DropdownMenuItem>
 
-                                                {(convenio.status === "INACTIVO" && user?.rol === "SUPER_USUARIO") && (
-                                                    <Dropdown.DropdownMenuItem
-                                                        variant="destructive"
-                                                        onClick={() => handleDelete(convenio.id, convenio.status)}
-                                                    >
-                                                        <Icon.Trash2 className="h-4 w-4 mr-2" />
-                                                        Eliminar
-                                                    </Dropdown.DropdownMenuItem>
+                                                {user?.rol !== "SISTEMA" && (
+                                                    <>
+                                                        <Dropdown.DropdownMenuItem
+                                                            onClick={() => handleEditConvenio(convenio)}
+                                                        >
+                                                            <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                                            Editar
+                                                        </Dropdown.DropdownMenuItem>
+                                                        <Dropdown.DropdownMenuSeparator />
+                                                        <Dropdown.DropdownMenuItem
+                                                            disabled={convenio.status === "ACTIVO"}
+                                                            onClick={() => handleToggleStatus(convenio.id, "INACTIVO")}
+                                                        >
+                                                            <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                            Activar
+                                                        </Dropdown.DropdownMenuItem>
+                                                        <Dropdown.DropdownMenuItem
+                                                            disabled={convenio.status === "INACTIVO"}
+                                                            variant="destructive"
+                                                            onClick={() => handleToggleStatus(convenio.id, "ACTIVO")}
+                                                        >
+                                                            <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                            Desactivar
+                                                        </Dropdown.DropdownMenuItem>
+
+                                                        {(convenio.status === "INACTIVO" && user?.rol === "SUPER_USUARIO") && (
+                                                            <Dropdown.DropdownMenuItem
+                                                                variant="destructive"
+                                                                onClick={() => handleDelete(convenio.id, convenio.status)}
+                                                            >
+                                                                <Icon.Trash2 className="h-4 w-4 mr-2" />
+                                                                Eliminar
+                                                            </Dropdown.DropdownMenuItem>
+                                                        )}
+                                                    </>
                                                 )}
                                             </Dropdown.DropdownMenuContent>
                                         </Dropdown.DropdownMenu>

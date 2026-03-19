@@ -17,6 +17,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { UsuariosService } from "@/services/usuario.service"
+import { RolesService, Role } from "@/services/roles.service"
 import { toast } from "sonner"
 
 interface AddUsuarioModalProps {
@@ -63,7 +64,7 @@ const usuarioSchema = z
 
         confirmPassword: z.string(),
 
-        rol: z.enum(["USUARIO", "SUPER_USUARIO"]),
+        rol: z.string().min(1, "Debe seleccionar un rol"),
 
         status: z.enum(["ACTIVO", "INACTIVO"]),
     })
@@ -80,6 +81,7 @@ export default function AddUsuarioModal({
     onSuccess,
 }: AddUsuarioModalProps) {
     const [isLoading, setIsLoading] = useState(false)
+    const [roles, setRoles] = useState<Role[]>([])
     const [showPassword, setShowPassword] = useState(false)
 
     const form = useForm<UsuarioFormValues>({
@@ -91,10 +93,26 @@ export default function AddUsuarioModal({
             telefono: "",
             password: "",
             confirmPassword: "",
-            rol: "USUARIO",
+            rol: "",
             status: "ACTIVO",
         },
     })
+
+    const fetchRoles = async () => {
+        try {
+            const response = await RolesService.getRoles({ limit: 100, status: "ACTIVO" })
+            setRoles(response.rows)
+            if (response.rows.length > 0) {
+                form.setValue("rol", response.rows[0].nombre)
+            }
+        } catch (error) {
+            console.error('Error fetching roles:', error)
+        }
+    }
+
+    useEffect(() => {
+        fetchRoles()
+    }, [])
 
     useEffect(() => {
         if (!open) {
@@ -110,7 +128,7 @@ export default function AddUsuarioModal({
             await UsuariosService.createUsuario({
                 correo: data.correo,
                 password: data.password,
-                rol: data.rol,
+                rol: data.rol.toUpperCase().replace(/\s+/g, "_"),
                 status: data.status,
                 nombre: data.nombre,
                 rut: data.rut || null,
@@ -261,8 +279,11 @@ export default function AddUsuarioModal({
                                             </SelectTrigger>
                                         </Form.FormControl>
                                         <SelectContent>
-                                            <SelectItem value="USUARIO">Usuario</SelectItem>
-                                            <SelectItem value="SUPER_USUARIO">Super Usuario</SelectItem>
+                                            {roles.map((role) => (
+                                                <SelectItem key={role.id} value={role.nombre}>
+                                                    {role.nombre}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <Form.FormMessage />

@@ -19,6 +19,7 @@ import { useDebounce } from "@/hooks/use-debounce"
 import { formatRut } from "@/utils/helpers"
 import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function CarabinerosPage() {
     const [searchValue, setSearchValue] = useState("")
@@ -29,6 +30,7 @@ export default function CarabinerosPage() {
     const [openUpdate, setOpenUpdate] = useState(false)
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedCarabinero, setSelectedCarabinero] = useState<Carabinero | null>(null)
+    const { user } = useAuth()
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -189,7 +191,7 @@ export default function CarabinerosPage() {
         }
     }
 
-    const actionButtons = [
+    const actionButtons = user?.rol === "SISTEMA" ? [] : [
         {
             label: "Nuevo Carabinero",
             onClick: () => setOpenAdd(true),
@@ -279,19 +281,21 @@ export default function CarabinerosPage() {
                                                 </Button>
                                             </Dropdown.DropdownMenuTrigger>
                                             <Dropdown.DropdownMenuContent align="end">
-                                                {/* <Dropdown.DropdownMenuItem
+                                                <Dropdown.DropdownMenuItem
                                                     onClick={() => handleDetailsCarabinero(carabinero)}
                                                 >
                                                     <Icon.EyeIcon className="h-4 w-4 mr-2" />
                                                     Ver detalles
-                                                </Dropdown.DropdownMenuItem> */}
-                                                <Dropdown.DropdownMenuItem
-                                                    onClick={() => handleEditCarabinero(carabinero)}
-                                                >
-                                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
-                                                    Editar
                                                 </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuSeparator />
+
+                                                {user?.rol !== "SISTEMA" && (
+                                                    <Dropdown.DropdownMenuItem
+                                                        onClick={() => handleEditCarabinero(carabinero)}
+                                                    >
+                                                        <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                                        Editar
+                                                    </Dropdown.DropdownMenuItem>
+                                                )}
                                                 {carabinero.status === "ACTIVO" ? (
                                                     <Dropdown.DropdownMenuItem
                                                         variant="destructive"

@@ -21,6 +21,7 @@ import { useDebounce } from "@/hooks/use-debounce"
 import { formatRut } from "@/utils/helpers"
 import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function FachPage() {
     const [searchValue, setSearchValue] = useState("")
@@ -32,6 +33,7 @@ export default function FachPage() {
     const [openUpdate, setOpenUpdate] = useState(false)
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedFach, setSelectedFach] = useState<Fach | null>(null)
+    const { user } = useAuth()
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -204,7 +206,7 @@ export default function FachPage() {
         }
     }
 
-    const actionButtons = [
+    const actionButtons = user?.rol === "SISTEMA" ? [] : [
         {
             label: "Nuevo Fach",
             onClick: () => setOpenAdd(true),
@@ -302,13 +304,15 @@ export default function FachPage() {
                                                     <Icon.EyeIcon className="h-4 w-4 mr-2" />
                                                     Ver detalles
                                                 </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuItem
-                                                    onClick={() => handleEditFach(fach)}
-                                                >
-                                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
-                                                    Editar
-                                                </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuSeparator />
+
+                                                {user?.rol !== "SISTEMA" && (
+                                                    <Dropdown.DropdownMenuItem
+                                                        onClick={() => handleEditFach(fach)}
+                                                    >
+                                                        <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                                        Editar
+                                                    </Dropdown.DropdownMenuItem>
+                                                )}
                                                 {fach.status === "ACTIVO" ? (
                                                     <Dropdown.DropdownMenuItem
                                                         variant="destructive"

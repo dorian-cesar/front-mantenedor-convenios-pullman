@@ -7,7 +7,7 @@ export interface Usuario {
     rut: string | null;
     telefono: string | null;
     status: "ACTIVO" | "INACTIVO";
-    rol: "USUARIO" | "SUPER_USUARIO" | null;
+    rol: string | null;
     rol_id: number | null;
 }
 
@@ -30,14 +30,14 @@ export interface UsuariosResponse {
 export interface CreateUsuarioData {
     correo: string;
     password: string;
-    rol?: "USUARIO" | "SUPER_USUARIO";
+    rol?: string;
     status?: "ACTIVO" | "INACTIVO";
 }
 
 export interface UpdateUsuarioData {
     correo?: string;
     password?: string;
-    rol?: "USUARIO" | "SUPER_USUARIO";
+    rol?: string;
     status?: "ACTIVO" | "INACTIVO";
 }
 

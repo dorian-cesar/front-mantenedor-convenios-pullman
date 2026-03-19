@@ -24,15 +24,17 @@ import { exportToExcel } from "@/utils/exportXLSX"
 import { EmpresasService, type Empresa } from "@/services/empresa.service"
 import { PasajerosService, type Pasajero } from "@/services/pasajero.service"
 import { ConveniosService, type Convenio } from "@/services/convenio.service"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function EventosPage() {
     const [openExport, setOpenExport] = useState(false);
     const [searchValue, setSearchValue] = useState("")
     const [eventos, setEventos] = useState<Evento[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const { user } = useAuth()
 
     // Filtros
-    const [tipoEventoFilter, setTipoEventoFilter] = useState<"COMPRA" | "CAMBIO" | "DEVOLUCION" | null>(null)
+    const [statusFilter, setStatusFilter] = useState<"compra" | "anulado" | null>(null)
     const [empresaFilter, setEmpresaFilter] = useState<number | null>(null)
     const [pasajeroFilter, setPasajeroFilter] = useState<number | null>(null)
     const [convenioFilter, setConvenioFilter] = useState<number | null>(null)
@@ -62,11 +64,16 @@ export default function EventosPage() {
                 limit: pagination.limit,
                 sortBy: 'id',
                 order: 'DESC',
+                tipo_evento: 'COMPRA',
             }
 
             // Aplicar filtros
-            if (tipoEventoFilter) {
-                params.tipo_evento = tipoEventoFilter
+            if (statusFilter === "anulado") {
+                params.estado = "anulado"
+                params.status = "anulado"
+            } else if (statusFilter === "compra") {
+                params.estado = "confirmado"
+                params.status = "confirmado"
             }
 
             if (empresaFilter) {
@@ -154,7 +161,7 @@ export default function EventosPage() {
     }, [
         pagination.page,
         pagination.limit,
-        tipoEventoFilter,
+        statusFilter,
         empresaFilter,
         pasajeroFilter,
         convenioFilter,
@@ -179,7 +186,8 @@ export default function EventosPage() {
             }
 
             // Aplicar mismos filtros que la tabla
-            if (tipoEventoFilter) params.tipo_evento = tipoEventoFilter
+            if (statusFilter === "anulado") params.estado = "anulado"
+            if (statusFilter === "compra") params.estado = "confirmado"
             if (empresaFilter) params.empresa_id = empresaFilter
             if (pasajeroFilter) params.pasajero_id = pasajeroFilter
             if (convenioFilter) params.convenio_id = convenioFilter
@@ -195,7 +203,7 @@ export default function EventosPage() {
 
             const formattedData = response.rows.map((evento) => ({
                 ID: evento.id,
-                Tipo: getTipoEventoLabel(evento.tipo_evento),
+                Tipo: getTipoEventoLabel(evento),
                 "Origen - Destino": `${evento.terminal_origen} → ${evento.terminal_destino}`,
                 "Fecha Viaje": formatDateOnly(evento.fecha_viaje),
                 "Hora Salida": evento.hora_salida ?? "N/A",
@@ -211,11 +219,9 @@ export default function EventosPage() {
                     : "N/A",
                 Convenio: evento.convenio?.nombre || "N/A",
                 Estado:
-                    evento.estado === "ANULADO"
-                        ? "Anulado"
-                        : evento.estado === "REVERTIDO"
-                            ? "Revertido"
-                            : "Confirmado",
+                    evento.estado === "anulado"
+                        ? "anulado"
+                        : "confirmado",
             }))
 
             if (type === "csv") {
@@ -244,13 +250,9 @@ export default function EventosPage() {
         }
     ]
 
-    const getTipoEventoLabel = (tipo: "COMPRA" | "CAMBIO" | "DEVOLUCION") => {
-        switch (tipo) {
-            case "COMPRA": return "Compra"
-            case "CAMBIO": return "Cambio"
-            case "DEVOLUCION": return "Devolución"
-            default: return tipo
-        }
+    const getTipoEventoLabel = (evento: Evento) => {
+        if (evento.estado === "anulado") return "anulado"
+        return "compra"
     }
 
     return (
@@ -278,16 +280,15 @@ export default function EventosPage() {
                     <div className="flex flex-col gap-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
-                                <label className="text-sm font-medium mb-2 block">Tipo de Evento</label>
+                                <label className="text-sm font-medium mb-2 block">Estado</label>
                                 <select
                                     className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                                    value={tipoEventoFilter || ""}
-                                    onChange={(e) => setTipoEventoFilter(e.target.value ? e.target.value as any : null)}
+                                    value={statusFilter || ""}
+                                    onChange={(e) => setStatusFilter(e.target.value ? e.target.value as any : null)}
                                 >
-                                    <option value="">Todos los tipos</option>
-                                    <option value="COMPRA">Compra</option>
-                                    <option value="CAMBIO">Cambio</option>
-                                    <option value="DEVOLUCION">Devolución</option>
+                                    <option value="">Todos</option>
+                                    <option value="compra">Confirmados</option>
+                                    <option value="anulado">Anulados</option>
                                 </select>
                             </div>
 
@@ -370,11 +371,11 @@ export default function EventosPage() {
                                 </Popover>
                             </div>
 
-                            {(tipoEventoFilter || empresaFilter || pasajeroFilter || convenioFilter || dateRange) && (
+                            {(statusFilter || empresaFilter || pasajeroFilter || convenioFilter || dateRange) && (
                                 <Button
                                     variant="ghost"
                                     onClick={() => {
-                                        setTipoEventoFilter(null)
+                                        setStatusFilter(null)
                                         setEmpresaFilter(null)
                                         setPasajeroFilter(null)
                                         setConvenioFilter(null)
@@ -430,11 +431,10 @@ export default function EventosPage() {
                                     <Table.TableCell>
                                         <BadgeStatus
                                             status={
-                                                evento.tipo_evento === "COMPRA" ? "active" :
-                                                    evento.tipo_evento === "CAMBIO" ? "warning" : "inactive"
+                                                evento.estado === "anulado" ? "inactive" : "active"
                                             }
                                         >
-                                            {getTipoEventoLabel(evento.tipo_evento)}
+                                            {getTipoEventoLabel(evento)}
                                         </BadgeStatus>
                                     </Table.TableCell>
                                     <Table.TableCell>
@@ -460,13 +460,13 @@ export default function EventosPage() {
                                         {evento.convenio?.nombre || "N/A"}
                                     </Table.TableCell>
                                     <Table.TableCell>
-                                        {
-                                            evento.estado === "ANULADO"
-                                                ? "Anulado"
-                                                : evento.estado === "REVERTIDO"
-                                                    ? "Revertido"
-                                                    : "Confirmado"
-                                        }
+                                        <BadgeStatus status={evento.estado === "anulado" ? "anulado" : "confirmado"}>
+                                            {
+                                                evento.estado === "anulado"
+                                                    ? "anulado"
+                                                    : "confirmado"
+                                            }
+                                        </BadgeStatus>
                                     </Table.TableCell>
                                 </Table.TableRow>
                             ))

@@ -22,6 +22,7 @@ import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
 import RechazarModal from "@/components/modals/rechazar"
 import { useConvenios } from "@/hooks/use-convenios"
+import { useAuth } from "@/hooks/useAuth"
 
 
 export default function AdultosMayoresPage() {
@@ -34,6 +35,7 @@ export default function AdultosMayoresPage() {
     const [openRechazar, setOpenRechazar] = useState(false)
 
     const { convenioMap } = useConvenios()
+    const { user } = useAuth()
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -201,7 +203,7 @@ export default function AdultosMayoresPage() {
         }
     }
 
-    const actionButtons = [
+    const actionButtons = user?.rol === "SISTEMA" ? [] : [
         {
             label: "Nuevo Adulto Mayor",
             onClick: () => setOpenAdd(true),
@@ -306,12 +308,15 @@ export default function AdultosMayoresPage() {
                                                     <Icon.EyeIcon className="h-4 w-4 mr-2" />
                                                     Ver detalles
                                                 </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuItem
-                                                    onClick={() => handleEditAdultoMayor(adultoMayor)}
-                                                >
-                                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
-                                                    Editar
-                                                </Dropdown.DropdownMenuItem>
+
+                                                {user?.rol !== "SISTEMA" && (
+                                                    <Dropdown.DropdownMenuItem
+                                                        onClick={() => handleEditAdultoMayor(adultoMayor)}
+                                                    >
+                                                        <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                                        Editar
+                                                    </Dropdown.DropdownMenuItem>
+                                                )}
                                                 {adultoMayor.status === "ACTIVO" ? (
                                                     <>
                                                         <Dropdown.DropdownMenuSeparator />

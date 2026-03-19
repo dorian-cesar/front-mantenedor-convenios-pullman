@@ -17,6 +17,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { UsuariosService, Usuario } from "@/services/usuario.service"
+import { RolesService, Role } from "@/services/roles.service"
 import { toast } from "sonner"
 
 interface UpdateUsuarioModalProps {
@@ -65,7 +66,7 @@ const usuarioSchema = z
         password: z.string().min(6).optional().or(z.literal("")),
         confirmPassword: z.string().optional(),
 
-        rol: z.enum(["USUARIO", "SUPER_USUARIO"]),
+        rol: z.string().min(1, "Debe seleccionar un rol"),
 
         status: z.enum(["ACTIVO", "INACTIVO"]),
     })
@@ -89,6 +90,7 @@ export default function UpdateUsuarioModal({
     onSuccess,
 }: UpdateUsuarioModalProps) {
     const [isLoading, setIsLoading] = useState(false)
+    const [roles, setRoles] = useState<Role[]>([])
     const [showPassword, setShowPassword] = useState(false)
 
     const form = useForm<UsuarioFormValues>({
@@ -101,10 +103,23 @@ export default function UpdateUsuarioModal({
             telefono: "",
             password: "",
             confirmPassword: "",
-            rol: "USUARIO",
+            rol: "",
             status: "ACTIVO",
         },
     })
+
+    const fetchRoles = async () => {
+        try {
+            const response = await RolesService.getRoles({ limit: 100, status: "ACTIVO" })
+            setRoles(response.rows)
+        } catch (error) {
+            console.error('Error fetching roles:', error)
+        }
+    }
+
+    useEffect(() => {
+        fetchRoles()
+    }, [])
 
     useEffect(() => {
         if (usuario) {
@@ -133,7 +148,7 @@ export default function UpdateUsuarioModal({
                 nombre: data.nombre,
                 rut: data.rut,
                 telefono: data.telefono,
-                rol: data.rol,
+                rol: data.rol.toUpperCase().replace(/\s+/g, "_"),
                 status: data.status,
                 ...(data.password
                     ? { password: data.password }
@@ -280,8 +295,11 @@ export default function UpdateUsuarioModal({
                                             </SelectTrigger>
                                         </Form.FormControl>
                                         <SelectContent>
-                                            <SelectItem value="USUARIO">Usuario</SelectItem>
-                                            <SelectItem value="SUPER_USUARIO">Super Usuario</SelectItem>
+                                            {roles.map((role) => (
+                                                <SelectItem key={role.id} value={role.nombre}>
+                                                    {role.nombre}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <Form.FormMessage />
