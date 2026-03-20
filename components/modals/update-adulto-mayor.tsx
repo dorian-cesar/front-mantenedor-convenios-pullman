@@ -42,7 +42,7 @@ const adultoMayorSchema = z.object({
             message: "Formato de RUT inválido (ej: 12345678-9)",
         }),
     telefono: z.string().min(1, "El teléfono es requerido"),
-    correo: z.string().email("Correo electrónico inválido"),
+    correo: z.string().email("Correo electrónico inválido").or(z.literal("")),
     direccion: z.string().min(1, "La dirección es requerida"),
     status: z.enum(["ACTIVO", "INACTIVO", "RECHAZADO"]),
     imagen_cedula_identidad: z.string().optional(),
