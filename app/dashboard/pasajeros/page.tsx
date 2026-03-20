@@ -41,6 +41,7 @@ export default function PasajerosPage() {
     const [selectedEmpresa, setSelectedEmpresa] = useState<number | null>(null)
     const [selectedConvenio, setSelectedConvenio] = useState<number | null>(null)
     const [selectedTipoPasajero, setSelectedTipoPasajero] = useState<number | null>(null)
+    const [statusFilter, setStatusFilter] = useState<string>("")
     const { user } = useAuth()
 
     const [pagination, setPagination] = useState({
@@ -137,7 +138,7 @@ export default function PasajerosPage() {
         fetchEmpresas()
         fetchConvenios()
         fetchTiposPasajero()
-    }, [pagination.page, pagination.limit, debouncedSearch, selectedEmpresa, selectedConvenio, selectedTipoPasajero])
+    }, [pagination.page, pagination.limit, debouncedSearch, selectedEmpresa, selectedConvenio, selectedTipoPasajero, statusFilter])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -301,12 +302,105 @@ export default function PasajerosPage() {
     const filteredPasajeros = pasajeros.filter(pasajero => {
         if (!searchValue.trim()) return true;
         const searchLower = searchValue.toLowerCase();
+        const idString = pasajero.id ? pasajero.id.toString() : "";
         return (
+            idString.includes(searchLower) ||
             (pasajero.nombres && pasajero.nombres.toLowerCase().includes(searchLower)) ||
             (pasajero.apellidos && pasajero.apellidos.toLowerCase().includes(searchLower)) ||
             (pasajero.rut && pasajero.rut.toLowerCase().includes(searchLower))
         );
     });
+
+    const filters = (
+        <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Empresa:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
+                            <span className="truncate">
+                                {selectedEmpresa ? empresas.find(e => e.id === selectedEmpresa)?.nombre || "Seleccionar..." : "Todas"}
+                            </span>
+                            <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                        <Dropdown.DropdownMenuItem onClick={() => setSelectedEmpresa(null)}>
+                            Todas
+                        </Dropdown.DropdownMenuItem>
+                        {empresas.map((empresa) => (
+                            <Dropdown.DropdownMenuItem key={empresa.id} onClick={() => setSelectedEmpresa(empresa.id)}>
+                                {empresa.nombre}
+                            </Dropdown.DropdownMenuItem>
+                        ))}
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Convenio:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
+                            <span className="truncate">
+                                {selectedConvenio ? convenios.find(c => c.id === selectedConvenio)?.nombre || "Seleccionar..." : "Todos"}
+                            </span>
+                            <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                        <Dropdown.DropdownMenuItem onClick={() => setSelectedConvenio(null)}>
+                            Todos
+                        </Dropdown.DropdownMenuItem>
+                        {convenios.map((convenio) => (
+                            <Dropdown.DropdownMenuItem key={convenio.id} onClick={() => setSelectedConvenio(convenio.id)}>
+                                {convenio.nombre}
+                            </Dropdown.DropdownMenuItem>
+                        ))}
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Status:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
+                            {statusFilter === "ACTIVO" ? "Activo" : statusFilter === "INACTIVO" ? "Inactivo" : "Todos"}
+                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start">
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("")}>
+                            Todos
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("ACTIVO")}>
+                            Activo
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("INACTIVO")}>
+                            Inactivo
+                        </Dropdown.DropdownMenuItem>
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            {(statusFilter || selectedEmpresa || selectedConvenio) && (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                        setStatusFilter("");
+                        setSelectedEmpresa(null);
+                        setSelectedConvenio(null);
+                    }}
+                    className="h-9"
+                >
+                    <Icon.X className="mr-2 h-4 w-4" />
+                    Limpiar
+                </Button>
+            )}
+        </div>
+    )
 
     return (
         <div className="flex flex-col justify-center space-y-4">
@@ -328,6 +422,7 @@ export default function PasajerosPage() {
                 searchValue={searchValue}
                 onSearchChange={setSearchValue}
                 onSearchClear={() => setSearchValue("")}
+                filters={filters}
                 showPagination={true}
                 paginationComponent={
                     <Pagination
@@ -344,35 +439,6 @@ export default function PasajerosPage() {
                 }
                 showRefreshButton={true}
                 onRefresh={handleRefresh}
-                filters={
-                    <div className="flex items-center space-x-2">
-                        <select
-                            className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                            value={selectedEmpresa || ""}
-                            onChange={(e) => setSelectedEmpresa(e.target.value ? Number(e.target.value) : null)}
-                        >
-                            <option value="">Todas las empresas</option>
-                            {empresas.map((empresa) => (
-                                <option key={empresa.id} value={empresa.id}>
-                                    {empresa.nombre}
-                                </option>
-                            ))}
-                        </select>
-
-                        <select
-                            className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                            value={selectedConvenio || ""}
-                            onChange={(e) => setSelectedConvenio(e.target.value ? Number(e.target.value) : null)}
-                        >
-                            <option value="">Todos los convenios</option>
-                            {convenios.map((convenio) => (
-                                <option key={convenio.id} value={convenio.id}>
-                                    {convenio.nombre}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                }
             />
 
             <Card.Card>

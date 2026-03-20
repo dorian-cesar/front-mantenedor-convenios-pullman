@@ -30,6 +30,7 @@ export default function EmpresasPage() {
     const [openUpdate, setOpenUpdate] = useState(false)
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedEmpresa, setSelectedEmpresa] = useState<Empresa | null>(null)
+    const [statusFilter, setStatusFilter] = useState<string>("")
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -52,8 +53,8 @@ export default function EmpresasPage() {
                 order: 'DESC',
             }
 
-            if (debouncedSearch.trim()) {
-                params.nombre = debouncedSearch.trim()
+            if (statusFilter) {
+                params.status = statusFilter as any
             }
 
             const response = await EmpresasService.getEmpresas(params)
@@ -77,7 +78,7 @@ export default function EmpresasPage() {
 
     useEffect(() => {
         fetchEmpresas()
-    }, [pagination.page, pagination.limit, debouncedSearch])
+    }, [pagination.page, pagination.limit, debouncedSearch, statusFilter])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -193,11 +194,54 @@ export default function EmpresasPage() {
     const filteredEmpresas = empresas.filter(emp => {
         if (!searchValue.trim()) return true;
         const searchLower = searchValue.toLowerCase();
+        const idString = emp.id ? emp.id.toString() : "";
         return (
+            idString.includes(searchLower) ||
             (emp.nombre && emp.nombre.toLowerCase().includes(searchLower)) ||
             (emp.rut_empresa && emp.rut_empresa.toLowerCase().includes(searchLower))
         );
     });
+
+    const filters = (
+        <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Status:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
+                            {statusFilter === "ACTIVO" ? "Activo" : statusFilter === "INACTIVO" ? "Inactivo" : "Todos"}
+                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start">
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("")}>
+                            Todos
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("ACTIVO")}>
+                            Activo
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("INACTIVO")}>
+                            Inactivo
+                        </Dropdown.DropdownMenuItem>
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            {statusFilter && (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                        setStatusFilter("");
+                    }}
+                    className="h-9"
+                >
+                    <Icon.X className="mr-2 h-4 w-4" />
+                    Limpiar
+                </Button>
+            )}
+        </div>
+    )
 
     return (
         <div className="flex flex-col justify-center space-y-4">
@@ -219,6 +263,7 @@ export default function EmpresasPage() {
                 searchValue={searchValue}
                 onSearchChange={setSearchValue}
                 onSearchClear={() => setSearchValue("")}
+                filters={filters}
                 showPagination={true}
                 paginationComponent={
                     <Pagination

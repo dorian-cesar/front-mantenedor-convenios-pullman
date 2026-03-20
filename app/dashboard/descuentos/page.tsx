@@ -37,6 +37,7 @@ export default function DescuentosPage() {
     const [selectedDescuento, setSelectedDescuento] = useState<Descuento | null>(null)
     const [selectedConvenio, setSelectedConvenio] = useState<number | null>(null)
     const [selectedEmpresa, setSelectedEmpresa] = useState<number | null>(null)
+    const [statusFilter, setStatusFilter] = useState<string>("")
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -66,6 +67,10 @@ export default function DescuentosPage() {
 
             if (selectedConvenio) {
                 params.convenio_id = selectedConvenio
+            }
+
+            if (statusFilter) {
+                params.status = statusFilter as any
             }
 
             const response = await DescuentosService.getDescuentos(params)
@@ -126,7 +131,7 @@ export default function DescuentosPage() {
         fetchConvenios()
         fetchCodigos()
         fetchEmpresas()
-    }, [pagination.page, pagination.limit, debouncedSearch, selectedConvenio])
+    }, [pagination.page, pagination.limit, debouncedSearch, selectedConvenio, statusFilter])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -237,6 +242,84 @@ export default function DescuentosPage() {
         },
     ]
 
+    const filteredDescuentos = descuentos.filter(descuento => {
+        if (!searchValue.trim()) return true;
+        const searchLower = searchValue.toLowerCase();
+        const idString = descuento.id ? descuento.id.toString() : "";
+        return (
+            idString.includes(searchLower) ||
+            (descuento.codigo_descuento?.codigo && descuento.codigo_descuento.codigo.toLowerCase().includes(searchLower)) ||
+            (descuento.pasajero?.nombres && descuento.pasajero.nombres.toLowerCase().includes(searchLower)) ||
+            (descuento.pasajero?.rut && descuento.pasajero.rut.toLowerCase().includes(searchLower))
+        );
+    });
+
+    const filters = (
+        <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Convenio:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
+                            <span className="truncate">
+                                {selectedConvenio ? convenios.find(c => c.id === selectedConvenio)?.nombre || "Seleccionar..." : "Todos"}
+                            </span>
+                            <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                        <Dropdown.DropdownMenuItem onClick={() => setSelectedConvenio(null)}>
+                            Todos
+                        </Dropdown.DropdownMenuItem>
+                        {convenios.map((convenio) => (
+                            <Dropdown.DropdownMenuItem key={convenio.id} onClick={() => setSelectedConvenio(convenio.id)}>
+                                {convenio.nombre} {convenio.empresa ? `(${convenio.empresa.nombre})` : ''}
+                            </Dropdown.DropdownMenuItem>
+                        ))}
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Status:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
+                            {statusFilter === "ACTIVO" ? "Activo" : statusFilter === "INACTIVO" ? "Inactivo" : "Todos"}
+                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start">
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("")}>
+                            Todos
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("ACTIVO")}>
+                            Activo
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("INACTIVO")}>
+                            Inactivo
+                        </Dropdown.DropdownMenuItem>
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            {(statusFilter || selectedConvenio) && (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                        setStatusFilter("");
+                        setSelectedConvenio(null);
+                    }}
+                    className="h-9"
+                >
+                    <Icon.X className="mr-2 h-4 w-4" />
+                    Limpiar
+                </Button>
+            )}
+        </div>
+    )
+
     return (
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
@@ -253,7 +336,7 @@ export default function DescuentosPage() {
                         }
                     ]
                 }}
-                showSearch={false}
+                showSearch={true}
                 searchValue={searchValue}
                 onSearchChange={setSearchValue}
                 onSearchClear={() => setSearchValue("")}
@@ -273,22 +356,7 @@ export default function DescuentosPage() {
                 }
                 showRefreshButton={true}
                 onRefresh={handleRefresh}
-                filters={
-                    <div className="flex items-center space-x-2">
-                        <select
-                            className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                            value={selectedConvenio || ""}
-                            onChange={(e) => setSelectedConvenio(e.target.value ? Number(e.target.value) : null)}
-                        >
-                            <option value="">Todos los convenios</option>
-                            {convenios.map((convenio, index) => (
-                                <option key={`${convenio.id}-${index}`} value={convenio.id}>
-                                    {convenio.nombre} {convenio.empresa ? `(${convenio.empresa.nombre})` : ''}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                }
+                filters={filters}
             />
 
             <Card.Card>
@@ -314,14 +382,14 @@ export default function DescuentosPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : descuentos.length === 0 ? (
+                        ) : filteredDescuentos.length === 0 ? (
                             <Table.TableRow>
                                 <Table.TableCell colSpan={10} className="text-center py-8">
                                     No se encontraron descuentos
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            descuentos.map((descuento) => (
+                            filteredDescuentos.map((descuento) => (
                                 <Table.TableRow key={descuento.id}>
                                     <Table.TableCell>{descuento.id}</Table.TableCell>
 

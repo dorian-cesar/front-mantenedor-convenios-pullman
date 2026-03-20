@@ -35,8 +35,7 @@ export default function FachPage() {
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedFach, setSelectedFach] = useState<Fach | null>(null)
     const [statusFilter, setStatusFilter] = useState<string>("")
-    const [convenioFilter, setConvenioFilter] = useState<string>("")
-    const { convenios, convenioMap } = useConvenios()
+    const { convenioMap } = useConvenios()
     const { user } = useAuth()
 
     const [pagination, setPagination] = useState({
@@ -73,10 +72,6 @@ export default function FachPage() {
                 params.status = statusFilter as any
             }
 
-            if (convenioFilter) {
-                params.convenio_id = Number(convenioFilter)
-            }
-
             if (debouncedSearch.trim()) {
                 const isNumericOrRut = /^[0-9kK.-]+$/.test(debouncedSearch.trim())
                 if (isNumericOrRut) {
@@ -111,7 +106,7 @@ export default function FachPage() {
 
     useEffect(() => {
         fetchFach()
-    }, [pagination.page, pagination.limit, debouncedSearch, statusFilter, convenioFilter])
+    }, [pagination.page, pagination.limit, debouncedSearch, statusFilter])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -235,7 +230,10 @@ export default function FachPage() {
         const searchLower = searchValue.toLowerCase();
         const convenioName = f.convenio?.nombre?.toLowerCase() || "";
         const passengerRut = f.rut?.toLowerCase() || "";
+        const idString = f.id ? f.id.toString() : "";
+        
         return (
+            idString.includes(searchLower) ||
             (f.nombre_completo && f.nombre_completo.toLowerCase().includes(searchLower)) ||
             (f.rut && f.rut.toLowerCase().includes(searchLower)) ||
             convenioName.includes(searchLower)
@@ -244,27 +242,6 @@ export default function FachPage() {
 
     const filters = (
         <div className="flex flex-wrap gap-2 items-center">
-            <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Convenio:</span>
-                <Dropdown.DropdownMenu>
-                    <Dropdown.DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between">
-                            {convenioFilter ? convenioMap[Number(convenioFilter)] || "Seleccionar..." : "Todos"}
-                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                    </Dropdown.DropdownMenuTrigger>
-                    <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
-                        <Dropdown.DropdownMenuItem onClick={() => setConvenioFilter("")}>
-                            Todos
-                        </Dropdown.DropdownMenuItem>
-                        {convenios.map((c: any) => (
-                            <Dropdown.DropdownMenuItem key={c.id} onClick={() => setConvenioFilter(c.id.toString())}>
-                                {c.nombre}
-                            </Dropdown.DropdownMenuItem>
-                        ))}
-                    </Dropdown.DropdownMenuContent>
-                </Dropdown.DropdownMenu>
-            </div>
 
             <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Status:</span>
@@ -292,13 +269,12 @@ export default function FachPage() {
                 </Dropdown.DropdownMenu>
             </div>
 
-            {(statusFilter || convenioFilter) && (
+            {statusFilter && (
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => {
                         setStatusFilter("");
-                        setConvenioFilter("");
                     }}
                     className="h-9"
                 >

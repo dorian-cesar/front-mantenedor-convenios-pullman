@@ -28,6 +28,7 @@ export default function ApisPage() {
     const [openUpdate, setOpenUpdate] = useState(false)
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedApi, setSelectedApi] = useState<Api | null>(null)
+    const [statusFilter, setStatusFilter] = useState<string>("")
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -50,8 +51,8 @@ export default function ApisPage() {
                 order: 'DESC',
             }
 
-            if (debouncedSearch.trim()) {
-                params.nombre = debouncedSearch.trim()
+            if (statusFilter) {
+                params.status = statusFilter as any
             }
 
             const response = await ApisService.getApis(params)
@@ -74,7 +75,7 @@ export default function ApisPage() {
 
     useEffect(() => {
         fetchApis()
-    }, [pagination.page, pagination.limit, debouncedSearch])
+    }, [pagination.page, pagination.limit, debouncedSearch, statusFilter])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -182,11 +183,54 @@ export default function ApisPage() {
     const filteredApis = apis.filter(api => {
         if (!searchValue.trim()) return true;
         const searchLower = searchValue.toLowerCase();
+        const idString = api.id ? api.id.toString() : "";
         return (
+            idString.includes(searchLower) ||
             (api.nombre && api.nombre.toLowerCase().includes(searchLower)) ||
             (api.endpoint && api.endpoint.toLowerCase().includes(searchLower))
         );
     });
+
+    const filters = (
+        <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Status:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
+                            {statusFilter === "ACTIVO" ? "Activo" : statusFilter === "INACTIVO" ? "Inactivo" : "Todos"}
+                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start">
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("")}>
+                            Todos
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("ACTIVO")}>
+                            Activo
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("INACTIVO")}>
+                            Inactivo
+                        </Dropdown.DropdownMenuItem>
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            {statusFilter && (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                        setStatusFilter("");
+                    }}
+                    className="h-9"
+                >
+                    <Icon.X className="mr-2 h-4 w-4" />
+                    Limpiar
+                </Button>
+            )}
+        </div>
+    )
 
     return (
         <div className="flex flex-col justify-center space-y-4">
@@ -208,6 +252,7 @@ export default function ApisPage() {
                 searchValue={searchValue}
                 onSearchChange={setSearchValue}
                 onSearchClear={() => setSearchValue("")}
+                filters={filters}
                 showPagination={true}
                 paginationComponent={
                     <Pagination

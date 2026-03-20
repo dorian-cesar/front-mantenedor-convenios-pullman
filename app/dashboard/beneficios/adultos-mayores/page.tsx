@@ -34,9 +34,7 @@ export default function AdultosMayoresPage() {
     const [selectedAdultoMayor, setSelectedAdultoMayor] = useState<AdultoMayor | null>(null)
     const [openRechazar, setOpenRechazar] = useState(false)
     const [statusFilter, setStatusFilter] = useState<string>("")
-    const [convenioFilter, setConvenioFilter] = useState<string>("")
-
-    const { convenioMap, convenios } = useConvenios()
+    const { convenioMap } = useConvenios()
     const { user } = useAuth()
 
     const [pagination, setPagination] = useState({
@@ -60,15 +58,11 @@ export default function AdultosMayoresPage() {
             params.status = statusFilter as any
         }
 
-        if (convenioFilter) {
-            params.convenio_id = Number(convenioFilter)
-        }
-
         return AdultosMayoresService.getAdultosMayores(params)
     }
 
     const { data: response, error, isLoading, mutate } = useSWR(
-        ['beneficiarios', 'adultos-mayores', pagination.page, pagination.limit, debouncedSearch, statusFilter, convenioFilter],
+        ['beneficiarios', 'adultos-mayores', pagination.page, pagination.limit, debouncedSearch, statusFilter],
         fetcher,
         { keepPreviousData: true }
     )
@@ -225,7 +219,10 @@ export default function AdultosMayoresPage() {
         const searchLower = searchValue.toLowerCase();
         const passengerRut = adulto.rut ? adulto.rut.toLowerCase() : "";
         const convenioName = adulto.convenio?.nombre ? adulto.convenio.nombre.toLowerCase() : "";
+        const idString = adulto.id ? adulto.id.toString() : "";
+        
         return (
+            idString.includes(searchLower) ||
             (adulto.nombre && adulto.nombre.toLowerCase().includes(searchLower)) ||
             passengerRut.includes(searchLower) ||
             convenioName.includes(searchLower)
@@ -234,27 +231,6 @@ export default function AdultosMayoresPage() {
 
     const filters = (
         <div className="flex flex-wrap gap-2 items-center">
-            <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Convenio:</span>
-                <Dropdown.DropdownMenu>
-                    <Dropdown.DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between">
-                            {convenioFilter ? convenioMap[Number(convenioFilter)] || "Seleccionar..." : "Todos"}
-                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                    </Dropdown.DropdownMenuTrigger>
-                    <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
-                        <Dropdown.DropdownMenuItem onClick={() => setConvenioFilter("")}>
-                            Todos
-                        </Dropdown.DropdownMenuItem>
-                        {convenios.map((c) => (
-                            <Dropdown.DropdownMenuItem key={c.id} onClick={() => setConvenioFilter(c.id.toString())}>
-                                {c.nombre}
-                            </Dropdown.DropdownMenuItem>
-                        ))}
-                    </Dropdown.DropdownMenuContent>
-                </Dropdown.DropdownMenu>
-            </div>
 
             <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Status:</span>
@@ -282,13 +258,12 @@ export default function AdultosMayoresPage() {
                 </Dropdown.DropdownMenu>
             </div>
 
-            {(statusFilter || convenioFilter) && (
+            {statusFilter && (
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => {
                         setStatusFilter("");
-                        setConvenioFilter("");
                     }}
                     className="h-9"
                 >

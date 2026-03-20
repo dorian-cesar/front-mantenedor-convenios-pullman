@@ -275,6 +275,161 @@ export default function EventosPage() {
         );
     });
 
+    const filters = (
+        <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap gap-2 items-center">
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Estado:</span>
+                    <Dropdown.DropdownMenu>
+                        <Dropdown.DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
+                                {statusFilter === "compra" ? "Confirmados" : statusFilter === "anulado" ? "Anulados" : "Todos"}
+                                <Icon.ChevronDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        </Dropdown.DropdownMenuTrigger>
+                        <Dropdown.DropdownMenuContent align="start">
+                            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter(null)}>
+                                Todos
+                            </Dropdown.DropdownMenuItem>
+                            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("compra")}>
+                                Confirmados
+                            </Dropdown.DropdownMenuItem>
+                            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("anulado")}>
+                                Anulados
+                            </Dropdown.DropdownMenuItem>
+                        </Dropdown.DropdownMenuContent>
+                    </Dropdown.DropdownMenu>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Empresa:</span>
+                    <Dropdown.DropdownMenu>
+                        <Dropdown.DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
+                                <span className="truncate">
+                                    {empresaFilter ? empresas.find(e => e.id === empresaFilter)?.nombre || "Seleccionar..." : "Todas"}
+                                </span>
+                                <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                            </Button>
+                        </Dropdown.DropdownMenuTrigger>
+                        <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                            <Dropdown.DropdownMenuItem onClick={() => setEmpresaFilter(null)}>
+                                Todas
+                            </Dropdown.DropdownMenuItem>
+                            {empresas.map((empresa) => (
+                                <Dropdown.DropdownMenuItem key={empresa.id} onClick={() => setEmpresaFilter(empresa.id)}>
+                                    {empresa.nombre}
+                                </Dropdown.DropdownMenuItem>
+                            ))}
+                        </Dropdown.DropdownMenuContent>
+                    </Dropdown.DropdownMenu>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Convenio:</span>
+                    <Dropdown.DropdownMenu>
+                        <Dropdown.DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
+                                <span className="truncate">
+                                    {convenioFilter ? convenios.find(c => c.id === convenioFilter)?.nombre || "Seleccionar..." : "Todos"}
+                                </span>
+                                <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                            </Button>
+                        </Dropdown.DropdownMenuTrigger>
+                        <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                            <Dropdown.DropdownMenuItem onClick={() => setConvenioFilter(null)}>
+                                Todos
+                            </Dropdown.DropdownMenuItem>
+                            {convenios.map((convenio) => (
+                                <Dropdown.DropdownMenuItem key={convenio.id} onClick={() => setConvenioFilter(convenio.id)}>
+                                    {convenio.nombre}
+                                </Dropdown.DropdownMenuItem>
+                            ))}
+                        </Dropdown.DropdownMenuContent>
+                    </Dropdown.DropdownMenu>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Pasajero:</span>
+                    <Dropdown.DropdownMenu>
+                        <Dropdown.DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
+                                <span className="truncate">
+                                    {pasajeroFilter ? pasajeros.find(p => p.id === pasajeroFilter)?.nombres || "Seleccionar..." : "Todos"}
+                                </span>
+                                <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                            </Button>
+                        </Dropdown.DropdownMenuTrigger>
+                        <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                            <Dropdown.DropdownMenuItem onClick={() => setPasajeroFilter(null)}>
+                                Todos
+                            </Dropdown.DropdownMenuItem>
+                            {pasajeros.map((pasajero) => (
+                                <Dropdown.DropdownMenuItem key={pasajero.id} onClick={() => setPasajeroFilter(pasajero.id)}>
+                                    {pasajero.nombres} {pasajero.apellidos}
+                                </Dropdown.DropdownMenuItem>
+                            ))}
+                        </Dropdown.DropdownMenuContent>
+                    </Dropdown.DropdownMenu>
+                </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Rango de Fecha:</span>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="h-9 min-w-[240px] gap-2 justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Icon.Calendar className="h-4 w-4" />
+                                    <span className="text-sm">
+                                        {dateRange?.from
+                                            ? dateRange.to
+                                                ? `${format(dateRange.from, "dd/MM/yyyy")} - ${format(dateRange.to, "dd/MM/yyyy")}`
+                                                : format(dateRange.from, "dd/MM/yyyy")
+                                            : "Seleccionar rango"}
+                                    </span>
+                                </div>
+                                <Icon.ChevronDown className="h-4 w-4 shrink-0" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="p-0">
+                            <Calendar
+                                mode="range"
+                                selected={dateRange}
+                                onSelect={setDateRange}
+                                numberOfMonths={2}
+                                locale={es}
+                                classNames={{
+                                    cell: "p-1",
+                                    day: "h-8 w-8 p-0",
+                                }}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                </div>
+
+                {(statusFilter || empresaFilter || pasajeroFilter || convenioFilter || dateRange) && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                            setStatusFilter(null)
+                            setEmpresaFilter(null)
+                            setPasajeroFilter(null)
+                            setConvenioFilter(null)
+                            setDateRange(undefined)
+                        }}
+                        className="h-9"
+                    >
+                        <Icon.X className="mr-2 h-4 w-4" />
+                        Limpiar
+                    </Button>
+                )}
+            </div>
+        </div>
+    )
+
     return (
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
@@ -299,118 +454,7 @@ export default function EventosPage() {
                         className="w-full"
                     />
                 }
-                filters={
-                    <div className="flex flex-col gap-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Estado</label>
-                                <select
-                                    className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                                    value={statusFilter || ""}
-                                    onChange={(e) => setStatusFilter(e.target.value ? e.target.value as any : null)}
-                                >
-                                    <option value="">Todos</option>
-                                    <option value="compra">Confirmados</option>
-                                    <option value="anulado">Anulados</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Empresa</label>
-                                <select
-                                    className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                                    value={empresaFilter || ""}
-                                    onChange={(e) => setEmpresaFilter(e.target.value ? Number(e.target.value) : null)}
-                                >
-                                    <option value="">Todas las empresas</option>
-                                    {empresas.map((empresa) => (
-                                        <option key={empresa.id} value={empresa.id}>
-                                            {empresa.nombre}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Pasajero</label>
-                                <select
-                                    className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                                    value={pasajeroFilter || ""}
-                                    onChange={(e) => setPasajeroFilter(e.target.value ? Number(e.target.value) : null)}
-                                >
-                                    <option value="">Todos los pasajeros</option>
-                                    {pasajeros.map((pasajero) => (
-                                        <option key={pasajero.id} value={pasajero.id}>
-                                            {pasajero.nombres} {pasajero.apellidos} ({pasajero.rut})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Convenio</label>
-                                <select
-                                    className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                                    value={convenioFilter || ""}
-                                    onChange={(e) => setConvenioFilter(e.target.value ? Number(e.target.value) : null)}
-                                >
-                                    <option value="">Todos los convenios</option>
-                                    {convenios.map((convenio) => (
-                                        <option key={convenio.id} value={convenio.id}>
-                                            {convenio.nombre}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="flex items-end gap-4">
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Fecha del Evento</label>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="outline" className="w-full gap-2">
-                                            <Icon.Calendar className="h-4 w-4" />
-                                            {dateRange?.from
-                                                ? dateRange.to
-                                                    ? `${format(dateRange.from, "dd/MM/yyyy")} - ${format(dateRange.to, "dd/MM/yyyy")}`
-                                                    : format(dateRange.from, "dd/MM/yyyy")
-                                                : "Seleccionar rango"}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent align="start" className="p-0">
-                                        <Calendar
-                                            mode="range"
-                                            selected={dateRange}
-                                            onSelect={setDateRange}
-                                            numberOfMonths={2}
-                                            locale={es}
-                                            classNames={{
-                                                cell: "p-1",
-                                                day: "h-8 w-8 p-0",
-                                            }}
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-
-                            {(statusFilter || empresaFilter || pasajeroFilter || convenioFilter || dateRange) && (
-                                <Button
-                                    variant="ghost"
-                                    onClick={() => {
-                                        setStatusFilter(null)
-                                        setEmpresaFilter(null)
-                                        setPasajeroFilter(null)
-                                        setConvenioFilter(null)
-                                        setDateRange(undefined)
-                                    }}
-                                >
-                                    Limpiar filtros
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                }
+                filters={filters}
             />
             <Card.Card>
                 <Table.Table>

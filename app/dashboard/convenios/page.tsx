@@ -53,6 +53,7 @@ function ConveniosPage() {
     const [openPrecios, setOpenPrecios] = useState(false)
     const [selectedConvenio, setSelectedConvenio] = useState<Convenio | null>(null)
     const [selectedEmpresa, setSelectedEmpresa] = useState<number | null>(null)
+    const [statusFilter, setStatusFilter] = useState<string>("")
     const [user, setUser] = useState<CurrentUser | null>(null)
 
     const [pagination, setPagination] = useState({
@@ -76,13 +77,8 @@ function ConveniosPage() {
                 order: 'DESC',
             }
 
-            if (debouncedSearch.trim()) {
-                const isNumeric = /^\d+$/.test(debouncedSearch.trim())
-                if (isNumeric) {
-                    params.id = debouncedSearch.trim()
-                } else {
-                    params.nombre = debouncedSearch.trim()
-                }
+            if (statusFilter) {
+                params.status = statusFilter as any
             }
 
             if (selectedEmpresa) {
@@ -133,7 +129,7 @@ function ConveniosPage() {
         fetchConvenios()
         fetchEmpresas()
         fetchApis()
-    }, [pagination.page, pagination.limit, debouncedSearch, selectedEmpresa])
+    }, [pagination.page, pagination.limit, debouncedSearch, selectedEmpresa, statusFilter])
 
     useEffect(() => {
         setUser(AuthService.getCurrentUser())
@@ -271,20 +267,96 @@ function ConveniosPage() {
         }
     }
 
-    const actionButtons = user?.rol === "SISTEMA" ? [] : [
-        {
-            label: "Nuevo Convenio",
-            onClick: () => setOpenAdd(true),
-            icon: <Icon.PlusIcon className="h-4 w-4" />
-        },
-    ]
+    const filteredConvenios = convenios.filter(conv => {
+        if (!searchValue.trim()) return true;
+        const searchLower = searchValue.toLowerCase();
+        const idString = conv.id ? conv.id.toString() : "";
+        const empresaName = conv.empresa?.nombre ? conv.empresa.nombre.toLowerCase() : "";
+        return (
+            idString.includes(searchLower) ||
+            (conv.nombre && conv.nombre.toLowerCase().includes(searchLower)) ||
+            empresaName.includes(searchLower)
+        );
+    });
+
+    const filters = (
+        <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Empresa:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
+                            <span className="truncate">
+                                {selectedEmpresa ? empresas.find(e => e.id === selectedEmpresa)?.nombre || "Seleccionar..." : "Todas"}
+                            </span>
+                            <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                        <Dropdown.DropdownMenuItem onClick={() => setSelectedEmpresa(null)}>
+                            Todas
+                        </Dropdown.DropdownMenuItem>
+                        {empresas.map((empresa) => (
+                            <Dropdown.DropdownMenuItem key={empresa.id} onClick={() => setSelectedEmpresa(empresa.id)}>
+                                {empresa.nombre}
+                            </Dropdown.DropdownMenuItem>
+                        ))}
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Status:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
+                            {statusFilter === "ACTIVO" ? "Activo" : statusFilter === "INACTIVO" ? "Inactivo" : "Todos"}
+                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start">
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("")}>
+                            Todos
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("ACTIVO")}>
+                            Activo
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("INACTIVO")}>
+                            Inactivo
+                        </Dropdown.DropdownMenuItem>
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            {(statusFilter || selectedEmpresa) && (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                        setStatusFilter("");
+                        setSelectedEmpresa(null);
+                    }}
+                    className="h-9"
+                >
+                    <Icon.X className="mr-2 h-4 w-4" />
+                    Limpiar
+                </Button>
+            )}
+        </div>
+    )
 
     return (
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
                 title="Convenios"
                 description="Gestione los convenios de las empresas aquí."
-                actionButtons={actionButtons}
+                actionButtons={user?.rol === "SISTEMA" ? [] : [
+                    {
+                        label: "Nuevo Convenio",
+                        onClick: () => setOpenAdd(true),
+                        icon: <Icon.PlusIcon className="h-4 w-4" />
+                    },
+                ]}
                 actionMenu={{
                     title: "Detalles",
                     items: [
@@ -315,22 +387,7 @@ function ConveniosPage() {
                 }
                 showRefreshButton={true}
                 onRefresh={handleRefresh}
-                filters={
-                    <div className="flex items-center space-x-2">
-                        <select
-                            className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                            value={selectedEmpresa || ""}
-                            onChange={(e) => setSelectedEmpresa(e.target.value ? Number(e.target.value) : null)}
-                        >
-                            <option value="">Todas las empresas</option>
-                            {empresas.map((empresa) => (
-                                <option key={empresa.id} value={empresa.id}>
-                                    {empresa.nombre}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                }
+                filters={filters}
             />
             <Card.Card>
                 <Table.Table>
@@ -360,14 +417,14 @@ function ConveniosPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : convenios.length === 0 ? (
+                        ) : filteredConvenios.length === 0 ? (
                             <Table.TableRow>
                                 <Table.TableCell colSpan={11} className="text-center py-8">
                                     No se encontraron convenios
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            convenios.map((convenio, index) => (
+                            filteredConvenios.map((convenio, index) => (
                                 <Table.TableRow key={`${convenio.id}-${index}`}>
                                     <Table.TableCell>{convenio.id}</Table.TableCell>
                                     <Table.TableCell className="font-medium">{convenio.nombre}</Table.TableCell>

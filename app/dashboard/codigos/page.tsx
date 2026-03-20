@@ -248,12 +248,104 @@ export default function CodigosDescuentoPage() {
     const filteredCodigos = codigos.filter(codigo => {
         if (!searchValue.trim()) return true;
         const searchLower = searchValue.toLowerCase();
+        const idString = codigo.id ? codigo.id.toString() : "";
         return (
+            idString.includes(searchLower) ||
             (codigo.codigo && codigo.codigo.toLowerCase().includes(searchLower)) ||
             (codigo.convenio?.nombre && codigo.convenio.nombre.toLowerCase().includes(searchLower)) ||
             (codigo.convenio?.empresa?.nombre && codigo.convenio.empresa.nombre.toLowerCase().includes(searchLower))
         );
     });
+
+    const filters = (
+        <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Convenio:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
+                            <span className="truncate">
+                                {selectedConvenio ? convenios.find(c => c.id === selectedConvenio)?.nombre || "Seleccionar..." : "Todos"}
+                            </span>
+                            <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                        <Dropdown.DropdownMenuItem onClick={() => setSelectedConvenio(null)}>
+                            Todos
+                        </Dropdown.DropdownMenuItem>
+                        {convenios.map((convenio) => (
+                            <Dropdown.DropdownMenuItem key={convenio.id} onClick={() => setSelectedConvenio(convenio.id)}>
+                                {convenio.nombre} {convenio.empresa && `- ${convenio.empresa.nombre}`}
+                            </Dropdown.DropdownMenuItem>
+                        ))}
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Status:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
+                            {selectedStatus === "ACTIVO" ? "Activos" : selectedStatus === "INACTIVO" ? "Inactivos" : "Todos"}
+                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start">
+                        <Dropdown.DropdownMenuItem onClick={() => setSelectedStatus("")}>
+                            Todos
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setSelectedStatus("ACTIVO")}>
+                            Activos
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setSelectedStatus("INACTIVO")}>
+                            Inactivos
+                        </Dropdown.DropdownMenuItem>
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Vigencia:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
+                            {selectedVigencia === "vigentes" ? "Vigentes" : selectedVigencia === "no-vigentes" ? "No vigentes" : "Todas"}
+                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start">
+                        <Dropdown.DropdownMenuItem onClick={() => setSelectedVigencia("")}>
+                            Todas
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setSelectedVigencia("vigentes")}>
+                            Vigentes
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setSelectedVigencia("no-vigentes")}>
+                            No vigentes
+                        </Dropdown.DropdownMenuItem>
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            {(selectedStatus || selectedConvenio || selectedVigencia) && (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                        setSelectedStatus("");
+                        setSelectedConvenio(null);
+                        setSelectedVigencia("");
+                    }}
+                    className="h-9"
+                >
+                    <Icon.X className="mr-2 h-4 w-4" />
+                    Limpiar
+                </Button>
+            )}
+        </div>
+    )
 
     return (
         <div className="flex flex-col justify-center space-y-4">
@@ -291,42 +383,7 @@ export default function CodigosDescuentoPage() {
                 }
                 showRefreshButton={true}
                 onRefresh={handleRefresh}
-                filters={
-                    <div className="flex items-center gap-2">
-                        <select
-                            className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                            value={selectedConvenio || ""}
-                            onChange={(e) => setSelectedConvenio(e.target.value ? Number(e.target.value) : null)}
-                        >
-                            <option value="">Todos los convenios</option>
-                            {convenios.map((convenio, index) => (
-                                <option key={index} value={convenio.id}>
-                                    {convenio.nombre} {convenio.empresa && `- ${convenio.empresa.nombre}`}
-                                </option>
-                            ))}
-                        </select>
-
-                        <select
-                            className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                            value={selectedStatus}
-                            onChange={(e) => setSelectedStatus(e.target.value)}
-                        >
-                            <option value="">Todos los estados</option>
-                            <option value="ACTIVO">Activos</option>
-                            <option value="INACTIVO">Inactivos</option>
-                        </select>
-
-                        <select
-                            className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                            value={selectedVigencia}
-                            onChange={(e) => setSelectedVigencia(e.target.value)}
-                        >
-                            <option value="">Toda la vigencia</option>
-                            <option value="vigentes">Vigentes</option>
-                            <option value="no-vigentes">No vigentes</option>
-                        </select>
-                    </div>
-                }
+                filters={filters}
             />
             <Card.Card>
                 <Table.Table>

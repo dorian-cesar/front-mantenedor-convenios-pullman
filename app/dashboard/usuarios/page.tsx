@@ -32,6 +32,7 @@ export default function UsuariosPage() {
   const [openUpdate, setOpenUpdate] = useState(false)
   const [openDetails, setOpenDetails] = useState(false)
   const [selectedUsuario, setSelectedUsuario] = useState<Usuario | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string>("")
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -79,7 +80,7 @@ export default function UsuariosPage() {
 
   useEffect(() => {
     fetchUsuarios()
-  }, [pagination.page, pagination.limit, debouncedSearch])
+  }, [pagination.page, pagination.limit, debouncedSearch, statusFilter])
 
   useEffect(() => {
     setUser(AuthService.getCurrentUser())
@@ -200,12 +201,55 @@ export default function UsuariosPage() {
   const filteredUsuarios = usuarios.filter(usuario => {
     if (!searchValue.trim()) return true;
     const searchLower = searchValue.toLowerCase();
+    const idString = usuario.id ? usuario.id.toString() : "";
     return (
+      idString.includes(searchLower) ||
       (usuario.nombre && usuario.nombre.toLowerCase().includes(searchLower)) ||
       (usuario.correo && usuario.correo.toLowerCase().includes(searchLower)) ||
       (usuario.rut && usuario.rut.toLowerCase().includes(searchLower))
     );
   });
+
+  const filters = (
+    <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium">Status:</span>
+        <Dropdown.DropdownMenu>
+          <Dropdown.DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
+              {statusFilter === "ACTIVO" ? "Activo" : statusFilter === "INACTIVO" ? "Inactivo" : "Todos"}
+              <Icon.ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </Dropdown.DropdownMenuTrigger>
+          <Dropdown.DropdownMenuContent align="start">
+            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("")}>
+              Todos
+            </Dropdown.DropdownMenuItem>
+            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("ACTIVO")}>
+              Activo
+            </Dropdown.DropdownMenuItem>
+            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("INACTIVO")}>
+              Inactivo
+            </Dropdown.DropdownMenuItem>
+          </Dropdown.DropdownMenuContent>
+        </Dropdown.DropdownMenu>
+      </div>
+
+      {statusFilter && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setStatusFilter("");
+          }}
+          className="h-9"
+        >
+          <Icon.X className="mr-2 h-4 w-4" />
+          Limpiar
+        </Button>
+      )}
+    </div>
+  )
 
   return (
     <div className="flex flex-col justify-center space-y-4">
@@ -227,6 +271,7 @@ export default function UsuariosPage() {
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         onSearchClear={() => setSearchValue("")}
+        filters={filters}
         showPagination={true}
         paginationComponent={
           <Pagination
