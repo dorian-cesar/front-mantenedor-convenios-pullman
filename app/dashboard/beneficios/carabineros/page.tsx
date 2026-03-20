@@ -262,7 +262,7 @@ export default function CarabinerosPage() {
                 <Dropdown.DropdownMenu>
                     <Dropdown.DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
-                            {statusFilter || "Todos"}
+                            {statusFilter === "ACTIVO" ? "Activo" : statusFilter === "INACTIVO" ? "Inactivo" : statusFilter === "RECHAZADO" ? "Rechazado" : statusFilter === "PENDIENTE" ? "Pendiente" : statusFilter === "APROBADO" ? "Aprobado" : "Todos"}
                             <Icon.ChevronDown className="ml-2 h-4 w-4" />
                         </Button>
                     </Dropdown.DropdownMenuTrigger>
@@ -271,13 +271,19 @@ export default function CarabinerosPage() {
                             Todos
                         </Dropdown.DropdownMenuItem>
                         <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("ACTIVO")}>
-                            ACTIVO
+                            Activo
                         </Dropdown.DropdownMenuItem>
                         <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("INACTIVO")}>
-                            INACTIVO
+                            Inactivo
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("PENDIENTE")}>
+                            Pendiente
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("APROBADO")}>
+                            Aprobado
                         </Dropdown.DropdownMenuItem>
                         <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("RECHAZADO")}>
-                            RECHAZADO
+                            Rechazado
                         </Dropdown.DropdownMenuItem>
                     </Dropdown.DropdownMenuContent>
                 </Dropdown.DropdownMenu>
@@ -320,6 +326,7 @@ export default function CarabinerosPage() {
                 searchValue={searchValue}
                 onSearchChange={setSearchValue}
                 onSearchClear={() => setSearchValue("")}
+                filters={filters}
                 showPagination={true}
                 paginationComponent={
                     <Pagination

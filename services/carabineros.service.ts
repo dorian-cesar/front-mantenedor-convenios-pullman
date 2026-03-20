@@ -19,7 +19,7 @@ export interface GetCarabinerosParams {
     limit?: number;
     sortBy?: string;
     order?: "ASC" | "DESC";
-    status?: "ACTIVO" | "INACTIVO";
+    status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     rut?: string;
     nombre_completo?: string;
     search?: string;
