@@ -51,8 +51,12 @@ export default function UsuariosFrecuentesPage() {
         }
 
         if (debouncedSearch.trim()) {
-            params.nombre = debouncedSearch.trim()
-            params.rut = debouncedSearch.trim()
+            const isNumericOrRut = /^[0-9kK.-]+$/.test(debouncedSearch.trim())
+            if (isNumericOrRut) {
+                params.rut = debouncedSearch.trim()
+            } else {
+                params.nombre = debouncedSearch.trim()
+            }
         }
 
         return UsuariosFrecuentesService.getUsuariosFrecuentes(params)
@@ -166,8 +170,12 @@ export default function UsuariosFrecuentesPage() {
             }
 
             if (debouncedSearch.trim()) {
-                params.nombre = debouncedSearch.trim()
-                params.rut = debouncedSearch.trim()
+                const isNumericOrRut = /^[0-9kK.-]+$/.test(debouncedSearch.trim())
+                if (isNumericOrRut) {
+                    params.rut = debouncedSearch.trim()
+                } else {
+                    params.nombre = debouncedSearch.trim()
+                }
             }
 
             const response = await UsuariosFrecuentesService.getUsuariosFrecuentes(params)
@@ -213,6 +221,16 @@ export default function UsuariosFrecuentesPage() {
             icon: <Icon.PlusIcon className="h-4 w-4" />
         },
     ]
+
+    // Client-side filtering for immediate feedback
+    const filteredUsuariosFrecuentes = usuariosFrecuentes.filter(usuario => {
+        if (!searchValue.trim()) return true;
+        const searchLower = searchValue.toLowerCase();
+        return (
+            (usuario.nombre && usuario.nombre.toLowerCase().includes(searchLower)) ||
+            (usuario.rut && usuario.rut.toLowerCase().includes(searchLower))
+        );
+    });
 
     return (
         <div className="flex flex-col justify-center space-y-4">
@@ -275,14 +293,14 @@ export default function UsuariosFrecuentesPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : usuariosFrecuentes?.length === 0 ? (
+                        ) : filteredUsuariosFrecuentes.length === 0 ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={10} className="text-center py-8">
+                                <Table.TableCell colSpan={8} className="text-center py-8">
                                     No se encontraron usuarios frecuentes
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            usuariosFrecuentes.map((usuarioFrecuente) => (
+                            filteredUsuariosFrecuentes.map((usuarioFrecuente) => (
                                 <Table.TableRow key={usuarioFrecuente.id}>
                                     <Table.TableCell>{usuarioFrecuente.id}</Table.TableCell>
                                     <Table.TableCell className="font-medium">{usuarioFrecuente.nombre}</Table.TableCell>

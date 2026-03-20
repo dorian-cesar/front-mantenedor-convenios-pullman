@@ -54,10 +54,14 @@ export default function CarabinerosPage() {
                 order: 'DESC',
             }
 
-            if (debouncedSearch.trim()) {
-                params.nombre_completo = debouncedSearch.trim()
+        if (debouncedSearch.trim()) {
+            const isNumericOrRut = /^[0-9kK.-]+$/.test(debouncedSearch.trim())
+            if (isNumericOrRut) {
                 params.rut = debouncedSearch.trim()
+            } else {
+                params.nombre_completo = debouncedSearch.trim()
             }
+        }
 
             const response = await CarabinerosService.getCarabineros(params)
 
@@ -159,8 +163,12 @@ export default function CarabinerosPage() {
             }
 
             if (debouncedSearch.trim()) {
-                params.nombre_completo = debouncedSearch.trim()
-                params.rut = debouncedSearch.trim()
+                const isNumericOrRut = /^[0-9kK.-]+$/.test(debouncedSearch.trim())
+                if (isNumericOrRut) {
+                    params.rut = debouncedSearch.trim()
+                } else {
+                    params.nombre_completo = debouncedSearch.trim()
+                }
             }
 
             const response = await CarabinerosService.getCarabineros(params)
@@ -199,6 +207,16 @@ export default function CarabinerosPage() {
             icon: <Icon.PlusIcon className="h-4 w-4" />
         },
     ]
+
+    // Client-side filtering for immediate feedback
+    const filteredCarabineros = carabineros.filter(carabinero => {
+        if (!searchValue.trim()) return true;
+        const searchLower = searchValue.toLowerCase();
+        return (
+            (carabinero.nombre_completo && carabinero.nombre_completo.toLowerCase().includes(searchLower)) ||
+            (carabinero.rut && carabinero.rut.toLowerCase().includes(searchLower))
+        );
+    });
 
     return (
         <div className="flex flex-col justify-center space-y-4">
@@ -257,14 +275,14 @@ export default function CarabinerosPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : carabineros.length === 0 ? (
+                        ) : filteredCarabineros.length === 0 ? (
                             <Table.TableRow>
                                 <Table.TableCell colSpan={5} className="text-center py-8">
                                     No se encontraron carabineros
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            carabineros.map((carabinero, index) => (
+                            filteredCarabineros.map((carabinero, index) => (
                                 <Table.TableRow key={`${carabinero.rut}-${index}`}>
                                     <Table.TableCell className="font-medium">{carabinero.nombre_completo}</Table.TableCell>
                                     <Table.TableCell>{formatRut(carabinero.rut)}</Table.TableCell>

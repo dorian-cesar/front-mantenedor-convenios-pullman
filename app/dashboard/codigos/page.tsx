@@ -244,6 +244,17 @@ export default function CodigosDescuentoPage() {
         },
     ]
 
+    // Client-side filtering for immediate feedback
+    const filteredCodigos = codigos.filter(codigo => {
+        if (!searchValue.trim()) return true;
+        const searchLower = searchValue.toLowerCase();
+        return (
+            (codigo.codigo && codigo.codigo.toLowerCase().includes(searchLower)) ||
+            (codigo.convenio?.nombre && codigo.convenio.nombre.toLowerCase().includes(searchLower)) ||
+            (codigo.convenio?.empresa?.nombre && codigo.convenio.empresa.nombre.toLowerCase().includes(searchLower))
+        );
+    });
+
     return (
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
@@ -341,14 +352,14 @@ export default function CodigosDescuentoPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : codigos.length === 0 ? (
+                        ) : filteredCodigos.length === 0 ? (
                             <Table.TableRow>
                                 <Table.TableCell colSpan={9} className="text-center py-8">
                                     No se encontraron códigos de descuento
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            codigos.map((codigo, index) => (
+                            filteredCodigos.map((codigo, index) => (
                                 <Table.TableRow key={`${codigo.id}-${index}`}>
                                     <Table.TableCell>{codigo.id}</Table.TableCell>
                                     <Table.TableCell className="font-medium">

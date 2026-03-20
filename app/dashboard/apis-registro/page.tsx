@@ -128,6 +128,17 @@ export default function ApisRegistroPage() {
         }
     }
 
+    // Client-side filtering for immediate feedback
+    const filteredApisRegistro = apisRegistro.filter(api => {
+        if (!searchValue.trim()) return true;
+        const searchLower = searchValue.toLowerCase();
+        return (
+            (api.nombre && api.nombre.toLowerCase().includes(searchLower)) ||
+            (api.endpoint && api.endpoint.toLowerCase().includes(searchLower)) ||
+            (api.empresa?.nombre && api.empresa.nombre.toLowerCase().includes(searchLower))
+        );
+    });
+
     return (
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
@@ -176,12 +187,12 @@ export default function ApisRegistroPage() {
                                     <div className="flex justify-center"><Icon.Loader2Icon className="h-6 w-6 animate-spin" /></div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : apisRegistro.length === 0 ? (
+                        ) : filteredApisRegistro.length === 0 ? (
                             <Table.TableRow>
                                 <Table.TableCell colSpan={6} className="text-center py-8">No se encontraron APIs de Registro</Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            apisRegistro.map((api) => (
+                            filteredApisRegistro.map((api) => (
                                 <Table.TableRow key={api.id}>
                                     <Table.TableCell>{api.id}</Table.TableCell>
                                     <Table.TableCell className="font-medium">{api.nombre}</Table.TableCell>

@@ -297,6 +297,17 @@ export default function PasajerosPage() {
         // }
     ]
 
+    // Client-side filtering for immediate feedback
+    const filteredPasajeros = pasajeros.filter(pasajero => {
+        if (!searchValue.trim()) return true;
+        const searchLower = searchValue.toLowerCase();
+        return (
+            (pasajero.nombres && pasajero.nombres.toLowerCase().includes(searchLower)) ||
+            (pasajero.apellidos && pasajero.apellidos.toLowerCase().includes(searchLower)) ||
+            (pasajero.rut && pasajero.rut.toLowerCase().includes(searchLower))
+        );
+    });
+
     return (
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
@@ -389,14 +400,14 @@ export default function PasajerosPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : pasajeros.length === 0 ? (
+                        ) : filteredPasajeros.length === 0 ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={9} className="text-center py-8">
+                                <Table.TableCell colSpan={8} className="text-center py-8">
                                     No se encontraron pasajeros
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            pasajeros.map((pasajero) => (
+                            filteredPasajeros.map((pasajero) => (
                                 <Table.TableRow key={pasajero.id}>
                                     <Table.TableCell>{pasajero.id}</Table.TableCell>
                                     <Table.TableCell>{formatRut(pasajero.rut)}</Table.TableCell>

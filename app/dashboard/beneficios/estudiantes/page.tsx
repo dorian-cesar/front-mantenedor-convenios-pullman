@@ -52,8 +52,12 @@ export default function EstudiantesPage() {
         }
 
         if (debouncedSearch.trim()) {
-            params.nombre = debouncedSearch.trim()
-            params.rut = debouncedSearch.trim()
+            const isNumericOrRut = /^[0-9kK.-]+$/.test(debouncedSearch.trim())
+            if (isNumericOrRut) {
+                params.rut = debouncedSearch.trim()
+            } else {
+                params.nombre = debouncedSearch.trim()
+            }
         }
 
         return EstudiantesService.getEstudiantes(params)
@@ -169,8 +173,12 @@ export default function EstudiantesPage() {
             }
 
             if (debouncedSearch.trim()) {
-                params.nombre = debouncedSearch.trim()
-                params.rut = debouncedSearch.trim()
+                const isNumericOrRut = /^[0-9kK.-]+$/.test(debouncedSearch.trim())
+                if (isNumericOrRut) {
+                    params.rut = debouncedSearch.trim()
+                } else {
+                    params.nombre = debouncedSearch.trim()
+                }
             }
 
             const response = await EstudiantesService.getEstudiantes(params)
@@ -216,6 +224,16 @@ export default function EstudiantesPage() {
             icon: <Icon.PlusIcon className="h-4 w-4" />
         },
     ]
+
+    // Client-side filtering for immediate feedback
+    const filteredEstudiantes = estudiantes.filter(estudiante => {
+        if (!searchValue.trim()) return true;
+        const searchLower = searchValue.toLowerCase();
+        return (
+            (estudiante.nombre && estudiante.nombre.toLowerCase().includes(searchLower)) ||
+            (estudiante.rut && estudiante.rut.toLowerCase().includes(searchLower))
+        );
+    });
 
     return (
         <div className="flex flex-col justify-center space-y-4">
@@ -278,14 +296,14 @@ export default function EstudiantesPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : estudiantes?.length === 0 ? (
+                        ) : filteredEstudiantes.length === 0 ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={7} className="text-center py-8">
+                                <Table.TableCell colSpan={8} className="text-center py-8">
                                     No se encontraron estudiantes
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            estudiantes.map((estudiante) => (
+                            filteredEstudiantes.map((estudiante) => (
                                 <Table.TableRow key={estudiante.id}>
                                     <Table.TableCell>{estudiante.id}</Table.TableCell>
                                     <Table.TableCell className="font-medium">{estudiante.nombre}</Table.TableCell>

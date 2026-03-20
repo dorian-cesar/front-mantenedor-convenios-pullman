@@ -178,6 +178,16 @@ export default function ApisPage() {
         },
     ]
 
+    // Client-side filtering for immediate feedback
+    const filteredApis = apis.filter(api => {
+        if (!searchValue.trim()) return true;
+        const searchLower = searchValue.toLowerCase();
+        return (
+            (api.nombre && api.nombre.toLowerCase().includes(searchLower)) ||
+            (api.endpoint && api.endpoint.toLowerCase().includes(searchLower))
+        );
+    });
+
     return (
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
@@ -237,14 +247,14 @@ export default function ApisPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : apis.length === 0 ? (
+                        ) : filteredApis.length === 0 ? (
                             <Table.TableRow>
                                 <Table.TableCell colSpan={5} className="text-center py-8">
                                     No se encontraron APIs
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            apis.map((api) => (
+                            filteredApis.map((api) => (
                                 <Table.TableRow key={api.id}>
                                     <Table.TableCell>{api.id}</Table.TableCell>
                                     <Table.TableCell>{api.nombre}</Table.TableCell>

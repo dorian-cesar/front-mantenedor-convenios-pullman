@@ -28,6 +28,7 @@ export interface GetAdultosMayoresParams {
     status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     rut?: string;
     nombre?: string;
+    search?: string;
 }
 
 export interface AdultosMayoresResponse {

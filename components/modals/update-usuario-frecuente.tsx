@@ -60,6 +60,8 @@ export default function UpdateUsuarioFrecuenteModal({
     const [isLoading, setIsLoading] = useState(false)
     const [previewCedula, setPreviewCedula] = useState<{ src: string; isPDF: boolean } | null>(null)
     const [previewCertificado, setPreviewCertificado] = useState<{ src: string; isPDF: boolean } | null>(null)
+    const [originalCedula, setOriginalCedula] = useState<string | undefined>()
+    const [originalCertificado, setOriginalCertificado] = useState<string | undefined>()
 
     const form = useForm<UsuarioFrecuenteFormValues>({
         resolver: zodResolver(usuarioFrecuenteSchema),
@@ -75,8 +77,19 @@ export default function UpdateUsuarioFrecuenteModal({
         },
     })
 
+    const getVal = (obj: any, keys: string[]): string | null => {
+        if (!obj) return null
+        for (const key of keys) {
+            if (obj[key]) return obj[key]
+        }
+        return null
+    }
+
     useEffect(() => {
         if (usuarioFrecuente) {
+            const imgCedula = getVal(usuarioFrecuente?.imagenes, ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]) || usuarioFrecuente.imagen_cedula_identidad || undefined
+            const imgCertificado = getVal(usuarioFrecuente?.imagenes, ["Certificado de Estudios", "Certificado"]) || usuarioFrecuente.imagen_certificado || undefined
+
             form.reset({
                 nombre: usuarioFrecuente.nombre || "",
                 rut: usuarioFrecuente.rut || "",
@@ -84,22 +97,25 @@ export default function UpdateUsuarioFrecuenteModal({
                 correo: usuarioFrecuente.correo || "",
                 direccion: usuarioFrecuente.direccion || "",
                 status: usuarioFrecuente.status,
-                imagen_cedula_identidad: usuarioFrecuente.imagen_cedula_identidad || undefined,
-                imagen_certificado: usuarioFrecuente.imagen_certificado || undefined,
+                imagen_cedula_identidad: imgCedula,
+                imagen_certificado: imgCertificado,
             })
-            if (usuarioFrecuente.imagen_cedula_identidad) {
+            setOriginalCedula(imgCedula)
+            setOriginalCertificado(imgCertificado)
+
+            if (imgCedula) {
                 setPreviewCedula({
-                    src: usuarioFrecuente.imagen_cedula_identidad,
-                    isPDF: isPDF(usuarioFrecuente.imagen_cedula_identidad)
+                    src: imgCedula,
+                    isPDF: isPDF(imgCedula)
                 })
             } else {
                 setPreviewCedula(null)
             }
 
-            if (usuarioFrecuente.imagen_certificado) {
+            if (imgCertificado) {
                 setPreviewCertificado({
-                    src: usuarioFrecuente.imagen_certificado,
-                    isPDF: isPDF(usuarioFrecuente.imagen_certificado)
+                    src: imgCertificado,
+                    isPDF: isPDF(imgCertificado)
                 })
             } else {
                 setPreviewCertificado(null)
@@ -228,7 +244,21 @@ export default function UpdateUsuarioFrecuenteModal({
         setIsLoading(true)
 
         try {
-            await UsuariosFrecuentesService.updateUsuarioFrecuente(usuarioFrecuente.id, data)
+            // "debe subirlo todo" - El usuario quiere que se envíe todo el payload
+            const payload: any = { 
+                ...data,
+                imagenes: {
+                    ...usuarioFrecuente.imagenes,
+                    "Foto frontal del Carnet de Identidad": data.imagen_cedula_identidad,
+                    "Certificado": data.imagen_certificado
+                }
+            }
+
+            // Eliminamos los campos directos que el backend no permite (not allowed)
+            delete payload.imagen_cedula_identidad
+            delete payload.imagen_certificado
+
+            await UsuariosFrecuentesService.updateUsuarioFrecuente(usuarioFrecuente.id, payload)
 
             toast.success("Usuario Frecuente actualizado correctamente")
 

@@ -52,7 +52,6 @@ export default function AdultosMayoresPage() {
 
         if (debouncedSearch.trim()) {
             params.nombre = debouncedSearch.trim()
-            params.rut = debouncedSearch.trim()
         }
 
         return AdultosMayoresService.getAdultosMayores(params)
@@ -164,7 +163,6 @@ export default function AdultosMayoresPage() {
 
             if (debouncedSearch.trim()) {
                 params.nombre = debouncedSearch.trim()
-                params.rut = debouncedSearch.trim()
             }
 
             const response = await AdultosMayoresService.getAdultosMayores(params)
@@ -210,6 +208,16 @@ export default function AdultosMayoresPage() {
             icon: <Icon.PlusIcon className="h-4 w-4" />
         },
     ]
+
+    // Client-side filtering for immediate feedback
+    const filteredAdultosMayores = adultosMayores.filter(adulto => {
+        if (!searchValue.trim()) return true;
+        const searchLower = searchValue.toLowerCase();
+        return (
+            (adulto.nombre && adulto.nombre.toLowerCase().includes(searchLower)) ||
+            (adulto.rut && adulto.rut.toLowerCase().includes(searchLower))
+        );
+    });
 
     return (
         <div className="flex flex-col justify-center space-y-4">
@@ -272,14 +280,14 @@ export default function AdultosMayoresPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : adultosMayores?.length === 0 ? (
+                        ) : filteredAdultosMayores.length === 0 ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={7} className="text-center py-8">
+                                <Table.TableCell colSpan={8} className="text-center py-8">
                                     No se encontraron adultos mayores
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            adultosMayores.map((adultoMayor) => (
+                            filteredAdultosMayores.map((adultoMayor) => (
                                 <Table.TableRow key={adultoMayor.id}>
                                     <Table.TableCell>{adultoMayor.id}</Table.TableCell>
                                     <Table.TableCell className="font-medium">{adultoMayor.nombre}</Table.TableCell>

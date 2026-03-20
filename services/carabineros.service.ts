@@ -22,6 +22,7 @@ export interface GetCarabinerosParams {
     status?: "ACTIVO" | "INACTIVO";
     rut?: string;
     nombre_completo?: string;
+    search?: string;
 }
 
 export interface CarabinerosResponse {

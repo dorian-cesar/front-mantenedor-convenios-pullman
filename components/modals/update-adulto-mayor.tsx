@@ -73,8 +73,18 @@ export default function UpdateAdultoMayorModal({
         },
     })
 
+    const getVal = (obj: any, keys: string[]): string | null => {
+        if (!obj) return null
+        for (const key of keys) {
+            if (obj[key]) return obj[key]
+        }
+        return null
+    }
+
     useEffect(() => {
         if (adultoMayor) {
+            const imgCedula = getVal(adultoMayor?.imagenes, ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]) || adultoMayor.imagen_cedula_identidad || ""
+
             form.reset({
                 nombre: adultoMayor.nombre || "",
                 rut: adultoMayor.rut || "",
@@ -82,15 +92,15 @@ export default function UpdateAdultoMayorModal({
                 correo: adultoMayor.correo || "",
                 direccion: adultoMayor.direccion || "",
                 status: adultoMayor.status,
-                imagen_cedula_identidad: adultoMayor.imagen_cedula_identidad || "",
+                imagen_cedula_identidad: imgCedula,
             })
 
-            setOriginalFile(adultoMayor.imagen_cedula_identidad)
+            setOriginalFile(imgCedula)
 
-            if (adultoMayor.imagen_cedula_identidad) {
+            if (imgCedula) {
                 setPreview({
-                    src: adultoMayor.imagen_cedula_identidad,
-                    isPDF: isPDF(adultoMayor.imagen_cedula_identidad)
+                    src: imgCedula,
+                    isPDF: isPDF(imgCedula)
                 })
             } else {
                 setPreview(null)
@@ -186,7 +196,20 @@ export default function UpdateAdultoMayorModal({
         setIsLoading(true)
 
         try {
-            await AdultosMayoresService.updateAdultoMayor(adultoMayor.id, data)
+            // "debe subirlo todo" - El usuario quiere que se envíe todo el payload
+            // El backend acepta las imágenes dentro del objeto 'imagenes' con nombres específicos
+            const payload: any = { 
+                ...data,
+                imagenes: {
+                    ...adultoMayor.imagenes,
+                    "Foto frontal del Carnet de Identidad": data.imagen_cedula_identidad
+                }
+            }
+
+            // Eliminamos los campos directos que el backend no permite (not allowed)
+            delete payload.imagen_cedula_identidad
+
+            await AdultosMayoresService.updateAdultoMayor(adultoMayor.id, payload)
 
             toast.success("Adulto Mayor actualizado correctamente")
 

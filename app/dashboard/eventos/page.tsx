@@ -255,6 +255,26 @@ export default function EventosPage() {
         return "compra"
     }
 
+    // Client-side filtering for immediate feedback
+    const filteredEventos = eventos.filter(evento => {
+        if (!searchValue.trim()) return true;
+        const searchLower = searchValue.toLowerCase();
+        const passengerName = evento.pasajero ? `${evento.pasajero.nombres} ${evento.pasajero.apellidos}`.toLowerCase() : "";
+        const passengerRut = evento.pasajero?.rut?.toLowerCase() || "";
+        const companyName = evento.empresa?.nombre?.toLowerCase() || "";
+        const convenioName = evento.convenio?.nombre?.toLowerCase() || "";
+        const authCode = evento.codigo_autorizacion?.toLowerCase() || "";
+
+        return (
+            passengerName.includes(searchLower) ||
+            passengerRut.includes(searchLower) ||
+            companyName.includes(searchLower) ||
+            convenioName.includes(searchLower) ||
+            authCode.includes(searchLower) ||
+            evento.id.toString().includes(searchLower)
+        );
+    });
+
     return (
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
@@ -262,6 +282,9 @@ export default function EventosPage() {
                 description="Historial de todos los eventos del sistema."
                 actionButtons={actionButtons}
                 showSearch={true}
+                searchValue={searchValue}
+                onSearchChange={setSearchValue}
+                onSearchClear={() => setSearchValue("")}
                 onRefresh={handleRefresh}
                 showRefreshButton={true}
                 showPagination={true}
@@ -418,14 +441,14 @@ export default function EventosPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : eventos.length === 0 ? (
+                        ) : filteredEventos.length === 0 ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={13} className="text-center py-8">
+                                <Table.TableCell colSpan={14} className="text-center py-8">
                                     No se encontraron eventos
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            eventos.map((evento) => (
+                            filteredEventos.map((evento) => (
                                 <Table.TableRow key={evento.id}>
                                     <Table.TableCell>{evento.id}</Table.TableCell>
                                     <Table.TableCell>

@@ -28,6 +28,7 @@ export interface GetUsuariosFrecuentesParams {
     status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     nombre?: string;
     rut?: string;
+    search?: string;
 }
 
 export interface UsuariosFrecuentesResponse {

@@ -66,8 +66,12 @@ export default function FachPage() {
             }
 
             if (debouncedSearch.trim()) {
-                params.search = debouncedSearch.trim()
-                params.rut = debouncedSearch.trim()
+                const isNumericOrRut = /^[0-9kK.-]+$/.test(debouncedSearch.trim())
+                if (isNumericOrRut) {
+                    params.rut = debouncedSearch.trim()
+                } else {
+                    params.search = debouncedSearch.trim()
+                }
             }
 
             const response = await FachService.getFach(params)
@@ -175,7 +179,6 @@ export default function FachPage() {
 
             if (debouncedSearch.trim()) {
                 params.search = debouncedSearch.trim()
-                params.rut = debouncedSearch.trim()
             }
 
             const response = await FachService.getFach(params)
@@ -213,6 +216,16 @@ export default function FachPage() {
             icon: <Icon.PlusIcon className="h-4 w-4" />
         },
     ]
+
+    // Client-side filtering for immediate feedback
+    const filteredFach = fach.filter(f => {
+        if (!searchValue.trim()) return true;
+        const searchLower = searchValue.toLowerCase();
+        return (
+            (f.nombre_completo && f.nombre_completo.toLowerCase().includes(searchLower)) ||
+            (f.rut && f.rut.toLowerCase().includes(searchLower))
+        );
+    });
 
     return (
         <div className="flex flex-col justify-center space-y-4">
@@ -272,14 +285,14 @@ export default function FachPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : fachList.length === 0 ? (
+                        ) : filteredFach.length === 0 ? (
                             <Table.TableRow>
                                 <Table.TableCell colSpan={5} className="text-center py-8">
-                                    No se encontraron registros
+                                    No se encontraron beneficios FACH
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            fachList.map((fach, index) => (
+                            filteredFach.map((fach, index) => (
                                 <Table.TableRow key={`${fach.id}-${index}`}>
                                     <Table.TableCell className="font-medium">{fach.id}</Table.TableCell>
                                     <Table.TableCell className="font-medium">{fach.nombre_completo}</Table.TableCell>

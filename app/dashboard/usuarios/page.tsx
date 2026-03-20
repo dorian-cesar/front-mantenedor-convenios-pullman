@@ -196,6 +196,17 @@ export default function UsuariosPage() {
     },
   ]
 
+  // Client-side filtering for immediate feedback
+  const filteredUsuarios = usuarios.filter(usuario => {
+    if (!searchValue.trim()) return true;
+    const searchLower = searchValue.toLowerCase();
+    return (
+      (usuario.nombre && usuario.nombre.toLowerCase().includes(searchLower)) ||
+      (usuario.correo && usuario.correo.toLowerCase().includes(searchLower)) ||
+      (usuario.rut && usuario.rut.toLowerCase().includes(searchLower))
+    );
+  });
+
   return (
     <div className="flex flex-col justify-center space-y-4">
       <PageHeader
@@ -256,14 +267,14 @@ export default function UsuariosPage() {
                     </div>
                   </Table.TableCell>
                 </Table.TableRow>
-              ) : usuarios.length === 0 ? (
+              ) : filteredUsuarios.length === 0 ? (
                 <Table.TableRow>
                   <Table.TableCell colSpan={6} className="text-center py-8">
                     No se encontraron usuarios
                   </Table.TableCell>
                 </Table.TableRow>
               ) : (
-                usuarios.map((usuario) => (
+                filteredUsuarios.map((usuario) => (
                   <Table.TableRow key={usuario.id}>
                     <Table.TableCell>{usuario.id}</Table.TableCell>
                     <Table.TableCell className="font-medium">{usuario.correo}</Table.TableCell>

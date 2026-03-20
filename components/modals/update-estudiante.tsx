@@ -60,6 +60,8 @@ export default function UpdateEstudianteModal({
     const [isLoading, setIsLoading] = useState(false)
     const [previewCedula, setPreviewCedula] = useState<{ src: string; isPDF: boolean } | null>(null)
     const [previewCertificado, setPreviewCertificado] = useState<{ src: string; isPDF: boolean } | null>(null)
+    const [originalCedula, setOriginalCedula] = useState<string | undefined>()
+    const [originalCertificado, setOriginalCertificado] = useState<string | undefined>()
 
     const form = useForm<EstudianteFormValues>({
         resolver: zodResolver(estudianteSchema),
@@ -75,9 +77,20 @@ export default function UpdateEstudianteModal({
         },
     })
 
+    const getVal = (obj: any, keys: string[]): string | null => {
+        if (!obj) return null
+        for (const key of keys) {
+            if (obj[key]) return obj[key]
+        }
+        return null
+    }
+
     // Reset form cuando se abre el modal con un estudiante
     useEffect(() => {
         if (estudiante && open) {
+            const imgCedula = getVal(estudiante?.imagenes, ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]) || estudiante.imagen_cedula_identidad || undefined
+            const imgCertificado = getVal(estudiante?.imagenes, ["Certificado de Estudios", "Certificado", "Certificado Alumno Regular"]) || estudiante.imagen_certificado_alumno_regular || undefined
+
             // Reset con los valores actuales del estudiante
             form.reset({
                 nombre: estudiante.nombre || "",
@@ -86,24 +99,27 @@ export default function UpdateEstudianteModal({
                 correo: estudiante.correo || "",
                 direccion: estudiante.direccion || "",
                 status: estudiante.status,
-                imagen_cedula_identidad: estudiante.imagen_cedula_identidad || undefined,
-                imagen_certificado_alumno_regular: estudiante.imagen_certificado_alumno_regular || undefined,
+                imagen_cedula_identidad: imgCedula,
+                imagen_certificado_alumno_regular: imgCertificado,
             })
 
+            setOriginalCedula(imgCedula)
+            setOriginalCertificado(imgCertificado)
+
             // Configurar previews
-            if (estudiante.imagen_cedula_identidad) {
+            if (imgCedula) {
                 setPreviewCedula({
-                    src: estudiante.imagen_cedula_identidad,
-                    isPDF: isPDF(estudiante.imagen_cedula_identidad)
+                    src: imgCedula,
+                    isPDF: isPDF(imgCedula)
                 })
             } else {
                 setPreviewCedula(null)
             }
 
-            if (estudiante.imagen_certificado_alumno_regular) {
+            if (imgCertificado) {
                 setPreviewCertificado({
-                    src: estudiante.imagen_certificado_alumno_regular,
-                    isPDF: isPDF(estudiante.imagen_certificado_alumno_regular)
+                    src: imgCertificado,
+                    isPDF: isPDF(imgCertificado)
                 })
             } else {
                 setPreviewCertificado(null)
@@ -234,7 +250,21 @@ export default function UpdateEstudianteModal({
         setIsLoading(true)
 
         try {
-            await EstudiantesService.updateEstudiante(estudiante.id, data)
+            // "debe subirlo todo" - El usuario quiere que se envíe todo el payload
+            const payload: any = { 
+                ...data,
+                imagenes: {
+                    ...estudiante.imagenes,
+                    "Foto frontal del Carnet de Identidad": data.imagen_cedula_identidad,
+                    "Certificado Alumno Regular": data.imagen_certificado_alumno_regular
+                }
+            }
+
+            // Eliminamos los campos directos que el backend no permite (not allowed)
+            delete payload.imagen_cedula_identidad
+            delete payload.imagen_certificado_alumno_regular
+
+            await EstudiantesService.updateEstudiante(estudiante.id, payload)
 
             toast.success("Estudiante actualizado correctamente")
 
