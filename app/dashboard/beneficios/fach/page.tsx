@@ -22,6 +22,7 @@ import { formatRut } from "@/utils/helpers"
 import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
 import { useAuth } from "@/hooks/useAuth"
+import { useConvenios } from "@/hooks/use-convenios"
 
 export default function FachPage() {
     const [searchValue, setSearchValue] = useState("")
@@ -33,6 +34,9 @@ export default function FachPage() {
     const [openUpdate, setOpenUpdate] = useState(false)
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedFach, setSelectedFach] = useState<Fach | null>(null)
+    const [statusFilter, setStatusFilter] = useState<string>("")
+    const [convenioFilter, setConvenioFilter] = useState<string>("")
+    const { convenios, convenioMap } = useConvenios()
     const { user } = useAuth()
 
     const [pagination, setPagination] = useState({
@@ -63,6 +67,14 @@ export default function FachPage() {
                 limit: pagination.limit,
                 sortBy: 'id',
                 order: 'DESC',
+            }
+
+            if (statusFilter) {
+                params.status = statusFilter as any
+            }
+
+            if (convenioFilter) {
+                params.convenio_id = Number(convenioFilter)
             }
 
             if (debouncedSearch.trim()) {
@@ -99,7 +111,7 @@ export default function FachPage() {
 
     useEffect(() => {
         fetchFach()
-    }, [pagination.page, pagination.limit, debouncedSearch])
+    }, [pagination.page, pagination.limit, debouncedSearch, statusFilter, convenioFilter])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -218,20 +230,90 @@ export default function FachPage() {
     ]
 
     // Client-side filtering for immediate feedback
-    const filteredFach = fach.filter(f => {
+    const filteredFach = fachList.filter(f => {
         if (!searchValue.trim()) return true;
         const searchLower = searchValue.toLowerCase();
+        const convenioName = f.convenio?.nombre?.toLowerCase() || "";
+        const passengerRut = f.rut?.toLowerCase() || "";
         return (
             (f.nombre_completo && f.nombre_completo.toLowerCase().includes(searchLower)) ||
-            (f.rut && f.rut.toLowerCase().includes(searchLower))
+            (f.rut && f.rut.toLowerCase().includes(searchLower)) ||
+            convenioName.includes(searchLower)
         );
     });
+
+    const filters = (
+        <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Convenio:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between">
+                            {convenioFilter ? convenioMap[Number(convenioFilter)] || "Seleccionar..." : "Todos"}
+                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                        <Dropdown.DropdownMenuItem onClick={() => setConvenioFilter("")}>
+                            Todos
+                        </Dropdown.DropdownMenuItem>
+                        {convenios.map((c: any) => (
+                            <Dropdown.DropdownMenuItem key={c.id} onClick={() => setConvenioFilter(c.id.toString())}>
+                                {c.nombre}
+                            </Dropdown.DropdownMenuItem>
+                        ))}
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Status:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
+                            {statusFilter || "Todos"}
+                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start">
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("")}>
+                            Todos
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("ACTIVO")}>
+                            ACTIVO
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("INACTIVO")}>
+                            INACTIVO
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("RECHAZADO")}>
+                            RECHAZADO
+                        </Dropdown.DropdownMenuItem>
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            {(statusFilter || convenioFilter) && (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                        setStatusFilter("");
+                        setConvenioFilter("");
+                    }}
+                    className="h-9"
+                >
+                    <Icon.X className="mr-2 h-4 w-4" />
+                    Limpiar
+                </Button>
+            )}
+        </div>
+    )
 
     return (
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
                 title="Fach"
-                description="Listado de registros Fach."
+                description="Listado de personal Fach beneficiarios del sistema."
                 actionButtons={actionButtons}
                 actionMenu={{
                     title: "Opciones",

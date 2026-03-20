@@ -23,6 +23,7 @@ export interface GetCarabinerosParams {
     rut?: string;
     nombre_completo?: string;
     search?: string;
+    convenio_id?: number;
 }
 
 export interface CarabinerosResponse {

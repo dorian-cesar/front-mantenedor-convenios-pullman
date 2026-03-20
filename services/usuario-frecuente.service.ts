@@ -29,6 +29,7 @@ export interface GetUsuariosFrecuentesParams {
     nombre?: string;
     rut?: string;
     search?: string;
+    convenio_id?: number;
 }
 
 export interface UsuariosFrecuentesResponse {

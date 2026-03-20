@@ -29,6 +29,7 @@ export interface GetAdultosMayoresParams {
     rut?: string;
     nombre?: string;
     search?: string;
+    convenio_id?: number;
 }
 
 export interface AdultosMayoresResponse {

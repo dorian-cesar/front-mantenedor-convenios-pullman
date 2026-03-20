@@ -33,9 +33,11 @@ export default function UsuariosFrecuentesPage() {
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedUsuarioFrecuente, setSelectedUsuarioFrecuente] = useState<UsuarioFrecuente | null>(null)
     const [openRechazar, setOpenRechazar] = useState(false)
+    const [statusFilter, setStatusFilter] = useState<string>("")
+    const [convenioFilter, setConvenioFilter] = useState<string>("")
     const { user } = useAuth()
 
-    const { convenioMap } = useConvenios()
+    const { convenioMap, convenios } = useConvenios()
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -59,11 +61,19 @@ export default function UsuariosFrecuentesPage() {
             }
         }
 
+        if (statusFilter) {
+            params.status = statusFilter as any
+        }
+
+        if (convenioFilter) {
+            params.convenio_id = Number(convenioFilter)
+        }
+
         return UsuariosFrecuentesService.getUsuariosFrecuentes(params)
     }
 
     const { data: response, error, isLoading, mutate } = useSWR(
-        ['beneficiarios', 'usuarios-frecuentes', pagination.page, pagination.limit, debouncedSearch],
+        ['beneficiarios', 'usuarios-frecuentes', pagination.page, pagination.limit, debouncedSearch, statusFilter, convenioFilter],
         fetcher,
         { keepPreviousData: true }
     )
@@ -226,17 +236,87 @@ export default function UsuariosFrecuentesPage() {
     const filteredUsuariosFrecuentes = usuariosFrecuentes.filter(usuario => {
         if (!searchValue.trim()) return true;
         const searchLower = searchValue.toLowerCase();
+        const passengerRut = usuario.rut ? formatRut(usuario.rut).toLowerCase() : "";
+        const convenioName = usuario.convenio?.nombre ? usuario.convenio.nombre.toLowerCase() : "";
         return (
             (usuario.nombre && usuario.nombre.toLowerCase().includes(searchLower)) ||
-            (usuario.rut && usuario.rut.toLowerCase().includes(searchLower))
+            passengerRut.includes(searchLower) ||
+            convenioName.includes(searchLower)
         );
     });
+
+    const filters = (
+        <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Convenio:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between">
+                            {convenioFilter ? convenioMap[Number(convenioFilter)] || "Seleccionar..." : "Todos"}
+                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                        <Dropdown.DropdownMenuItem onClick={() => setConvenioFilter("")}>
+                            Todos
+                        </Dropdown.DropdownMenuItem>
+                        {convenios.map((c) => (
+                            <Dropdown.DropdownMenuItem key={c.id} onClick={() => setConvenioFilter(c.id.toString())}>
+                                {c.nombre}
+                            </Dropdown.DropdownMenuItem>
+                        ))}
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">Status:</span>
+                <Dropdown.DropdownMenu>
+                    <Dropdown.DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
+                            {statusFilter || "Todos"}
+                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </Dropdown.DropdownMenuTrigger>
+                    <Dropdown.DropdownMenuContent align="start">
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("")}>
+                            Todos
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("ACTIVO")}>
+                            ACTIVO
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("INACTIVO")}>
+                            INACTIVO
+                        </Dropdown.DropdownMenuItem>
+                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("RECHAZADO")}>
+                            RECHAZADO
+                        </Dropdown.DropdownMenuItem>
+                    </Dropdown.DropdownMenuContent>
+                </Dropdown.DropdownMenu>
+            </div>
+
+            {(statusFilter || convenioFilter) && (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                        setStatusFilter("");
+                        setConvenioFilter("");
+                    }}
+                    className="h-9"
+                >
+                    <Icon.X className="mr-2 h-4 w-4" />
+                    Limpiar
+                </Button>
+            )}
+        </div>
+    )
 
     return (
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
                 title="Usuarios Frecuentes"
-                description="Listado de usuarios frecuentes registrados."
+                description="Listado de usuarios frecuentes beneficiarios del sistema."
                 actionButtons={actionButtons}
                 actionMenu={{
                     title: "Detalles",
@@ -250,7 +330,7 @@ export default function UsuariosFrecuentesPage() {
                 }}
                 showSearch={true}
                 searchValue={searchValue}
-                onSearchChange={setSearchValue}
+                onSearchChange={(value) => setSearchValue(value)}
                 onSearchClear={() => setSearchValue("")}
                 showPagination={true}
                 paginationComponent={

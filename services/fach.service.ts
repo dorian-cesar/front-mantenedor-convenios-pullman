@@ -4,6 +4,7 @@ import { Convenio } from './convenio.service';
 
 export interface Fach {
     id: number;
+    rut: string;
     nombre_completo: string;
     status: "ACTIVO" | "INACTIVO";
     empresa: Empresa;
@@ -20,6 +21,7 @@ export interface GetFachParams {
     order?: "ASC" | "DESC";
     status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
     search?: string;
+    convenio_id?: number;
     rut?: string;
 }
 

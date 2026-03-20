@@ -29,6 +29,7 @@ export interface GetEstudiantesParams {
     nombre?: string;
     rut?: string;
     search?: string;
+    convenio_id?: number;
 }
 
 export interface EstudiantesResponse {
