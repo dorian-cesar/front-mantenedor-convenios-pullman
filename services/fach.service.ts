@@ -6,6 +6,7 @@ export interface Fach {
     id: number;
     rut: string;
     nombre_completo: string;
+    correo?: string;
     status: "ACTIVO" | "INACTIVO";
     empresa: Empresa;
     convenio_id: number | null;

@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import * as Dropdown from "@/components/ui/dropdown-menu"
 import * as Table from "@/components/ui/table"
 import * as Icon from "lucide-react"
@@ -34,6 +35,9 @@ export default function FachPage() {
     const [openUpdate, setOpenUpdate] = useState(false)
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedFach, setSelectedFach] = useState<Fach | null>(null)
+    const [idFilter, setIdFilter] = useState("")
+    const [rutFilter, setRutFilter] = useState("")
+    const [emailFilter, setEmailFilter] = useState("")
     const [statusFilter, setStatusFilter] = useState<string>("")
     const { convenioMap } = useConvenios()
     const { user } = useAuth()
@@ -48,6 +52,9 @@ export default function FachPage() {
     })
 
     const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedId = useDebounce(idFilter, 500)
+    const debouncedRut = useDebounce(rutFilter, 500)
+    const debouncedEmail = useDebounce(emailFilter, 500)
 
     const fetchEmpresas = async () => {
         try {
@@ -78,23 +85,27 @@ export default function FachPage() {
                     params.id = searchTerm
                 } else if (searchTerm.includes('@')) {
                     params.correo = searchTerm
-                } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
+                } else if (/[0-9-kK]{7,12}/.test(searchTerm) && !searchTerm.includes(" ")) {
                     params.rut = searchTerm.replace(/\./g, '')
                 } else {
                     params.search = searchTerm
                 }
             }
 
+            if (debouncedId.trim()) params.id = debouncedId.trim()
+            if (debouncedRut.trim()) params.rut = debouncedRut.trim().replace(/\./g, '')
+            if (debouncedEmail.trim()) params.correo = debouncedEmail.trim()
+
             const response = await FachService.getFach(params)
 
-            setFachList(response.rows)
+            setFachList(response.rows || (response as any).data || [])
 
             setPagination(prev => ({
                 ...prev,
-                total: response.totalItems,
-                totalPages: response.totalPages || 1,
-                hasPrevPage: (response.currentPage || 1) > 1,
-                hasNextPage: (response.currentPage || 1) < (response.totalPages || 1)
+                total: response.totalItems ?? (response as any).total ?? 0,
+                totalPages: response.totalPages || (response as any).pages || 1,
+                hasPrevPage: (response.currentPage || (response as any).currentPage || 1) > 1,
+                hasNextPage: (response.currentPage || (response as any).currentPage || 1) < (response.totalPages || (response as any).pages || 1)
             }))
         } catch (error) {
             console.error('Error fetching fach:', error)
@@ -110,7 +121,7 @@ export default function FachPage() {
 
     useEffect(() => {
         fetchFach()
-    }, [pagination.page, pagination.limit, debouncedSearch, statusFilter])
+    }, [pagination.page, pagination.limit, debouncedSearch, debouncedId, debouncedRut, debouncedEmail, statusFilter])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -230,23 +241,68 @@ export default function FachPage() {
 
     // Client-side filtering for immediate feedback
     const filteredFach = fachList.filter(f => {
-        if (!searchValue.trim()) return true;
-        const searchLower = searchValue.toLowerCase();
-        const convenioName = f.convenio?.nombre?.toLowerCase() || "";
-        const passengerRut = f.rut?.toLowerCase() || "";
-        const idString = f.id ? f.id.toString() : "";
+        if (!searchValue.trim() && !idFilter.trim() && !rutFilter.trim() && !emailFilter.trim()) return true;
         
+        const normalize = (text: string) => 
+            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+        const cleanRut = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
+
+        const searchLower = normalize(searchValue);
+        const searchClean = cleanRut(searchValue);
+        
+        const fId = f.id?.toString() || "";
+        const fNombre = f.nombre_completo ? normalize(f.nombre_completo) : "";
+        const fRutClean = cleanRut(f.rut || "");
+        const fEmail = f.correo ? normalize(f.correo) : "";
+        const fConvenio = f.convenio?.nombre ? normalize(f.convenio.nombre) : "";
+
+        const matchesGlobal = searchValue.trim() === "" || (
+            fId.includes(searchLower) ||
+            fNombre.includes(searchLower) ||
+            fRutClean.includes(searchClean) ||
+            fEmail.includes(searchLower) ||
+            fConvenio.includes(searchLower)
+        );
+
+        const idLower = idFilter.toLowerCase();
+        const rutFilterClean = cleanRut(rutFilter);
+        const emailLower = emailFilter.toLowerCase();
+
         return (
-            idString.includes(searchLower) ||
-            (f.nombre_completo && f.nombre_completo.toLowerCase().includes(searchLower)) ||
-            (f.rut && f.rut.toLowerCase().includes(searchLower)) ||
-            convenioName.includes(searchLower)
+            matchesGlobal &&
+            (idFilter.trim() === "" || fId.includes(idLower)) &&
+            (rutFilter.trim() === "" || fRutClean.includes(rutFilterClean)) &&
+            (emailFilter.trim() === "" || fEmail.includes(emailLower))
         );
     });
 
     const filters = (
         <div className="flex flex-wrap gap-2 items-center">
-
+            <div className="w-32">
+                <Input
+                    placeholder="ID"
+                    value={idFilter}
+                    onChange={(e) => setIdFilter(e.target.value)}
+                    className="h-9"
+                />
+            </div>
+            <div className="w-40">
+                <Input
+                    placeholder="RUT"
+                    value={rutFilter}
+                    onChange={(e) => setRutFilter(e.target.value)}
+                    className="h-9"
+                />
+            </div>
+            <div className="w-56">
+                <Input
+                    placeholder="Email"
+                    value={emailFilter}
+                    onChange={(e) => setEmailFilter(e.target.value)}
+                    className="h-9"
+                />
+            </div>
             <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Status:</span>
                 <Dropdown.DropdownMenu>
@@ -273,12 +329,15 @@ export default function FachPage() {
                 </Dropdown.DropdownMenu>
             </div>
 
-            {statusFilter && (
+            {(statusFilter || idFilter || rutFilter || emailFilter) && (
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => {
                         setStatusFilter("");
+                        setIdFilter("");
+                        setRutFilter("");
+                        setEmailFilter("");
                     }}
                     className="h-9"
                 >

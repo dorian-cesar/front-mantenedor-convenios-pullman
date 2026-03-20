@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import * as Dropdown from "@/components/ui/dropdown-menu"
 import * as Table from "@/components/ui/table"
 import * as Icon from "lucide-react"
@@ -32,6 +33,9 @@ export default function CarabinerosPage() {
     const [openUpdate, setOpenUpdate] = useState(false)
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedCarabinero, setSelectedCarabinero] = useState<Carabinero | null>(null)
+    const [idFilter, setIdFilter] = useState("")
+    const [rutFilter, setRutFilter] = useState("")
+    const [emailFilter, setEmailFilter] = useState("")
     const [statusFilter, setStatusFilter] = useState<string>("")
     const { convenioMap } = useConvenios()
     const { user } = useAuth()
@@ -46,6 +50,9 @@ export default function CarabinerosPage() {
     })
 
     const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedId = useDebounce(idFilter, 500)
+    const debouncedRut = useDebounce(rutFilter, 500)
+    const debouncedEmail = useDebounce(emailFilter, 500)
 
     const fetchCarabineros = async () => {
         setIsLoading(true)
@@ -61,29 +68,33 @@ export default function CarabinerosPage() {
                 params.status = statusFilter as any
             }
 
-        const searchTerm = debouncedSearch.trim()
-        if (searchTerm) {
-            if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
-                params.id = searchTerm
-            } else if (searchTerm.includes('@')) {
-                params.correo = searchTerm
-            } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
-                params.rut = searchTerm.replace(/\./g, '')
-            } else {
-                params.nombre_completo = searchTerm
+            const searchTerm = debouncedSearch.trim()
+            if (searchTerm) {
+                if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
+                    params.id = searchTerm
+                } else if (searchTerm.includes('@')) {
+                    params.correo = searchTerm
+                } else if (/[0-9-kK]{7,12}/.test(searchTerm) && !searchTerm.includes(" ")) {
+                    params.rut = searchTerm.replace(/\./g, '')
+                } else {
+                    params.nombre_completo = searchTerm
+                }
             }
-        }
+
+            if (debouncedId.trim()) params.id = debouncedId.trim()
+            if (debouncedRut.trim()) params.rut = debouncedRut.trim().replace(/\./g, '')
+            if (debouncedEmail.trim()) params.correo = debouncedEmail.trim()
 
             const response = await CarabinerosService.getCarabineros(params)
 
-            setCarabineros(response.rows)
+            setCarabineros(response.rows || (response as any).data || [])
 
             setPagination(prev => ({
                 ...prev,
-                total: response.totalItems,
-                totalPages: response.totalPages || 1,
-                hasPrevPage: (response.currentPage || 1) > 1,
-                hasNextPage: (response.currentPage || 1) < (response.totalPages || 1)
+                total: response.totalItems ?? (response as any).total ?? 0,
+                totalPages: response.totalPages || (response as any).pages || 1,
+                hasPrevPage: (response.currentPage || (response as any).currentPage || 1) > 1,
+                hasNextPage: (response.currentPage || (response as any).currentPage || 1) < (response.totalPages || (response as any).pages || 1)
             }))
         } catch (error) {
             console.error('Error fetching carabineros:', error)
@@ -95,7 +106,7 @@ export default function CarabinerosPage() {
 
     useEffect(() => {
         fetchCarabineros()
-    }, [pagination.page, pagination.limit, debouncedSearch, statusFilter])
+    }, [pagination.page, pagination.limit, debouncedSearch, debouncedId, debouncedRut, debouncedEmail, statusFilter])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -212,23 +223,68 @@ export default function CarabinerosPage() {
 
     // Client-side filtering for immediate feedback
     const filteredCarabineros = carabineros.filter(carabinero => {
-        if (!searchValue.trim()) return true;
-        const searchLower = searchValue.toLowerCase();
-        const passengerRut = carabinero.rut ? carabinero.rut.toLowerCase() : "";
-        const convenioName = carabinero.convenio?.nombre ? carabinero.convenio.nombre.toLowerCase() : "";
-        const idString = carabinero.id ? carabinero.id.toString() : "";
+        if (!searchValue.trim() && !idFilter.trim() && !rutFilter.trim() && !emailFilter.trim()) return true;
         
+        const normalize = (text: string) => 
+            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+        const cleanRut = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
+
+        const searchLower = normalize(searchValue);
+        const searchClean = cleanRut(searchValue);
+        
+        const cId = carabinero.id?.toString() || "";
+        const cNombre = carabinero.nombre_completo ? normalize(carabinero.nombre_completo) : "";
+        const cRutClean = cleanRut(carabinero.rut || "");
+        const cEmail = carabinero.correo ? normalize(carabinero.correo) : "";
+        const cConvenio = carabinero.convenio?.nombre ? normalize(carabinero.convenio.nombre) : "";
+
+        const matchesGlobal = searchValue.trim() === "" || (
+            cId.includes(searchLower) ||
+            cNombre.includes(searchLower) ||
+            cRutClean.includes(searchClean) ||
+            cEmail.includes(searchLower) ||
+            cConvenio.includes(searchLower)
+        );
+
+        const idLower = idFilter.toLowerCase();
+        const rutFilterClean = cleanRut(rutFilter);
+        const emailLower = emailFilter.toLowerCase();
+
         return (
-            idString.includes(searchLower) ||
-            (carabinero.nombre_completo && carabinero.nombre_completo.toLowerCase().includes(searchLower)) ||
-            passengerRut.includes(searchLower) ||
-            convenioName.includes(searchLower)
+            matchesGlobal &&
+            (idFilter.trim() === "" || cId.includes(idLower)) &&
+            (rutFilter.trim() === "" || cRutClean.includes(rutFilterClean)) &&
+            (emailFilter.trim() === "" || cEmail.includes(emailLower))
         );
     });
 
     const filters = (
         <div className="flex flex-wrap gap-2 items-center">
-
+            <div className="w-32">
+                <Input
+                    placeholder="ID"
+                    value={idFilter}
+                    onChange={(e) => setIdFilter(e.target.value)}
+                    className="h-9"
+                />
+            </div>
+            <div className="w-40">
+                <Input
+                    placeholder="RUT"
+                    value={rutFilter}
+                    onChange={(e) => setRutFilter(e.target.value)}
+                    className="h-9"
+                />
+            </div>
+            <div className="w-56">
+                <Input
+                    placeholder="Email"
+                    value={emailFilter}
+                    onChange={(e) => setEmailFilter(e.target.value)}
+                    className="h-9"
+                />
+            </div>
             <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Status:</span>
                 <Dropdown.DropdownMenu>
@@ -261,12 +317,15 @@ export default function CarabinerosPage() {
                 </Dropdown.DropdownMenu>
             </div>
 
-            {statusFilter && (
+            {(statusFilter || idFilter || rutFilter || emailFilter) && (
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => {
                         setStatusFilter("");
+                        setIdFilter("");
+                        setRutFilter("");
+                        setEmailFilter("");
                     }}
                     className="h-9"
                 >

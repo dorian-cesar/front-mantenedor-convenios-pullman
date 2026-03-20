@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import * as Dropdown from "@/components/ui/dropdown-menu"
 import * as Table from "@/components/ui/table"
 import * as Icon from "lucide-react"
@@ -34,6 +35,9 @@ export default function EstudiantesPage() {
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedEstudiante, setSelectedEstudiante] = useState<Estudiante | null>(null)
     const [openRechazar, setOpenRechazar] = useState(false)
+    const [idFilter, setIdFilter] = useState("")
+    const [rutFilter, setRutFilter] = useState("")
+    const [emailFilter, setEmailFilter] = useState("")
     const [statusFilter, setStatusFilter] = useState<string>("")
     const { convenioMap } = useConvenios()
     const { user } = useAuth()
@@ -44,11 +48,15 @@ export default function EstudiantesPage() {
     })
 
     const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedId = useDebounce(idFilter, 500)
+    const debouncedRut = useDebounce(rutFilter, 500)
+    const debouncedEmail = useDebounce(emailFilter, 500)
 
     const fetcher = async () => {
         const params: GetEstudiantesParams = {
             page: pagination.page,
             limit: pagination.limit,
+            status: (statusFilter as any) || undefined
         }
 
         const searchTerm = debouncedSearch.trim()
@@ -57,31 +65,31 @@ export default function EstudiantesPage() {
                 params.id = searchTerm
             } else if (searchTerm.includes('@')) {
                 params.correo = searchTerm
-            } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
+            } else if (/[0-9-kK]{7,12}/.test(searchTerm) && !searchTerm.includes(" ")) {
                 params.rut = searchTerm.replace(/\./g, '')
             } else {
                 params.nombre = searchTerm
             }
         }
 
-        if (statusFilter) {
-            params.status = statusFilter as any
-        }
+        if (debouncedId.trim()) params.id = debouncedId.trim()
+        if (debouncedRut.trim()) params.rut = debouncedRut.trim().replace(/\./g, '')
+        if (debouncedEmail.trim()) params.correo = debouncedEmail.trim()
 
         return EstudiantesService.getEstudiantes(params)
     }
 
     const { data: response, error, isLoading, mutate } = useSWR(
-        ['beneficiarios', 'estudiantes', pagination.page, pagination.limit, debouncedSearch, statusFilter],
+        ['beneficiarios', 'estudiantes', pagination.page, pagination.limit, debouncedSearch, debouncedId, debouncedRut, debouncedEmail, statusFilter],
         fetcher,
         { keepPreviousData: true }
     )
 
     const estudiantes: Estudiante[] = (response?.rows || (response as any)?.data || (Array.isArray(response) ? response : [])) ?? [];
     
-    const totalItems = Number(response?.totalItems ?? (response as any)?.total ?? estudiantes.length);
-    const totalPages = response?.totalPages ? Number(response.totalPages) : Math.ceil(totalItems / pagination.limit) || 1;
-    const currentPage = Number(response?.currentPage ?? pagination.page);
+    const totalItems = Number(response?.totalItems ?? (response as any)?.total ?? (response as any)?.totalItems ?? estudiantes.length);
+    const totalPages = response?.totalPages ? Number(response.totalPages) : (response as any)?.pages ? Number((response as any).pages) : Math.ceil(totalItems / pagination.limit) || 1;
+    const currentPage = Number(response?.currentPage ?? (response as any)?.page ?? pagination.page);
     const hasPrevPage = currentPage > 1;
     const hasNextPage = currentPage < totalPages;
 
@@ -235,27 +243,68 @@ export default function EstudiantesPage() {
 
     // Client-side filtering for immediate feedback
     const filteredEstudiantes = estudiantes.filter(estudiante => {
-        if (!searchValue.trim()) return true;
+        if (!searchValue.trim() && !idFilter.trim() && !rutFilter.trim() && !emailFilter.trim()) return true;
+        
         const normalize = (text: string) => 
             text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+        const cleanRut = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
+
         const searchLower = normalize(searchValue);
-        const passengerRut = estudiante.rut ? normalize(estudiante.rut) : "";
-        const convenioName = estudiante.convenio?.nombre ? normalize(estudiante.convenio.nombre) : "";
-        const idString = estudiante.id ? estudiante.id.toString() : "";
-        const nombre = estudiante.nombre ? normalize(estudiante.nombre) : "";
+        const searchClean = cleanRut(searchValue);
         
+        const estId = estudiante.id?.toString() || "";
+        const estNombre = estudiante.nombre ? normalize(estudiante.nombre) : "";
+        const estRutClean = cleanRut(estudiante.rut || "");
+        const estEmail = estudiante.correo ? normalize(estudiante.correo) : "";
+        const estConvenio = estudiante.convenio?.nombre ? normalize(estudiante.convenio.nombre) : "";
+
+        const matchesGlobal = searchValue.trim() === "" || (
+            estId.includes(searchLower) ||
+            estNombre.includes(searchLower) ||
+            estRutClean.includes(searchClean) ||
+            estEmail.includes(searchLower) ||
+            estConvenio.includes(searchLower)
+        );
+
+        const idLower = idFilter.toLowerCase();
+        const rutFilterClean = cleanRut(rutFilter);
+        const emailLower = emailFilter.toLowerCase();
+
         return (
-            idString.includes(searchLower) ||
-            nombre.includes(searchLower) ||
-            passengerRut.includes(searchLower) ||
-            convenioName.includes(searchLower)
+            matchesGlobal &&
+            (idFilter.trim() === "" || estId.includes(idLower)) &&
+            (rutFilter.trim() === "" || estRutClean.includes(rutFilterClean)) &&
+            (emailFilter.trim() === "" || estEmail.includes(emailLower))
         );
     });
 
     const filters = (
         <div className="flex flex-wrap gap-2 items-center">
-
+            <div className="w-32">
+                <Input
+                    placeholder="ID"
+                    value={idFilter}
+                    onChange={(e) => setIdFilter(e.target.value)}
+                    className="h-9"
+                />
+            </div>
+            <div className="w-40">
+                <Input
+                    placeholder="RUT"
+                    value={rutFilter}
+                    onChange={(e) => setRutFilter(e.target.value)}
+                    className="h-9"
+                />
+            </div>
+            <div className="w-56">
+                <Input
+                    placeholder="Email"
+                    value={emailFilter}
+                    onChange={(e) => setEmailFilter(e.target.value)}
+                    className="h-9"
+                />
+            </div>
             <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Status:</span>
                 <Dropdown.DropdownMenu>
@@ -282,12 +331,15 @@ export default function EstudiantesPage() {
                 </Dropdown.DropdownMenu>
             </div>
 
-            {statusFilter && (
+            {(statusFilter || idFilter || rutFilter || emailFilter) && (
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => {
                         setStatusFilter("");
+                        setIdFilter("");
+                        setRutFilter("");
+                        setEmailFilter("");
                     }}
                     className="h-9"
                 >

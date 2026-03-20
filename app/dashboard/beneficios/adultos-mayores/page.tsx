@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import * as Dropdown from "@/components/ui/dropdown-menu"
 import * as Table from "@/components/ui/table"
 import * as Icon from "lucide-react"
@@ -33,6 +34,9 @@ export default function AdultosMayoresPage() {
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedAdultoMayor, setSelectedAdultoMayor] = useState<AdultoMayor | null>(null)
     const [openRechazar, setOpenRechazar] = useState(false)
+    const [idFilter, setIdFilter] = useState("")
+    const [rutFilter, setRutFilter] = useState("")
+    const [emailFilter, setEmailFilter] = useState("")
     const [statusFilter, setStatusFilter] = useState<string>("")
     const { convenioMap } = useConvenios()
     const { user } = useAuth()
@@ -43,11 +47,15 @@ export default function AdultosMayoresPage() {
     })
 
     const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedId = useDebounce(idFilter, 500)
+    const debouncedRut = useDebounce(rutFilter, 500)
+    const debouncedEmail = useDebounce(emailFilter, 500)
 
     const fetcher = async () => {
         const params: GetAdultosMayoresParams = {
             page: pagination.page,
             limit: pagination.limit,
+            status: (statusFilter as any) || undefined
         }
 
         const searchTerm = debouncedSearch.trim()
@@ -56,31 +64,31 @@ export default function AdultosMayoresPage() {
                 params.id = searchTerm
             } else if (searchTerm.includes('@')) {
                 params.correo = searchTerm
-            } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
+            } else if (/[0-9-kK]{7,12}/.test(searchTerm) && !searchTerm.includes(" ")) {
                 params.rut = searchTerm.replace(/\./g, '')
             } else {
                 params.nombre = searchTerm
             }
         }
 
-        if (statusFilter) {
-            params.status = statusFilter as any
-        }
+        if (debouncedId.trim()) params.id = debouncedId.trim()
+        if (debouncedRut.trim()) params.rut = debouncedRut.trim().replace(/\./g, '')
+        if (debouncedEmail.trim()) params.correo = debouncedEmail.trim()
 
         return AdultosMayoresService.getAdultosMayores(params)
     }
 
     const { data: response, error, isLoading, mutate } = useSWR(
-        ['beneficiarios', 'adultos-mayores', pagination.page, pagination.limit, debouncedSearch, statusFilter],
+        ['beneficiarios', 'adultos-mayores', pagination.page, pagination.limit, debouncedSearch, debouncedId, debouncedRut, debouncedEmail, statusFilter],
         fetcher,
         { keepPreviousData: true }
     )
 
     const adultosMayores: AdultoMayor[] = (response?.rows || (response as any)?.data || (Array.isArray(response) ? response : [])) ?? [];
     
-    const totalItems = Number(response?.totalItems ?? (response as any)?.total ?? adultosMayores.length);
-    const totalPages = response?.totalPages ? Number(response.totalPages) : Math.ceil(totalItems / pagination.limit) || 1;
-    const currentPage = Number(response?.currentPage ?? pagination.page);
+    const totalItems = Number(response?.totalItems ?? (response as any)?.total ?? (response as any)?.totalItems ?? adultosMayores.length);
+    const totalPages = response?.totalPages ? Number(response.totalPages) : (response as any)?.pages ? Number((response as any).pages) : Math.ceil(totalItems / pagination.limit) || 1;
+    const currentPage = Number(response?.currentPage ?? (response as any)?.page ?? pagination.page);
     const hasPrevPage = currentPage > 1;
     const hasNextPage = currentPage < totalPages;
 
@@ -224,27 +232,68 @@ export default function AdultosMayoresPage() {
 
     // Client-side filtering for immediate feedback
     const filteredAdultosMayores = adultosMayores.filter(adulto => {
-        if (!searchValue.trim()) return true;
+        if (!searchValue.trim() && !idFilter.trim() && !rutFilter.trim() && !emailFilter.trim()) return true;
+        
         const normalize = (text: string) => 
             text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-            
+
+        const cleanRut = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
+
         const searchLower = normalize(searchValue);
-        const passengerRut = adulto.rut ? normalize(adulto.rut) : "";
-        const convenioName = adulto.convenio?.nombre ? normalize(adulto.convenio.nombre) : "";
-        const idString = adulto.id ? adulto.id.toString() : "";
-        const nombre = adulto.nombre ? normalize(adulto.nombre) : "";
+        const searchClean = cleanRut(searchValue);
         
+        const amId = adulto.id?.toString() || "";
+        const amNombre = adulto.nombre ? normalize(adulto.nombre) : "";
+        const amRutClean = cleanRut(adulto.rut || "");
+        const amEmail = adulto.correo ? normalize(adulto.correo) : "";
+        const amConvenio = adulto.convenio?.nombre ? normalize(adulto.convenio.nombre) : "";
+
+        const matchesGlobal = searchValue.trim() === "" || (
+            amId.includes(searchLower) ||
+            amNombre.includes(searchLower) ||
+            amRutClean.includes(searchClean) ||
+            amEmail.includes(searchLower) ||
+            amConvenio.includes(searchLower)
+        );
+
+        const idLower = idFilter.toLowerCase();
+        const rutFilterClean = cleanRut(rutFilter);
+        const emailLower = emailFilter.toLowerCase();
+
         return (
-            idString.includes(searchLower) ||
-            nombre.includes(searchLower) ||
-            passengerRut.includes(searchLower) ||
-            convenioName.includes(searchLower)
+            matchesGlobal &&
+            (idFilter.trim() === "" || amId.includes(idLower)) &&
+            (rutFilter.trim() === "" || amRutClean.includes(rutFilterClean)) &&
+            (emailFilter.trim() === "" || amEmail.includes(emailLower))
         );
     });
 
     const filters = (
         <div className="flex flex-wrap gap-2 items-center">
-
+            <div className="w-32">
+                <Input
+                    placeholder="ID"
+                    value={idFilter}
+                    onChange={(e) => setIdFilter(e.target.value)}
+                    className="h-9"
+                />
+            </div>
+            <div className="w-40">
+                <Input
+                    placeholder="RUT"
+                    value={rutFilter}
+                    onChange={(e) => setRutFilter(e.target.value)}
+                    className="h-9"
+                />
+            </div>
+            <div className="w-56">
+                <Input
+                    placeholder="Email"
+                    value={emailFilter}
+                    onChange={(e) => setEmailFilter(e.target.value)}
+                    className="h-9"
+                />
+            </div>
             <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Status:</span>
                 <Dropdown.DropdownMenu>
@@ -271,12 +320,15 @@ export default function AdultosMayoresPage() {
                 </Dropdown.DropdownMenu>
             </div>
 
-            {statusFilter && (
+            {(statusFilter || idFilter || rutFilter || emailFilter) && (
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => {
                         setStatusFilter("");
+                        setIdFilter("");
+                        setRutFilter("");
+                        setEmailFilter("");
                     }}
                     className="h-9"
                 >

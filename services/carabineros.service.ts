@@ -5,6 +5,7 @@ export interface Carabinero {
     id: number;
     nombre_completo: string;
     rut: string;
+    correo?: string;
     status: "ACTIVO" | "INACTIVO";
     convenio_id?: number | null;
     convenio?: {
