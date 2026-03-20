@@ -20,6 +20,9 @@ export interface GetPasajerosParams {
     sortBy?: string;
     order?: "ASC" | "DESC";
     status?: "ACTIVO" | "INACTIVO";
+    id?: number | string;
+    correo?: string;
+    rut?: string;
     empresa_id?: number;
     convenio_id?: number;
     tipo_pasajero_id?: number;

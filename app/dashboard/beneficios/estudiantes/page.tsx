@@ -51,12 +51,16 @@ export default function EstudiantesPage() {
             limit: pagination.limit,
         }
 
-        if (debouncedSearch.trim()) {
-            const isNumericOrRut = /^[0-9kK.-]+$/.test(debouncedSearch.trim())
-            if (isNumericOrRut) {
-                params.rut = debouncedSearch.trim()
+        const searchTerm = debouncedSearch.trim()
+        if (searchTerm) {
+            if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
+                params.id = searchTerm
+            } else if (searchTerm.includes('@')) {
+                params.correo = searchTerm
+            } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
+                params.rut = searchTerm.replace(/\./g, '')
             } else {
-                params.nombre = debouncedSearch.trim()
+                params.nombre = searchTerm
             }
         }
 
@@ -232,14 +236,18 @@ export default function EstudiantesPage() {
     // Client-side filtering for immediate feedback
     const filteredEstudiantes = estudiantes.filter(estudiante => {
         if (!searchValue.trim()) return true;
-        const searchLower = searchValue.toLowerCase();
-        const passengerRut = estudiante.rut ? formatRut(estudiante.rut).toLowerCase() : "";
-        const convenioName = estudiante.convenio?.nombre ? estudiante.convenio.nombre.toLowerCase() : "";
+        const normalize = (text: string) => 
+            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+        const searchLower = normalize(searchValue);
+        const passengerRut = estudiante.rut ? normalize(estudiante.rut) : "";
+        const convenioName = estudiante.convenio?.nombre ? normalize(estudiante.convenio.nombre) : "";
         const idString = estudiante.id ? estudiante.id.toString() : "";
+        const nombre = estudiante.nombre ? normalize(estudiante.nombre) : "";
         
         return (
             idString.includes(searchLower) ||
-            (estudiante.nombre && estudiante.nombre.toLowerCase().includes(searchLower)) ||
+            nombre.includes(searchLower) ||
             passengerRut.includes(searchLower) ||
             convenioName.includes(searchLower)
         );

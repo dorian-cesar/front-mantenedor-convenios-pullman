@@ -13,6 +13,7 @@ export interface GetApisParams {
     sortBy?: string;
     order?: "ASC" | "DESC";
     status?: "ACTIVO" | "INACTIVO";
+    id?: number | string;
     nombre?: string;
 }
 

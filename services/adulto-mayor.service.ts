@@ -26,6 +26,8 @@ export interface GetAdultosMayoresParams {
     sortBy?: string;
     order?: "ASC" | "DESC";
     status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
+    id?: number | string;
+    correo?: string;
     rut?: string;
     nombre?: string;
     search?: string;

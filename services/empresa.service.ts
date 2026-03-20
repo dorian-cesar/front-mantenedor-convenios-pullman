@@ -15,6 +15,8 @@ export interface GetEmpresasParams {
     sortBy?: string;
     order?: "ASC" | "DESC";
     status?: "ACTIVO" | "INACTIVO";
+    id?: number | string;
+    rut?: string;
     nombre?: string;
 }
 

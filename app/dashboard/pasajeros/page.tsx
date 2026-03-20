@@ -65,8 +65,17 @@ export default function PasajerosPage() {
                 order: 'DESC',
             }
 
-            if (debouncedSearch.trim()) {
-                params.search = debouncedSearch.trim()
+            const searchTerm = debouncedSearch.trim()
+            if (searchTerm) {
+                if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
+                    params.id = searchTerm
+                } else if (searchTerm.includes('@')) {
+                    params.correo = searchTerm
+                } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
+                    params.rut = searchTerm.replace(/\./g, '')
+                } else {
+                    params.search = searchTerm
+                }
             }
 
             if (selectedEmpresa) {
@@ -210,8 +219,17 @@ export default function PasajerosPage() {
                 order: "DESC",
             }
 
-            if (debouncedSearch.trim()) {
-                params.search = debouncedSearch.trim()
+            const searchTerm = debouncedSearch.trim()
+            if (searchTerm) {
+                if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
+                    params.id = searchTerm
+                } else if (searchTerm.includes('@')) {
+                    params.correo = searchTerm
+                } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
+                    params.rut = searchTerm.replace(/\./g, '')
+                } else {
+                    params.search = searchTerm
+                }
             }
 
             if (selectedEmpresa) {
@@ -301,13 +319,22 @@ export default function PasajerosPage() {
     // Client-side filtering for immediate feedback
     const filteredPasajeros = pasajeros.filter(pasajero => {
         if (!searchValue.trim()) return true;
-        const searchLower = searchValue.toLowerCase();
+        const normalize = (text: string) => 
+            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+        const searchLower = normalize(searchValue);
         const idString = pasajero.id ? pasajero.id.toString() : "";
+        const nombres = pasajero.nombres ? normalize(pasajero.nombres) : "";
+        const apellidos = pasajero.apellidos ? normalize(pasajero.apellidos) : "";
+        const rut = pasajero.rut ? normalize(pasajero.rut) : "";
+        const correo = pasajero.correo ? normalize(pasajero.correo) : "";
+        
         return (
             idString.includes(searchLower) ||
-            (pasajero.nombres && pasajero.nombres.toLowerCase().includes(searchLower)) ||
-            (pasajero.apellidos && pasajero.apellidos.toLowerCase().includes(searchLower)) ||
-            (pasajero.rut && pasajero.rut.toLowerCase().includes(searchLower))
+            nombres.includes(searchLower) ||
+            apellidos.includes(searchLower) ||
+            rut.includes(searchLower) ||
+            correo.includes(searchLower)
         );
     });
 

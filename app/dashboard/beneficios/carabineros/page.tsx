@@ -61,12 +61,16 @@ export default function CarabinerosPage() {
                 params.status = statusFilter as any
             }
 
-        if (debouncedSearch.trim()) {
-            const isNumericOrRut = /^[0-9kK.-]+$/.test(debouncedSearch.trim())
-            if (isNumericOrRut) {
-                params.rut = debouncedSearch.trim()
+        const searchTerm = debouncedSearch.trim()
+        if (searchTerm) {
+            if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
+                params.id = searchTerm
+            } else if (searchTerm.includes('@')) {
+                params.correo = searchTerm
+            } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
+                params.rut = searchTerm.replace(/\./g, '')
             } else {
-                params.nombre_completo = debouncedSearch.trim()
+                params.nombre_completo = searchTerm
             }
         }
 

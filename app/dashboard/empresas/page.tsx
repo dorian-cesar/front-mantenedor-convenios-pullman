@@ -53,6 +53,17 @@ export default function EmpresasPage() {
                 order: 'DESC',
             }
 
+            const searchTerm = debouncedSearch.trim()
+            if (searchTerm) {
+                if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
+                    params.id = searchTerm
+                } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
+                    params.rut = searchTerm.replace(/\./g, '')
+                } else {
+                    params.nombre = searchTerm
+                }
+            }
+
             if (statusFilter) {
                 params.status = statusFilter as any
             }
@@ -193,12 +204,18 @@ export default function EmpresasPage() {
     // Client-side filtering for immediate feedback
     const filteredEmpresas = empresas.filter(emp => {
         if (!searchValue.trim()) return true;
-        const searchLower = searchValue.toLowerCase();
+        const normalize = (text: string) => 
+            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+        const searchLower = normalize(searchValue);
         const idString = emp.id ? emp.id.toString() : "";
+        const nombre = emp.nombre ? normalize(emp.nombre) : "";
+        const rut = emp.rut_empresa ? normalize(emp.rut_empresa) : "";
+        
         return (
             idString.includes(searchLower) ||
-            (emp.nombre && emp.nombre.toLowerCase().includes(searchLower)) ||
-            (emp.rut_empresa && emp.rut_empresa.toLowerCase().includes(searchLower))
+            nombre.includes(searchLower) ||
+            rut.includes(searchLower)
         );
     });
 

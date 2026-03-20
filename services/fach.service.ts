@@ -20,6 +20,8 @@ export interface GetFachParams {
     sortBy?: string;
     order?: "ASC" | "DESC";
     status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
+    id?: number | string;
+    correo?: string;
     search?: string;
     convenio_id?: number;
     rut?: string;

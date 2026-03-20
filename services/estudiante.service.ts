@@ -26,6 +26,8 @@ export interface GetEstudiantesParams {
     sortBy?: string;
     order?: "ASC" | "DESC";
     status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
+    id?: number | string;
+    correo?: string;
     nombre?: string;
     rut?: string;
     search?: string;

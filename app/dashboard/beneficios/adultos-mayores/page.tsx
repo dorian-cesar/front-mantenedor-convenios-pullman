@@ -50,8 +50,17 @@ export default function AdultosMayoresPage() {
             limit: pagination.limit,
         }
 
-        if (debouncedSearch.trim()) {
-            params.nombre = debouncedSearch.trim()
+        const searchTerm = debouncedSearch.trim()
+        if (searchTerm) {
+            if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
+                params.id = searchTerm
+            } else if (searchTerm.includes('@')) {
+                params.correo = searchTerm
+            } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
+                params.rut = searchTerm.replace(/\./g, '')
+            } else {
+                params.nombre = searchTerm
+            }
         }
 
         if (statusFilter) {
@@ -216,14 +225,18 @@ export default function AdultosMayoresPage() {
     // Client-side filtering for immediate feedback
     const filteredAdultosMayores = adultosMayores.filter(adulto => {
         if (!searchValue.trim()) return true;
-        const searchLower = searchValue.toLowerCase();
-        const passengerRut = adulto.rut ? adulto.rut.toLowerCase() : "";
-        const convenioName = adulto.convenio?.nombre ? adulto.convenio.nombre.toLowerCase() : "";
+        const normalize = (text: string) => 
+            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            
+        const searchLower = normalize(searchValue);
+        const passengerRut = adulto.rut ? normalize(adulto.rut) : "";
+        const convenioName = adulto.convenio?.nombre ? normalize(adulto.convenio.nombre) : "";
         const idString = adulto.id ? adulto.id.toString() : "";
+        const nombre = adulto.nombre ? normalize(adulto.nombre) : "";
         
         return (
             idString.includes(searchLower) ||
-            (adulto.nombre && adulto.nombre.toLowerCase().includes(searchLower)) ||
+            nombre.includes(searchLower) ||
             passengerRut.includes(searchLower) ||
             convenioName.includes(searchLower)
         );

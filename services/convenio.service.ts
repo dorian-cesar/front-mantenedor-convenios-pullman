@@ -102,6 +102,7 @@ export interface GetConveniosParams {
     status?: "ACTIVO" | "INACTIVO";
     nombre?: string;
     id?: number | string;
+    rut?: string;
     empresa_id?: number;
 }
 

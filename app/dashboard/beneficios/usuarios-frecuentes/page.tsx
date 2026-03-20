@@ -50,12 +50,16 @@ export default function UsuariosFrecuentesPage() {
             limit: pagination.limit,
         }
 
-        if (debouncedSearch.trim()) {
-            const isNumericOrRut = /^[0-9kK.-]+$/.test(debouncedSearch.trim())
-            if (isNumericOrRut) {
-                params.rut = debouncedSearch.trim()
+        const searchTerm = debouncedSearch.trim()
+        if (searchTerm) {
+            if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
+                params.id = searchTerm
+            } else if (searchTerm.includes('@')) {
+                params.correo = searchTerm
+            } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
+                params.rut = searchTerm.replace(/\./g, '')
             } else {
-                params.nombre = debouncedSearch.trim()
+                params.nombre = searchTerm
             }
         }
 
@@ -229,15 +233,19 @@ export default function UsuariosFrecuentesPage() {
     // Client-side filtering for immediate feedback
     const filteredUsuariosFrecuentes = usuariosFrecuentes.filter(usuario => {
         if (!searchValue.trim()) return true;
-        const searchLower = searchValue.toLowerCase();
-        const passengerRut = usuario.rut ? formatRut(usuario.rut).toLowerCase() : "";
-        const convenioName = usuario.convenio?.nombre ? usuario.convenio.nombre.toLowerCase() : "";
+        const normalize = (text: string) => 
+            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+        const searchLower = normalize(searchValue);
         const idString = usuario.id ? usuario.id.toString() : "";
+        const nombre = usuario.nombre ? normalize(usuario.nombre) : "";
+        const rut = usuario.rut ? normalize(usuario.rut) : "";
+        const convenioName = usuario.convenio?.nombre ? normalize(usuario.convenio.nombre) : "";
         
         return (
             idString.includes(searchLower) ||
-            (usuario.nombre && usuario.nombre.toLowerCase().includes(searchLower)) ||
-            passengerRut.includes(searchLower) ||
+            nombre.includes(searchLower) ||
+            rut.includes(searchLower) ||
             convenioName.includes(searchLower)
         );
     });

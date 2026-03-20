@@ -77,6 +77,17 @@ function ConveniosPage() {
                 order: 'DESC',
             }
 
+            const searchTerm = debouncedSearch.trim()
+            if (searchTerm) {
+                if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
+                    params.id = searchTerm
+                } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
+                    params.rut = searchTerm.replace(/\./g, '')
+                } else {
+                    params.nombre = searchTerm
+                }
+            }
+
             if (statusFilter) {
                 params.status = statusFilter as any
             }
@@ -269,13 +280,20 @@ function ConveniosPage() {
 
     const filteredConvenios = convenios.filter(conv => {
         if (!searchValue.trim()) return true;
-        const searchLower = searchValue.toLowerCase();
+        const normalize = (text: string) => 
+            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+        const searchLower = normalize(searchValue);
         const idString = conv.id ? conv.id.toString() : "";
-        const empresaName = conv.empresa?.nombre ? conv.empresa.nombre.toLowerCase() : "";
+        const nombre = conv.nombre ? normalize(conv.nombre) : "";
+        const empresaNombre = conv.empresa?.nombre ? normalize(conv.empresa.nombre) : "";
+        const empresaRut = conv.empresa?.rut ? normalize(conv.empresa.rut) : "";
+        
         return (
             idString.includes(searchLower) ||
-            (conv.nombre && conv.nombre.toLowerCase().includes(searchLower)) ||
-            empresaName.includes(searchLower)
+            nombre.includes(searchLower) ||
+            empresaNombre.includes(searchLower) ||
+            empresaRut.includes(searchLower)
         );
     });
 
