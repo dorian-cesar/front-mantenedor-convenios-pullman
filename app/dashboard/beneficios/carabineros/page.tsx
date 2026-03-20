@@ -12,6 +12,7 @@ import { Pagination } from "@/components/dashboard/Pagination"
 import ExportModal from "@/components/modals/export"
 import AddCarabineroModal from "@/components/modals/add-carabinero"
 import UpdateCarabineroModal from "@/components/modals/update-carabinero"
+import DetailsCarabineroModal from "@/components/modals/details-carabinero"
 
 import { CarabinerosService, type Carabinero, GetCarabinerosParams } from "@/services/carabineros.service"
 import { toast } from "sonner"
@@ -296,22 +297,26 @@ export default function CarabinerosPage() {
                                                         Editar
                                                     </Dropdown.DropdownMenuItem>
                                                 )}
-                                                {carabinero.status === "ACTIVO" ? (
-                                                    <Dropdown.DropdownMenuItem
-                                                        variant="destructive"
-                                                        onClick={() => handleToggleStatus(carabinero.rut, carabinero.status)}
-                                                    >
-                                                        <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                        Desactivar
-                                                    </Dropdown.DropdownMenuItem>
-                                                ) : (
-                                                    <Dropdown.DropdownMenuItem
-                                                        onClick={() => handleToggleStatus(carabinero.rut, carabinero.status)}
-                                                    >
-                                                        <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                        Activar
-                                                    </Dropdown.DropdownMenuItem>
-                                                )}
+                                                 {user?.rol !== "SISTEMA" && (
+                                                     <>
+                                                         {carabinero.status === "ACTIVO" ? (
+                                                             <Dropdown.DropdownMenuItem
+                                                                 variant="destructive"
+                                                                 onClick={() => handleToggleStatus(carabinero.rut, carabinero.status)}
+                                                             >
+                                                                 <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                                 Desactivar
+                                                             </Dropdown.DropdownMenuItem>
+                                                         ) : (
+                                                             <Dropdown.DropdownMenuItem
+                                                                 onClick={() => handleToggleStatus(carabinero.rut, carabinero.status)}
+                                                             >
+                                                                 <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                                 Activar
+                                                             </Dropdown.DropdownMenuItem>
+                                                         )}
+                                                     </>
+                                                 )}
                                             </Dropdown.DropdownMenuContent>
                                         </Dropdown.DropdownMenu>
                                     </Table.TableCell>
@@ -339,6 +344,12 @@ export default function CarabinerosPage() {
                 onOpenChange={setOpenUpdate}
                 carabinero={selectedCarabinero}
                 onSuccess={handleCarabineroUpdated}
+            />
+
+            <DetailsCarabineroModal
+                open={openDetails}
+                onOpenChange={setOpenDetails}
+                carabinero={selectedCarabinero}
             />
         </div>
     )

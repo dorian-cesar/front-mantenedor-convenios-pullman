@@ -315,14 +315,12 @@ export default function EstudiantesPage() {
                                                     Ver detalles
                                                 </Dropdown.DropdownMenuItem>
 
-                                                {user?.rol !== "SISTEMA" && (
-                                                    <Dropdown.DropdownMenuItem
-                                                        onClick={() => handleEditEstudiante(estudiante)}
-                                                    >
-                                                        <Icon.PencilIcon className="h-4 w-4 mr-2" />
-                                                        Editar
-                                                    </Dropdown.DropdownMenuItem>
-                                                )}
+                                                <Dropdown.DropdownMenuItem
+                                                    onClick={() => handleEditEstudiante(estudiante)}
+                                                >
+                                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                                    Editar
+                                                </Dropdown.DropdownMenuItem>
                                                 {estudiante.status === "ACTIVO" ? (
                                                     <>
                                                         <Dropdown.DropdownMenuSeparator />

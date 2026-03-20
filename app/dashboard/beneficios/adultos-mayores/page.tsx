@@ -309,14 +309,12 @@ export default function AdultosMayoresPage() {
                                                     Ver detalles
                                                 </Dropdown.DropdownMenuItem>
 
-                                                {user?.rol !== "SISTEMA" && (
-                                                    <Dropdown.DropdownMenuItem
-                                                        onClick={() => handleEditAdultoMayor(adultoMayor)}
-                                                    >
-                                                        <Icon.PencilIcon className="h-4 w-4 mr-2" />
-                                                        Editar
-                                                    </Dropdown.DropdownMenuItem>
-                                                )}
+                                                <Dropdown.DropdownMenuItem
+                                                    onClick={() => handleEditAdultoMayor(adultoMayor)}
+                                                >
+                                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                                    Editar
+                                                </Dropdown.DropdownMenuItem>
                                                 {adultoMayor.status === "ACTIVO" ? (
                                                     <>
                                                         <Dropdown.DropdownMenuSeparator />

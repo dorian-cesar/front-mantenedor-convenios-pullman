@@ -2,6 +2,7 @@ import { api } from '@/lib/api';
 import { Convenio } from './convenio.service';
 
 export interface Carabinero {
+    id: number;
     nombre_completo: string;
     rut: string;
     status: "ACTIVO" | "INACTIVO";
@@ -9,6 +10,8 @@ export interface Carabinero {
     convenio?: {
         nombre: string;
     };
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface GetCarabinerosParams {

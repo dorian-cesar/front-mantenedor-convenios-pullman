@@ -313,22 +313,26 @@ export default function FachPage() {
                                                         Editar
                                                     </Dropdown.DropdownMenuItem>
                                                 )}
-                                                {fach.status === "ACTIVO" ? (
-                                                    <Dropdown.DropdownMenuItem
-                                                        variant="destructive"
-                                                        onClick={() => handleToggleStatus(fach.id, fach.status)}
-                                                    >
-                                                        <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                        Desactivar
-                                                    </Dropdown.DropdownMenuItem>
-                                                ) : (
-                                                    <Dropdown.DropdownMenuItem
-                                                        onClick={() => handleToggleStatus(fach.id, fach.status)}
-                                                    >
-                                                        <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                        Activar
-                                                    </Dropdown.DropdownMenuItem>
-                                                )}
+                                                 {user?.rol !== "SISTEMA" && (
+                                                     <>
+                                                         {fach.status === "ACTIVO" ? (
+                                                             <Dropdown.DropdownMenuItem
+                                                                 variant="destructive"
+                                                                 onClick={() => handleToggleStatus(fach.id, fach.status)}
+                                                             >
+                                                                 <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                                 Desactivar
+                                                             </Dropdown.DropdownMenuItem>
+                                                         ) : (
+                                                             <Dropdown.DropdownMenuItem
+                                                                 onClick={() => handleToggleStatus(fach.id, fach.status)}
+                                                             >
+                                                                 <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                                 Activar
+                                                             </Dropdown.DropdownMenuItem>
+                                                         )}
+                                                     </>
+                                                 )}
                                             </Dropdown.DropdownMenuContent>
                                         </Dropdown.DropdownMenu>
                                     </Table.TableCell>
