@@ -18,6 +18,7 @@ export interface GetUsuariosParams {
     order?: "ASC" | "DESC";
     status?: "ACTIVO" | "INACTIVO";
     correo?: string;
+    search?: string;
 }
 
 export interface UsuariosResponse {

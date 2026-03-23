@@ -36,14 +36,16 @@ export default function UsuariosPage() {
 
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 50,
     total: 0,
     totalPages: 0,
     hasNextPage: false,
     hasPrevPage: false,
   })
 
-  const debouncedSearch = useDebounce(searchValue, 500)
+  const debouncedSearch = useDebounce(searchValue, 300)
+  const normalizeString = (str: string) =>
+    str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
   const fetchUsuarios = async () => {
     setIsLoading(true)
@@ -55,8 +57,9 @@ export default function UsuariosPage() {
         order: 'DESC',
       }
 
-      if (debouncedSearch.trim()) {
-        params.correo = debouncedSearch.trim()
+      const searchTerm = debouncedSearch.trim()
+      if (searchTerm) {
+        params.search = searchTerm
       }
 
       const response = await UsuariosService.getUsuarios(params)
@@ -146,8 +149,9 @@ export default function UsuariosPage() {
         order: "DESC",
       }
 
-      if (debouncedSearch.trim()) {
-        params.correo = debouncedSearch.trim()
+      const searchTerm = debouncedSearch.trim()
+      if (searchTerm) {
+        params.search = searchTerm
       }
 
       const response = await UsuariosService.getUsuarios(params)
@@ -200,14 +204,24 @@ export default function UsuariosPage() {
   // Client-side filtering for immediate feedback
   const filteredUsuarios = usuarios.filter(usuario => {
     if (!searchValue.trim()) return true;
-    const searchLower = searchValue.toLowerCase();
+
+    const cleanRut = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
+    const searchTerms = normalizeString(searchValue).split(/\s+/).filter(Boolean);
+
     const idString = usuario.id ? usuario.id.toString() : "";
-    return (
-      idString.includes(searchLower) ||
-      (usuario.nombre && usuario.nombre.toLowerCase().includes(searchLower)) ||
-      (usuario.correo && usuario.correo.toLowerCase().includes(searchLower)) ||
-      (usuario.rut && usuario.rut.toLowerCase().includes(searchLower))
-    );
+    const nombre = usuario.nombre ? normalizeString(usuario.nombre) : "";
+    const correo = usuario.correo ? normalizeString(usuario.correo) : "";
+    const rutClean = cleanRut(usuario.rut || "");
+
+    return searchTerms.every(term => {
+            const termClean = cleanRut(term);
+            return (
+                idString.includes(term) ||
+                nombre.includes(term) ||
+                correo.includes(term) ||
+                (termClean !== "" && rutClean.includes(termClean))
+            );
+        });
   });
 
   const filters = (

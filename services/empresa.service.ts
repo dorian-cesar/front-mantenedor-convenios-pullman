@@ -18,6 +18,7 @@ export interface GetEmpresasParams {
     id?: number | string;
     rut?: string;
     nombre?: string;
+    search?: string;
 }
 
 export interface EmpresasResponse {

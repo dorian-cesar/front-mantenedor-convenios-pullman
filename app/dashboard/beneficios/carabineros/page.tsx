@@ -42,14 +42,16 @@ export default function CarabinerosPage() {
 
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 50,
         total: 0,
         totalPages: 0,
         hasNextPage: false,
         hasPrevPage: false,
     })
 
-    const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedSearch = useDebounce(searchValue, 300)
+    const normalizeString = (str: string) =>
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     const debouncedId = useDebounce(idFilter, 500)
     const debouncedRut = useDebounce(rutFilter, 500)
     const debouncedEmail = useDebounce(emailFilter, 500)
@@ -70,15 +72,7 @@ export default function CarabinerosPage() {
 
             const searchTerm = debouncedSearch.trim()
             if (searchTerm) {
-                if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
-                    params.id = searchTerm
-                } else if (searchTerm.includes('@')) {
-                    params.correo = searchTerm
-                } else if (/[0-9-kK]{7,12}/.test(searchTerm) && !searchTerm.includes(" ")) {
-                    params.rut = searchTerm.replace(/\./g, '')
-                } else {
-                    params.nombre_completo = searchTerm
-                }
+                params.search = searchTerm
             }
 
             if (debouncedId.trim()) params.id = debouncedId.trim()
@@ -224,28 +218,28 @@ export default function CarabinerosPage() {
     // Client-side filtering for immediate feedback
     const filteredCarabineros = carabineros.filter(carabinero => {
         if (!searchValue.trim() && !idFilter.trim() && !rutFilter.trim() && !emailFilter.trim()) return true;
-        
-        const normalize = (text: string) => 
-            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
         const cleanRut = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
 
-        const searchLower = normalize(searchValue);
+        const searchTerms = normalizeString(searchValue).split(/\s+/).filter(Boolean);
         const searchClean = cleanRut(searchValue);
-        
-        const cId = carabinero.id?.toString() || "";
-        const cNombre = carabinero.nombre_completo ? normalize(carabinero.nombre_completo) : "";
-        const cRutClean = cleanRut(carabinero.rut || "");
-        const cEmail = carabinero.correo ? normalize(carabinero.correo) : "";
-        const cConvenio = carabinero.convenio?.nombre ? normalize(carabinero.convenio.nombre) : "";
 
-        const matchesGlobal = searchValue.trim() === "" || (
-            cId.includes(searchLower) ||
-            cNombre.includes(searchLower) ||
-            cRutClean.includes(searchClean) ||
-            cEmail.includes(searchLower) ||
-            cConvenio.includes(searchLower)
-        );
+        const cId = carabinero.id?.toString() || "";
+        const cNombre = carabinero.nombre_completo ? normalizeString(carabinero.nombre_completo) : "";
+        const cRutClean = cleanRut(carabinero.rut || "");
+        const cEmail = carabinero.correo ? normalizeString(carabinero.correo) : "";
+        const cConvenio = carabinero.convenio?.nombre ? normalizeString(carabinero.convenio.nombre) : "";
+
+        const matchesGlobal = searchValue.trim() === "" || searchTerms.every(term => {
+            const termClean = cleanRut(term);
+            return (
+                cId.includes(term) ||
+                cNombre.includes(term) ||
+                (termClean !== "" && cRutClean.includes(termClean)) ||
+                cEmail.includes(term) ||
+                cConvenio.includes(term)
+            );
+        });
 
         const idLower = idFilter.toLowerCase();
         const rutFilterClean = cleanRut(rutFilter);
@@ -316,6 +310,7 @@ export default function CarabinerosPage() {
                     </Dropdown.DropdownMenuContent>
                 </Dropdown.DropdownMenu>
             </div>
+
 
             {(statusFilter || idFilter || rutFilter || emailFilter) && (
                 <Button

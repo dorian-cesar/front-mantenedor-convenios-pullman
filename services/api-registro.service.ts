@@ -24,6 +24,7 @@ export interface GetApisRegistroParams {
     id?: number | string;
     nombre?: string;
     empresa_id?: number;
+    search?: string;
 }
 
 export interface ApisRegistroResponse {

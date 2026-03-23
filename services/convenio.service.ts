@@ -104,6 +104,7 @@ export interface GetConveniosParams {
     id?: number | string;
     rut?: string;
     empresa_id?: number;
+    search?: string;
 }
 
 export interface ConveniosResponse {

@@ -44,10 +44,12 @@ export default function EstudiantesPage() {
 
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 50,
     })
 
-    const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedSearch = useDebounce(searchValue, 300)
+    const normalizeString = (str: string) =>
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     const debouncedId = useDebounce(idFilter, 500)
     const debouncedRut = useDebounce(rutFilter, 500)
     const debouncedEmail = useDebounce(emailFilter, 500)
@@ -61,15 +63,7 @@ export default function EstudiantesPage() {
 
         const searchTerm = debouncedSearch.trim()
         if (searchTerm) {
-            if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
-                params.id = searchTerm
-            } else if (searchTerm.includes('@')) {
-                params.correo = searchTerm
-            } else if (/[0-9-kK]{7,12}/.test(searchTerm) && !searchTerm.includes(" ")) {
-                params.rut = searchTerm.replace(/\./g, '')
-            } else {
-                params.nombre = searchTerm
-            }
+            params.search = searchTerm
         }
 
         if (debouncedId.trim()) params.id = debouncedId.trim()
@@ -189,12 +183,7 @@ export default function EstudiantesPage() {
             }
 
             if (debouncedSearch.trim()) {
-                const isNumericOrRut = /^[0-9kK.-]+$/.test(debouncedSearch.trim())
-                if (isNumericOrRut) {
-                    params.rut = debouncedSearch.trim()
-                } else {
-                    params.nombre = debouncedSearch.trim()
-                }
+                params.search = debouncedSearch.trim()
             }
 
             const response = await EstudiantesService.getEstudiantes(params)
@@ -244,28 +233,30 @@ export default function EstudiantesPage() {
     // Client-side filtering for immediate feedback
     const filteredEstudiantes = estudiantes.filter(estudiante => {
         if (!searchValue.trim() && !idFilter.trim() && !rutFilter.trim() && !emailFilter.trim()) return true;
-        
-        const normalize = (text: string) => 
-            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
         const cleanRut = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
 
-        const searchLower = normalize(searchValue);
+        const searchTerms = normalizeString(searchValue).split(/\s+/).filter(Boolean);
         const searchClean = cleanRut(searchValue);
-        
-        const estId = estudiante.id?.toString() || "";
-        const estNombre = estudiante.nombre ? normalize(estudiante.nombre) : "";
-        const estRutClean = cleanRut(estudiante.rut || "");
-        const estEmail = estudiante.correo ? normalize(estudiante.correo) : "";
-        const estConvenio = estudiante.convenio?.nombre ? normalize(estudiante.convenio.nombre) : "";
 
-        const matchesGlobal = searchValue.trim() === "" || (
-            estId.includes(searchLower) ||
-            estNombre.includes(searchLower) ||
-            estRutClean.includes(searchClean) ||
-            estEmail.includes(searchLower) ||
-            estConvenio.includes(searchLower)
-        );
+        const estId = estudiante.id?.toString() || "";
+        const estNombre = estudiante.nombre ? normalizeString(estudiante.nombre) : "";
+        const estRutClean = cleanRut(estudiante.rut || "");
+        const estEmail = estudiante.correo ? normalizeString(estudiante.correo) : "";
+        const estConvenio = estudiante.convenio?.nombre ? normalizeString(estudiante.convenio.nombre) : "";
+        const estTelefono = estudiante.telefono || "";
+
+        const matchesGlobal = searchValue.trim() === "" || searchTerms.every(term => {
+            const termClean = cleanRut(term);
+            return (
+                estId.includes(term) ||
+                estNombre.includes(term) ||
+                (termClean !== "" && estRutClean.includes(termClean)) ||
+                estEmail.includes(term) ||
+                estConvenio.includes(term) ||
+                estTelefono.includes(term)
+            );
+        });
 
         const idLower = idFilter.toLowerCase();
         const rutFilterClean = cleanRut(rutFilter);
@@ -330,6 +321,7 @@ export default function EstudiantesPage() {
                     </Dropdown.DropdownMenuContent>
                 </Dropdown.DropdownMenu>
             </div>
+
 
             {(statusFilter || idFilter || rutFilter || emailFilter) && (
                 <Button

@@ -43,10 +43,12 @@ export default function UsuariosFrecuentesPage() {
 
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 50,
     })
 
-    const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedSearch = useDebounce(searchValue, 300)
+    const normalizeString = (str: string) =>
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     const debouncedId = useDebounce(idFilter, 500)
     const debouncedRut = useDebounce(rutFilter, 500)
     const debouncedEmail = useDebounce(emailFilter, 500)
@@ -60,15 +62,7 @@ export default function UsuariosFrecuentesPage() {
 
         const searchTerm = debouncedSearch.trim()
         if (searchTerm) {
-            if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
-                params.id = searchTerm
-            } else if (searchTerm.includes('@')) {
-                params.correo = searchTerm
-            } else if (/[0-9-kK]{7,12}/.test(searchTerm) && !searchTerm.includes(" ")) {
-                params.rut = searchTerm.replace(/\./g, '')
-            } else {
-                params.nombre = searchTerm
-            }
+            params.search = searchTerm
         }
 
         if (debouncedId.trim()) params.id = debouncedId.trim()
@@ -186,12 +180,7 @@ export default function UsuariosFrecuentesPage() {
             }
 
             if (debouncedSearch.trim()) {
-                const isNumericOrRut = /^[0-9kK.-]+$/.test(debouncedSearch.trim())
-                if (isNumericOrRut) {
-                    params.rut = debouncedSearch.trim()
-                } else {
-                    params.nombre = debouncedSearch.trim()
-                }
+                params.search = debouncedSearch.trim()
             }
 
             const response = await UsuariosFrecuentesService.getUsuariosFrecuentes(params)
@@ -241,28 +230,30 @@ export default function UsuariosFrecuentesPage() {
     // Client-side filtering for immediate feedback
     const filteredUsuariosFrecuentes = usuariosFrecuentes.filter(usuario => {
         if (!searchValue.trim() && !idFilter.trim() && !rutFilter.trim() && !emailFilter.trim()) return true;
-        
-        const normalize = (text: string) => 
-            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
         const cleanRut = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
 
-        const searchLower = normalize(searchValue);
+        const searchTerms = normalizeString(searchValue).split(/\s+/).filter(Boolean);
         const searchClean = cleanRut(searchValue);
-        
-        const ufId = usuario.id?.toString() || "";
-        const ufNombre = usuario.nombre ? normalize(usuario.nombre) : "";
-        const ufRutClean = cleanRut(usuario.rut || "");
-        const ufEmail = usuario.correo ? normalize(usuario.correo) : "";
-        const ufConvenio = usuario.convenio?.nombre ? normalize(usuario.convenio.nombre) : "";
 
-        const matchesGlobal = searchValue.trim() === "" || (
-            ufId.includes(searchLower) ||
-            ufNombre.includes(searchLower) ||
-            ufRutClean.includes(searchClean) ||
-            ufEmail.includes(searchLower) ||
-            ufConvenio.includes(searchLower)
-        );
+        const ufId = usuario.id?.toString() || "";
+        const ufNombre = usuario.nombre ? normalizeString(usuario.nombre) : "";
+        const ufRutClean = cleanRut(usuario.rut || "");
+        const ufEmail = usuario.correo ? normalizeString(usuario.correo) : "";
+        const ufConvenio = usuario.convenio?.nombre ? normalizeString(usuario.convenio.nombre) : "";
+        const ufTelefono = usuario.telefono || "";
+
+        const matchesGlobal = searchValue.trim() === "" || searchTerms.every(term => {
+            const termClean = cleanRut(term);
+            return (
+                ufId.includes(term) ||
+                ufNombre.includes(term) ||
+                (termClean !== "" && ufRutClean.includes(termClean)) ||
+                ufEmail.includes(term) ||
+                ufConvenio.includes(term) ||
+                ufTelefono.includes(term)
+            );
+        });
 
         const idLower = idFilter.toLowerCase();
         const rutFilterClean = cleanRut(rutFilter);
@@ -327,6 +318,7 @@ export default function UsuariosFrecuentesPage() {
                     </Dropdown.DropdownMenuContent>
                 </Dropdown.DropdownMenu>
             </div>
+
 
             {(statusFilter || idFilter || rutFilter || emailFilter) && (
                 <Button

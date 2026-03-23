@@ -44,14 +44,16 @@ export default function FachPage() {
 
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 50,
         total: 0,
         totalPages: 0,
         hasNextPage: false,
         hasPrevPage: false,
     })
 
-    const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedSearch = useDebounce(searchValue, 300)
+    const normalizeString = (str: string) =>
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     const debouncedId = useDebounce(idFilter, 500)
     const debouncedRut = useDebounce(rutFilter, 500)
     const debouncedEmail = useDebounce(emailFilter, 500)
@@ -81,15 +83,7 @@ export default function FachPage() {
 
             const searchTerm = debouncedSearch.trim()
             if (searchTerm) {
-                if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
-                    params.id = searchTerm
-                } else if (searchTerm.includes('@')) {
-                    params.correo = searchTerm
-                } else if (/[0-9-kK]{7,12}/.test(searchTerm) && !searchTerm.includes(" ")) {
-                    params.rut = searchTerm.replace(/\./g, '')
-                } else {
-                    params.search = searchTerm
-                }
+                params.search = searchTerm
             }
 
             if (debouncedId.trim()) params.id = debouncedId.trim()
@@ -242,32 +236,40 @@ export default function FachPage() {
     // Client-side filtering for immediate feedback
     const filteredFach = fachList.filter(f => {
         if (!searchValue.trim() && !idFilter.trim() && !rutFilter.trim() && !emailFilter.trim()) return true;
-        
-        const normalize = (text: string) => 
-            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
         const cleanRut = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
-
-        const searchLower = normalize(searchValue);
-        const searchClean = cleanRut(searchValue);
+        const searchTerms = normalizeString(searchValue).split(/\s+/).filter(Boolean);
         
-        const fId = f.id?.toString() || "";
-        const fNombre = f.nombre_completo ? normalize(f.nombre_completo) : "";
-        const fRutClean = cleanRut(f.rut || "");
-        const fEmail = f.correo ? normalize(f.correo) : "";
-        const fConvenio = f.convenio?.nombre ? normalize(f.convenio.nombre) : "";
+        const fId = f.id?.toString() || ""
+        const fRutClean = cleanRut(f.rut || "")
+        const fRutRaw = normalizeString(f.rut || "")
+        const fEmail = normalizeString(f.correo || "")
+        const fNombre = normalizeString(f.nombre_completo || (f as any).nombre || "")
+        const fStatus = f.status === "ACTIVO" ? "activo" : f.status === "INACTIVO" ? "inactivo" : ""
+        const fConvenio = normalizeString(f.convenio?.nombre || "")
+        const fEmpresaNombre = normalizeString(f.empresa?.nombre || "")
+        const fEmpresaRutClean = cleanRut(f.empresa?.rut_empresa || "")
+        const fEmpresaRutRaw = normalizeString(f.empresa?.rut_empresa || "")
 
-        const matchesGlobal = searchValue.trim() === "" || (
-            fId.includes(searchLower) ||
-            fNombre.includes(searchLower) ||
-            fRutClean.includes(searchClean) ||
-            fEmail.includes(searchLower) ||
-            fConvenio.includes(searchLower)
-        );
+        const matchesGlobal = searchTerms.length === 0 || searchTerms.every(term => {
+            const termClean = cleanRut(term);
+            return (
+                fId.includes(term) ||
+                fNombre.includes(term) ||
+                fRutRaw.includes(term) ||
+                (termClean !== "" && fRutClean.includes(termClean)) ||
+                fEmail.includes(term) ||
+                fStatus.includes(term) ||
+                fConvenio.includes(term) ||
+                fEmpresaNombre.includes(term) ||
+                fEmpresaRutRaw.includes(term) ||
+                (termClean !== "" && fEmpresaRutClean.includes(termClean))
+            );
+        });
 
-        const idLower = idFilter.toLowerCase();
+        const idLower = idFilter.trim().toLowerCase();
         const rutFilterClean = cleanRut(rutFilter);
-        const emailLower = emailFilter.toLowerCase();
+        const emailLower = emailFilter.trim().toLowerCase();
 
         return (
             matchesGlobal &&
@@ -276,6 +278,7 @@ export default function FachPage() {
             (emailFilter.trim() === "" || fEmail.includes(emailLower))
         );
     });
+
 
     const filters = (
         <div className="flex flex-wrap gap-2 items-center">
@@ -329,6 +332,7 @@ export default function FachPage() {
                 </Dropdown.DropdownMenu>
             </div>
 
+
             {(statusFilter || idFilter || rutFilter || emailFilter) && (
                 <Button
                     variant="ghost"
@@ -351,8 +355,8 @@ export default function FachPage() {
     return (
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
-                title="Fach"
-                description="Listado de personal Fach beneficiarios del sistema."
+                title="Armada de Chile"
+                description="Listado de personal de la Armada de Chile beneficiarios del sistema."
                 actionButtons={actionButtons}
                 actionMenu={{
                     title: "Opciones",
@@ -410,7 +414,7 @@ export default function FachPage() {
                         ) : filteredFach.length === 0 ? (
                             <Table.TableRow>
                                 <Table.TableCell colSpan={5} className="text-center py-8">
-                                    No se encontraron beneficios FACH
+                                    No se encontraron registros de la Armada de Chile
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (

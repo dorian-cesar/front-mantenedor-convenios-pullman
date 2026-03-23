@@ -35,14 +35,17 @@ export default function ApisRegistroPage() {
 
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 50,
         total: 0,
         totalPages: 0,
         hasNextPage: false,
         hasPrevPage: false,
     })
 
-    const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedSearch = useDebounce(searchValue, 300)
+
+    const normalizeString = (str: string) =>
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
     const fetchApisRegistro = async () => {
         setIsLoading(true)
@@ -53,7 +56,7 @@ export default function ApisRegistroPage() {
                 sortBy: "id",
                 order: "DESC",
             }
-            if (debouncedSearch.trim()) params.nombre = debouncedSearch.trim()
+            if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
             if (statusFilter) params.status = statusFilter as any
             if (selectedEmpresa) params.empresa_id = selectedEmpresa
 
@@ -135,14 +138,21 @@ export default function ApisRegistroPage() {
     // Client-side filtering for immediate feedback
     const filteredApisRegistro = apisRegistro.filter(api => {
         if (!searchValue.trim()) return true;
-        const searchLower = searchValue.toLowerCase();
-        const idString = api.id ? api.id.toString() : "";
-        return (
-            idString.includes(searchLower) ||
-            (api.nombre && api.nombre.toLowerCase().includes(searchLower)) ||
-            (api.endpoint && api.endpoint.toLowerCase().includes(searchLower)) ||
-            (api.empresa?.nombre && api.empresa.nombre.toLowerCase().includes(searchLower))
-        );
+        const searchTerms = normalizeString(searchValue).split(/\s+/).filter(Boolean);
+
+        return searchTerms.every(term => {
+            const idString = api.id ? api.id.toString() : "";
+            const nombre = api.nombre ? normalizeString(api.nombre) : "";
+            const endpoint = api.endpoint ? normalizeString(api.endpoint) : "";
+            const empresaNombre = api.empresa?.nombre ? normalizeString(api.empresa.nombre) : "";
+
+            return (
+                idString.includes(term) ||
+                nombre.includes(term) ||
+                endpoint.includes(term) ||
+                empresaNombre.includes(term)
+            );
+        });
     });
 
     const filters = (
@@ -234,6 +244,7 @@ export default function ApisRegistroPage() {
                         hasNextPage={pagination.hasNextPage}
                         className="w-full"
                         limit={pagination.limit}
+                        limitOptions={[50, 100, 200, 400]}
                         onLimitChange={(l) => setPagination(prev => ({ ...prev, limit: l, page: 1 }))}
                     />
                 }

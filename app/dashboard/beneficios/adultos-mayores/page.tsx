@@ -43,10 +43,12 @@ export default function AdultosMayoresPage() {
 
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 50,
     })
 
-    const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedSearch = useDebounce(searchValue, 300)
+    const normalizeString = (str: string) =>
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     const debouncedId = useDebounce(idFilter, 500)
     const debouncedRut = useDebounce(rutFilter, 500)
     const debouncedEmail = useDebounce(emailFilter, 500)
@@ -60,15 +62,7 @@ export default function AdultosMayoresPage() {
 
         const searchTerm = debouncedSearch.trim()
         if (searchTerm) {
-            if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
-                params.id = searchTerm
-            } else if (searchTerm.includes('@')) {
-                params.correo = searchTerm
-            } else if (/[0-9-kK]{7,12}/.test(searchTerm) && !searchTerm.includes(" ")) {
-                params.rut = searchTerm.replace(/\./g, '')
-            } else {
-                params.nombre = searchTerm
-            }
+            params.search = searchTerm
         }
 
         if (debouncedId.trim()) params.id = debouncedId.trim()
@@ -183,7 +177,7 @@ export default function AdultosMayoresPage() {
             }
 
             if (debouncedSearch.trim()) {
-                params.nombre = debouncedSearch.trim()
+                params.search = debouncedSearch.trim()
             }
 
             const response = await AdultosMayoresService.getAdultosMayores(params)
@@ -233,28 +227,30 @@ export default function AdultosMayoresPage() {
     // Client-side filtering for immediate feedback
     const filteredAdultosMayores = adultosMayores.filter(adulto => {
         if (!searchValue.trim() && !idFilter.trim() && !rutFilter.trim() && !emailFilter.trim()) return true;
-        
-        const normalize = (text: string) => 
-            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
         const cleanRut = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
 
-        const searchLower = normalize(searchValue);
+        const searchTerms = normalizeString(searchValue).split(/\s+/).filter(Boolean);
         const searchClean = cleanRut(searchValue);
-        
-        const amId = adulto.id?.toString() || "";
-        const amNombre = adulto.nombre ? normalize(adulto.nombre) : "";
-        const amRutClean = cleanRut(adulto.rut || "");
-        const amEmail = adulto.correo ? normalize(adulto.correo) : "";
-        const amConvenio = adulto.convenio?.nombre ? normalize(adulto.convenio.nombre) : "";
 
-        const matchesGlobal = searchValue.trim() === "" || (
-            amId.includes(searchLower) ||
-            amNombre.includes(searchLower) ||
-            amRutClean.includes(searchClean) ||
-            amEmail.includes(searchLower) ||
-            amConvenio.includes(searchLower)
-        );
+        const amId = adulto.id?.toString() || "";
+        const amNombre = adulto.nombre ? normalizeString(adulto.nombre) : "";
+        const amRutClean = cleanRut(adulto.rut || "");
+        const amEmail = adulto.correo ? normalizeString(adulto.correo) : "";
+        const amConvenio = adulto.convenio?.nombre ? normalizeString(adulto.convenio.nombre) : "";
+        const amTelefono = adulto.telefono || "";
+
+        const matchesGlobal = searchValue.trim() === "" || searchTerms.every(term => {
+            const termClean = cleanRut(term);
+            return (
+                amId.includes(term) ||
+                amNombre.includes(term) ||
+                (termClean !== "" && amRutClean.includes(termClean)) ||
+                amEmail.includes(term) ||
+                amConvenio.includes(term) ||
+                amTelefono.includes(term)
+            );
+        });
 
         const idLower = idFilter.toLowerCase();
         const rutFilterClean = cleanRut(rutFilter);
@@ -319,6 +315,7 @@ export default function AdultosMayoresPage() {
                     </Dropdown.DropdownMenuContent>
                 </Dropdown.DropdownMenu>
             </div>
+
 
             {(statusFilter || idFilter || rutFilter || emailFilter) && (
                 <Button

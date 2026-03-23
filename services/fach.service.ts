@@ -26,6 +26,7 @@ export interface GetFachParams {
     search?: string;
     convenio_id?: number;
     rut?: string;
+    nombre_completo?: string;
 }
 
 export interface FachResponse {

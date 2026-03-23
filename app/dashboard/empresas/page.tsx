@@ -34,14 +34,16 @@ export default function EmpresasPage() {
 
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 50,
         total: 0,
         totalPages: 0,
         hasNextPage: false,
         hasPrevPage: false,
     })
 
-    const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedSearch = useDebounce(searchValue, 300)
+    const normalizeString = (str: string) =>
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
     const fetchEmpresas = async () => {
         setIsLoading(true)
@@ -55,13 +57,7 @@ export default function EmpresasPage() {
 
             const searchTerm = debouncedSearch.trim()
             if (searchTerm) {
-                if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
-                    params.id = searchTerm
-                } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
-                    params.rut = searchTerm.replace(/\./g, '')
-                } else {
-                    params.nombre = searchTerm
-                }
+                params.search = searchTerm
             }
 
             if (statusFilter) {
@@ -156,7 +152,7 @@ export default function EmpresasPage() {
             }
 
             if (debouncedSearch.trim()) {
-                params.nombre = debouncedSearch.trim()
+                params.search = debouncedSearch.trim()
             }
 
             const response = await EmpresasService.getEmpresas(params)
@@ -204,19 +200,22 @@ export default function EmpresasPage() {
     // Client-side filtering for immediate feedback
     const filteredEmpresas = empresas.filter(emp => {
         if (!searchValue.trim()) return true;
-        const normalize = (text: string) => 
-            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-        const searchLower = normalize(searchValue);
+        const cleanRut = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
+        const searchTerms = normalizeString(searchValue).split(/\s+/).filter(Boolean);
+
         const idString = emp.id ? emp.id.toString() : "";
-        const nombre = emp.nombre ? normalize(emp.nombre) : "";
-        const rut = emp.rut_empresa ? normalize(emp.rut_empresa) : "";
-        
-        return (
-            idString.includes(searchLower) ||
-            nombre.includes(searchLower) ||
-            rut.includes(searchLower)
-        );
+        const nombre = emp.nombre ? normalizeString(emp.nombre) : "";
+        const rutClean = cleanRut(emp.rut_empresa || "");
+
+        return searchTerms.every(term => {
+            const termClean = cleanRut(term);
+            return (
+                idString.includes(term) ||
+                nombre.includes(term) ||
+                (termClean !== "" && rutClean.includes(termClean))
+            );
+        });
     });
 
     const filters = (
@@ -243,6 +242,7 @@ export default function EmpresasPage() {
                     </Dropdown.DropdownMenuContent>
                 </Dropdown.DropdownMenu>
             </div>
+
 
             {statusFilter && (
                 <Button

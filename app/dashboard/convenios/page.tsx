@@ -58,14 +58,16 @@ function ConveniosPage() {
 
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 50,
         total: 0,
         totalPages: 0,
         hasNextPage: false,
         hasPrevPage: false,
     })
 
-    const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedSearch = useDebounce(searchValue, 300)
+    const normalizeString = (str: string) =>
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
     const fetchConvenios = async () => {
         setIsLoading(true)
@@ -79,13 +81,7 @@ function ConveniosPage() {
 
             const searchTerm = debouncedSearch.trim()
             if (searchTerm) {
-                if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
-                    params.id = searchTerm
-                } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
-                    params.rut = searchTerm.replace(/\./g, '')
-                } else {
-                    params.nombre = searchTerm
-                }
+                params.search = searchTerm
             }
 
             if (statusFilter) {
@@ -238,7 +234,7 @@ function ConveniosPage() {
             }
 
             if (debouncedSearch.trim()) {
-                params.nombre = debouncedSearch.trim()
+                params.search = debouncedSearch.trim()
             }
 
             if (selectedEmpresa) {
@@ -280,21 +276,24 @@ function ConveniosPage() {
 
     const filteredConvenios = convenios.filter(conv => {
         if (!searchValue.trim()) return true;
-        const normalize = (text: string) => 
-            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-        const searchLower = normalize(searchValue);
+        const cleanRut = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
+        const searchTerms = normalizeString(searchValue).split(/\s+/).filter(Boolean);
+
         const idString = conv.id ? conv.id.toString() : "";
-        const nombre = conv.nombre ? normalize(conv.nombre) : "";
-        const empresaNombre = conv.empresa?.nombre ? normalize(conv.empresa.nombre) : "";
-        const empresaRut = conv.empresa?.rut ? normalize(conv.empresa.rut) : "";
-        
-        return (
-            idString.includes(searchLower) ||
-            nombre.includes(searchLower) ||
-            empresaNombre.includes(searchLower) ||
-            empresaRut.includes(searchLower)
-        );
+        const nombre = conv.nombre ? normalizeString(conv.nombre) : "";
+        const empresaNombre = conv.empresa_nombre || conv.empresa?.nombre ? normalizeString(conv.empresa_nombre || conv.empresa?.nombre || "") : "";
+        const empresaRutClean = cleanRut(conv.empresa_rut || conv.empresa?.rut || "");
+
+        return searchTerms.every(term => {
+            const termClean = cleanRut(term);
+            return (
+                idString.includes(term) ||
+                nombre.includes(term) ||
+                empresaNombre.includes(term) ||
+                (termClean !== "" && empresaRutClean.includes(termClean))
+            );
+        });
     });
 
     const filters = (

@@ -15,6 +15,7 @@ export interface GetApisParams {
     status?: "ACTIVO" | "INACTIVO";
     id?: number | string;
     nombre?: string;
+    search?: string;
 }
 
 export interface ApisResponse {

@@ -46,14 +46,16 @@ export default function PasajerosPage() {
 
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 50,
         total: 0,
         totalPages: 0,
         hasNextPage: false,
         hasPrevPage: false,
     })
 
-    const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedSearch = useDebounce(searchValue, 300)
+    const normalizeString = (str: string) =>
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
     const fetchPasajeros = async () => {
         setIsLoading(true)
@@ -67,15 +69,7 @@ export default function PasajerosPage() {
 
             const searchTerm = debouncedSearch.trim()
             if (searchTerm) {
-                if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
-                    params.id = searchTerm
-                } else if (searchTerm.includes('@')) {
-                    params.correo = searchTerm
-                } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
-                    params.rut = searchTerm.replace(/\./g, '')
-                } else {
-                    params.search = searchTerm
-                }
+                params.search = searchTerm
             }
 
             if (selectedEmpresa) {
@@ -221,15 +215,7 @@ export default function PasajerosPage() {
 
             const searchTerm = debouncedSearch.trim()
             if (searchTerm) {
-                if (/^\d+$/.test(searchTerm) && searchTerm.length < 10) {
-                    params.id = searchTerm
-                } else if (searchTerm.includes('@')) {
-                    params.correo = searchTerm
-                } else if (/[0-9-kK]{7,12}/.test(searchTerm)) {
-                    params.rut = searchTerm.replace(/\./g, '')
-                } else {
-                    params.search = searchTerm
-                }
+                params.search = searchTerm
             }
 
             if (selectedEmpresa) {
@@ -319,23 +305,26 @@ export default function PasajerosPage() {
     // Client-side filtering for immediate feedback
     const filteredPasajeros = pasajeros.filter(pasajero => {
         if (!searchValue.trim()) return true;
-        const normalize = (text: string) => 
-            text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-        const searchLower = normalize(searchValue);
+        const cleanRut = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
+        const searchTerms = normalizeString(searchValue).split(/\s+/).filter(Boolean);
+
         const idString = pasajero.id ? pasajero.id.toString() : "";
-        const nombres = pasajero.nombres ? normalize(pasajero.nombres) : "";
-        const apellidos = pasajero.apellidos ? normalize(pasajero.apellidos) : "";
-        const rut = pasajero.rut ? normalize(pasajero.rut) : "";
-        const correo = pasajero.correo ? normalize(pasajero.correo) : "";
-        
-        return (
-            idString.includes(searchLower) ||
-            nombres.includes(searchLower) ||
-            apellidos.includes(searchLower) ||
-            rut.includes(searchLower) ||
-            correo.includes(searchLower)
-        );
+        const nombres = pasajero.nombres ? normalizeString(pasajero.nombres) : "";
+        const apellidos = pasajero.apellidos ? normalizeString(pasajero.apellidos) : "";
+        const rutClean = cleanRut(pasajero.rut || "");
+        const correo = pasajero.correo ? normalizeString(pasajero.correo) : "";
+
+        return searchTerms.every(term => {
+            const termClean = cleanRut(term);
+            return (
+                idString.includes(term) ||
+                nombres.includes(term) ||
+                apellidos.includes(term) ||
+                (termClean !== "" && rutClean.includes(termClean)) ||
+                correo.includes(term)
+            );
+        });
     });
 
     const filters = (
