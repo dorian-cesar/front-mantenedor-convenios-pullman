@@ -124,6 +124,16 @@ export default function DetailsConvenioModal({
                     </div>
 
                     <div>
+                        <p className="text-sm font-medium leading-none">Consumo Tickets</p>
+                        <p className="text-sm text-muted-foreground">{formatNumber(convenio.consumo_tickets || 0)}</p>
+                    </div>
+
+                    <div>
+                        <p className="text-sm font-medium leading-none">Consumo Monto</p>
+                        <p className="text-sm text-muted-foreground">${formatNumber(convenio.consumo_monto_descuento || 0)}</p>
+                    </div>
+
+                    <div>
                         <p className="text-sm font-medium leading-none">Limitar por Stock</p>
                         <p className="text-sm text-muted-foreground">
                             {convenio.limitar_por_stock === null || convenio.limitar_por_stock === undefined

@@ -254,6 +254,8 @@ function ConveniosPage() {
                 Empresa: conv.empresa?.nombre || "Sin empresa",
                 RUT_Empresa: conv.empresa?.rut || "N/A",
                 Estado: conv.status,
+                Consumo_Tickets: conv.consumo_tickets || 0,
+                Consumo_Monto: conv.consumo_monto_descuento || 0,
                 Creado: conv.createdAt ? new Date(conv.createdAt).toLocaleDateString() : "N/A",
                 Actualizado: conv.updatedAt ? new Date(conv.updatedAt).toLocaleDateString() : "N/A",
             }))
@@ -422,13 +424,15 @@ function ConveniosPage() {
                             <Table.TableHead>Tope Monto</Table.TableHead>
                             <Table.TableHead>Tope Tickets</Table.TableHead>
                             <Table.TableHead>Periodo</Table.TableHead>
+                            <Table.TableHead>Consumo Tickets</Table.TableHead>
+                            <Table.TableHead>Consumo Monto</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
                     </Table.TableHeader>
                     <Table.TableBody>
                         {isLoading ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={11} className="text-center py-8">
+                                <Table.TableCell colSpan={15} className="text-center py-8">
                                     <div className="flex justify-center">
                                         <Icon.Loader2Icon className="h-6 w-6 animate-spin" />
                                     </div>
@@ -436,7 +440,7 @@ function ConveniosPage() {
                             </Table.TableRow>
                         ) : filteredConvenios.length === 0 ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={11} className="text-center py-8">
+                                <Table.TableCell colSpan={15} className="text-center py-8">
                                     No se encontraron convenios
                                 </Table.TableCell>
                             </Table.TableRow>
@@ -516,6 +520,8 @@ function ConveniosPage() {
                                     <Table.TableCell>{(convenio.limitar_por_monto && convenio.tope_monto_descuento) ? formatNumber(convenio.tope_monto_descuento) : "Sin tope"}</Table.TableCell>
                                     <Table.TableCell>{(convenio.limitar_por_stock && convenio.tope_cantidad_tickets) ? formatNumber(convenio.tope_cantidad_tickets) : "Sin tope"}</Table.TableCell>
                                     <Table.TableCell>{convenio.fecha_inicio ? formatDateOnly(convenio.fecha_inicio) : "Sin inicio"} - {convenio.fecha_termino ? formatDateOnly(convenio.fecha_termino) : "Sin término"}</Table.TableCell>
+                                    <Table.TableCell className="font-medium">{formatNumber(convenio.consumo_tickets || 0)}</Table.TableCell>
+                                    <Table.TableCell className="font-medium text-blue-600">${formatNumber(convenio.consumo_monto_descuento || 0)}</Table.TableCell>
                                     <Table.TableCell className="text-right">
                                         <Dropdown.DropdownMenu>
                                             <Dropdown.DropdownMenuTrigger asChild>
