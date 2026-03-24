@@ -8,6 +8,7 @@ import { BadgeStatus } from "@/components/ui/badge-status"
 import * as Card from "@/components/ui/card"
 import { useState, useEffect } from "react"
 import { PageHeader } from "@/components/dashboard/page-header"
+import { Badge } from "@/components/ui/badge"
 import { Pagination } from "@/components/dashboard/Pagination"
 import { Calendar } from "@/components/ui/calendar"
 import { formatDateOnly, formatNumber, formatDateTime } from "@/utils/helpers"
@@ -34,7 +35,7 @@ export default function EventosPage() {
     const { user } = useAuth()
 
     // Filtros
-    const [statusFilter, setStatusFilter] = useState<"compra" | "anulado" | null>(null)
+    const [statusFilter, setStatusFilter] = useState<"compra" | "anulado" | "error_confirmacion" | "revisar" | "" | null>(null)
     const [empresaFilter, setEmpresaFilter] = useState<number | null>(null)
     const [pasajeroFilter, setPasajeroFilter] = useState<number | null>(null)
     const [convenioFilter, setConvenioFilter] = useState<number | null>(null)
@@ -59,7 +60,7 @@ export default function EventosPage() {
     const fetchEventos = async () => {
         setIsLoading(true)
         try {
-            const params: GetEventosParams = {
+            const params: any = {
                 page: pagination.page,
                 limit: pagination.limit,
                 sortBy: 'id',
@@ -70,35 +71,32 @@ export default function EventosPage() {
             // Aplicar filtros
             if (statusFilter === "anulado") {
                 params.estado = "anulado"
-                params.status = "anulado"
             } else if (statusFilter === "compra") {
                 params.estado = "confirmado"
-                params.status = "confirmado"
+            } else if (statusFilter === "error_confirmacion") {
+                params.estado = "error_confirmacion"
+            } else if (statusFilter === "revisar") {
+                params.estado = "revisar"
             }
 
             if (empresaFilter) {
                 params.empresa_id = empresaFilter
             }
-
             if (pasajeroFilter) {
                 params.pasajero_id = pasajeroFilter
             }
-
             if (convenioFilter) {
                 params.convenio_id = convenioFilter
             }
-
             if (dateRange?.from) {
-                params.fecha_inicio = format(dateRange.from, 'yyyy-MM-dd')
+                params.startDate = dateRange.from.toISOString()
             }
-
             if (dateRange?.to) {
-                params.fecha_fin = format(dateRange.to, 'yyyy-MM-dd')
+                params.endDate = dateRange.to.toISOString()
             }
 
             const response = await EventosService.getEventos(params)
             setEventos(response.rows)
-
             setPagination(prev => ({
                 ...prev,
                 total: response.totalItems,
@@ -283,7 +281,10 @@ export default function EventosPage() {
                     <Dropdown.DropdownMenu>
                         <Dropdown.DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
-                                {statusFilter === "compra" ? "Confirmados" : statusFilter === "anulado" ? "Anulados" : "Todos"}
+                                {statusFilter === "compra" ? "Confirmados" :
+                                 statusFilter === "anulado" ? "Anulados" :
+                                 statusFilter === "error_confirmacion" ? "Error Confirmación" :
+                                 statusFilter === "revisar" ? "Revisar" : "Todos"}
                                 <Icon.ChevronDown className="ml-2 h-4 w-4" />
                             </Button>
                         </Dropdown.DropdownMenuTrigger>
@@ -296,6 +297,12 @@ export default function EventosPage() {
                             </Dropdown.DropdownMenuItem>
                             <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("anulado")}>
                                 Anulados
+                            </Dropdown.DropdownMenuItem>
+                            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("error_confirmacion")}>
+                                Error Confirmación
+                            </Dropdown.DropdownMenuItem>
+                            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("revisar")}>
+                                Revisar
                             </Dropdown.DropdownMenuItem>
                         </Dropdown.DropdownMenuContent>
                     </Dropdown.DropdownMenu>
@@ -409,7 +416,13 @@ export default function EventosPage() {
                     </Popover>
                 </div>
 
-                {(statusFilter || empresaFilter || pasajeroFilter || convenioFilter || dateRange) && (
+                <div className="ml-auto flex items-center gap-2">
+                    <Badge variant="secondary" className="h-9 px-4 text-sm font-medium whitespace-nowrap">
+                        Total: {pagination.total} registros
+                    </Badge>
+                </div>
+
+                {(statusFilter || empresaFilter || pasajeroFilter || convenioFilter || dateRange?.from) && (
                     <Button
                         variant="ghost"
                         size="sm"
@@ -527,12 +540,10 @@ export default function EventosPage() {
                                         {evento.convenio?.nombre || "N/A"}
                                     </Table.TableCell>
                                     <Table.TableCell>
-                                        <BadgeStatus status={evento.estado === "anulado" ? "anulado" : "confirmado"}>
-                                            {
-                                                evento.estado === "anulado"
-                                                    ? "anulado"
-                                                    : "confirmado"
-                                            }
+                                        <BadgeStatus status={evento.status || evento.estado}>
+                                            {evento.status?.toLowerCase() === "error_confirmacion" ? "Error Confirmación" :
+                                                evento.status?.toLowerCase() === "revisar" ? "Revisar" :
+                                                    evento.estado || evento.status || "N/A"}
                                         </BadgeStatus>
                                     </Table.TableCell>
                                 </Table.TableRow>
