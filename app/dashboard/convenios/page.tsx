@@ -424,8 +424,8 @@ function ConveniosPage() {
                             <Table.TableHead>Tope Monto</Table.TableHead>
                             <Table.TableHead>Tope Tickets</Table.TableHead>
                             <Table.TableHead>Periodo</Table.TableHead>
-                            <Table.TableHead>Consumo Tickets</Table.TableHead>
-                            <Table.TableHead>Consumo Monto</Table.TableHead>
+                            <Table.TableHead className="text-center">Consumo Tickets</Table.TableHead>
+                            <Table.TableHead className="text-center">Consumo Monto</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
                     </Table.TableHeader>
@@ -520,8 +520,8 @@ function ConveniosPage() {
                                     <Table.TableCell>{(convenio.limitar_por_monto && convenio.tope_monto_descuento) ? formatNumber(convenio.tope_monto_descuento) : "Sin tope"}</Table.TableCell>
                                     <Table.TableCell>{(convenio.limitar_por_stock && convenio.tope_cantidad_tickets) ? formatNumber(convenio.tope_cantidad_tickets) : "Sin tope"}</Table.TableCell>
                                     <Table.TableCell>{convenio.fecha_inicio ? formatDateOnly(convenio.fecha_inicio) : "Sin inicio"} - {convenio.fecha_termino ? formatDateOnly(convenio.fecha_termino) : "Sin término"}</Table.TableCell>
-                                    <Table.TableCell className="font-medium">{formatNumber(convenio.consumo_tickets || 0)}</Table.TableCell>
-                                    <Table.TableCell className="font-medium text-blue-600">${formatNumber(convenio.consumo_monto_descuento || 0)}</Table.TableCell>
+                                    <Table.TableCell className="font-medium text-center">{formatNumber(convenio.consumo_tickets || 0)}</Table.TableCell>
+                                    <Table.TableCell className="font-medium text-blue-600 text-center">${formatNumber(convenio.consumo_monto_descuento || 0)}</Table.TableCell>
                                     <Table.TableCell className="text-right">
                                         <Dropdown.DropdownMenu>
                                             <Dropdown.DropdownMenuTrigger asChild>
