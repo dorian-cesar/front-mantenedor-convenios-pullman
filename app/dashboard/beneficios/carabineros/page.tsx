@@ -482,6 +482,7 @@ export default function CarabinerosPage() {
                 open={openDetails}
                 onOpenChange={setOpenDetails}
                 carabinero={selectedCarabinero}
+                onToggleStatus={handleToggleStatus}
             />
         </div>
     )

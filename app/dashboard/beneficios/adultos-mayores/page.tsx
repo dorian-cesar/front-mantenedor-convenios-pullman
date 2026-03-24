@@ -504,6 +504,8 @@ export default function AdultosMayoresPage() {
                 open={openDetails}
                 onOpenChange={setOpenDetails}
                 adultoMayor={selectedAdultoMayor}
+                onToggleStatus={handleToggleStatus}
+                onRechazar={handleRechazar}
             />
 
             <RechazarModal

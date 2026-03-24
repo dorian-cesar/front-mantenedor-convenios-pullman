@@ -507,6 +507,8 @@ export default function UsuariosFrecuentesPage() {
                 open={openDetails}
                 onOpenChange={setOpenDetails}
                 usuarioFrecuente={selectedUsuarioFrecuente}
+                onToggleStatus={handleToggleStatus}
+                onRechazar={handleRechazar}
             />
 
             <RechazarModal

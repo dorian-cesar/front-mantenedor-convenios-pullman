@@ -1,5 +1,3 @@
-"use client"
-
 import * as Dialog from "@/components/ui/dialog"
 import { AdultoMayor } from "@/services/adulto-mayor.service"
 import { formatDateOnly } from "@/utils/helpers"
@@ -7,18 +5,22 @@ import { getFileSrc, isPDF } from "@/utils/helpers"
 import { useState } from "react"
 import FileViewerModal from "./file-viewer-modal"
 import { Button } from "@/components/ui/button"
-import { Maximize2Icon, FileTextIcon } from "lucide-react"
+import { Maximize2Icon, FileTextIcon, Ban, CheckCircle2, XCircle } from "lucide-react"
 
 interface DetailsAdultoMayorModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     adultoMayor: AdultoMayor | null
+    onToggleStatus?: (id: number, currentStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO") => Promise<void>
+    onRechazar?: (adultoMayor: AdultoMayor) => void
 }
 
 export default function DetailsAdultoMayorModal({
     open,
     onOpenChange,
     adultoMayor,
+    onToggleStatus,
+    onRechazar,
 }: DetailsAdultoMayorModalProps) {
     const [openFileViewer, setOpenFileViewer] = useState(false)
 
@@ -84,7 +86,7 @@ export default function DetailsAdultoMayorModal({
     return (
         <>
             <Dialog.Dialog open={open} onOpenChange={onOpenChange}>
-                <Dialog.DialogContent className="max-w-2xl">
+                <Dialog.DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <Dialog.DialogHeader>
                         <Dialog.DialogTitle>Detalles del Adulto Mayor</Dialog.DialogTitle>
                         <Dialog.DialogDescription>
@@ -133,7 +135,7 @@ export default function DetailsAdultoMayorModal({
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 gap-6 mb-6">
                         <div>
                             <p className="text-sm font-medium mb-2">Foto frontal de Carnet de Identidad</p>
                             {renderFilePreview(
@@ -161,6 +163,35 @@ export default function DetailsAdultoMayorModal({
                                 </div>
                             );
                         })}
+                    </div>
+
+                    <div className="flex justify-end gap-2 border-t pt-4 mt-2">
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>
+                            Cerrar
+                        </Button>
+                        {adultoMayor && onRechazar && adultoMayor.status !== "RECHAZADO" && (
+                            <Button
+                                variant="outline"
+                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() => onRechazar(adultoMayor)}
+                            >
+                                <XCircle className="mr-2 h-4 w-4" /> Rechazar
+                            </Button>
+                        )}
+                        {adultoMayor && onToggleStatus && (
+                            <Button
+                                variant={adultoMayor.status === "ACTIVO" ? "destructive" : "default"}
+                                onClick={() => {
+                                    onToggleStatus(adultoMayor.id, adultoMayor.status as any)
+                                }}
+                            >
+                                {adultoMayor.status === "ACTIVO" ? (
+                                    <><Ban className="mr-2 h-4 w-4" /> Desactivar</>
+                                ) : (
+                                    <><CheckCircle2 className="mr-2 h-4 w-4" /> Activar</>
+                                )}
+                            </Button>
+                        )}
                     </div>
                 </Dialog.DialogContent>
             </Dialog.Dialog>

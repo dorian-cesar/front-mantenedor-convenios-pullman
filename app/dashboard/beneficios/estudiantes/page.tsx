@@ -510,6 +510,8 @@ export default function EstudiantesPage() {
                 open={openDetails}
                 onOpenChange={setOpenDetails}
                 estudiante={selectedEstudiante}
+                onToggleStatus={handleToggleStatus}
+                onRechazar={handleRechazar}
             />
 
             <RechazarModal

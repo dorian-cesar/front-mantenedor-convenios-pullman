@@ -507,6 +507,7 @@ export default function FachPage() {
                 open={openDetails}
                 onOpenChange={setOpenDetails}
                 fach={selectedFach}
+                onToggleStatus={handleToggleStatus}
             />
         </div>
     )
