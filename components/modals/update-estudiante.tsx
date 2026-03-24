@@ -250,14 +250,40 @@ export default function UpdateEstudianteModal({
         setIsLoading(true)
 
         try {
+            const cedulaKeys = ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]
+            const certificadoKeys = ["Certificado de Estudios", "Certificado", "Certificado Alumno Regular"]
+
             // "debe subirlo todo" - El usuario quiere que se envíe todo el payload
+            let updatedImagenes = { ...estudiante.imagenes }
+
+            // Auxiliar para actualizar todas las posibles llaves de un mismo concepto
+            const updateCategoryKeys = (currentImages: any, categoryKeys: string[], newValue: string | undefined) => {
+                const result = { ...currentImages }
+                let foundMatch = false
+                
+                // Actualizar todas las llaves que ya están presentes en el objeto
+                categoryKeys.forEach(key => {
+                    if (result[key] !== undefined) {
+                        result[key] = newValue
+                        foundMatch = true
+                    }
+                })
+
+                // Si ninguna llave de la categoría estaba presente, agregar la principal
+                if (!foundMatch && newValue) {
+                    result[categoryKeys[0]] = newValue
+                }
+                
+                return result
+            }
+
+            // Actualizar categorías
+            updatedImagenes = updateCategoryKeys(updatedImagenes, cedulaKeys, data.imagen_cedula_identidad)
+            updatedImagenes = updateCategoryKeys(updatedImagenes, certificadoKeys, data.imagen_certificado_alumno_regular)
+
             const payload: any = { 
                 ...data,
-                imagenes: {
-                    ...estudiante.imagenes,
-                    "Foto frontal del Carnet de Identidad": data.imagen_cedula_identidad,
-                    "Certificado Alumno Regular": data.imagen_certificado_alumno_regular
-                }
+                imagenes: updatedImagenes
             }
 
             // Eliminamos los campos directos que el backend no permite (not allowed)
