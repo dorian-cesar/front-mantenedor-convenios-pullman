@@ -372,7 +372,7 @@ export default function EstudiantesPage() {
                 )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-gray-100">
+            <div className="flex flex-wrap items-center gap-3 pt-2">
                 <BadgeStatus 
                     status="active" 
                     className={`h-9 px-4 text-sm font-medium whitespace-nowrap cursor-pointer hover:opacity-80 transition-all border shadow-sm ${statusFilter === 'ACTIVO' ? 'ring-2 ring-primary ring-offset-2 border-primary bg-green-100' : 'bg-green-50 text-green-700 border-green-200'}`}
