@@ -55,6 +55,7 @@ function ConveniosPage() {
     const [selectedEmpresa, setSelectedEmpresa] = useState<number | null>(null)
     const [statusFilter, setStatusFilter] = useState<string>("")
     const [user, setUser] = useState<CurrentUser | null>(null)
+    const [summary, setSummary] = useState({ activo: 0, inactivo: 0 })
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -68,6 +69,28 @@ function ConveniosPage() {
     const debouncedSearch = useDebounce(searchValue, 300)
     const normalizeString = (str: string) =>
         str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+    const fetchSummary = async () => {
+        try {
+            const baseParams: GetConveniosParams = {}
+            if (selectedEmpresa) baseParams.empresa_id = selectedEmpresa
+            if (user?.rol === "USUARIO" && user?.empresa_id) {
+                baseParams.empresa_id = user.empresa_id;
+            }
+
+            const [activeRes, inactiveRes] = await Promise.all([
+                ConveniosService.getConvenios({ ...baseParams, status: 'ACTIVO', limit: 1 }),
+                ConveniosService.getConvenios({ ...baseParams, status: 'INACTIVO', limit: 1 })
+            ]);
+
+            setSummary({
+                activo: activeRes.totalItems,
+                inactivo: inactiveRes.totalItems
+            });
+        } catch (error) {
+            console.error('Error fetching convenios summary:', error)
+        }
+    }
 
     const fetchConvenios = async () => {
         setIsLoading(true)
@@ -92,6 +115,11 @@ function ConveniosPage() {
                 params.empresa_id = selectedEmpresa
             }
 
+            // Restricción por Rol: Si es USUARIO, forzar su empresa_id
+            if (user?.rol === "USUARIO" && user?.empresa_id) {
+                params.empresa_id = user.empresa_id;
+            }
+
             const response = await ConveniosService.getConvenios(params)
             setConvenios(response.rows)
 
@@ -102,6 +130,9 @@ function ConveniosPage() {
                 hasPrevPage: (response.currentPage || 1) > 1,
                 hasNextPage: (response.currentPage || 1) < (response.totalPages || 1)
             }))
+
+            // Actualizar resumen también
+            fetchSummary()
         } catch (error) {
             console.error('Error fetching convenios:', error)
             toast.error("No se pudieron cargar los convenios")
@@ -213,6 +244,7 @@ function ConveniosPage() {
 
     const handleConvenioUpdated = () => {
         fetchConvenios()
+        setOpenUpdate(false)
     }
 
     const handleDetailsConvenio = (convenio: Convenio) => {
@@ -239,6 +271,11 @@ function ConveniosPage() {
 
             if (selectedEmpresa) {
                 params.empresa_id = selectedEmpresa
+            }
+
+            // Restricción por Rol: Si es USUARIO, forzar su empresa_id
+            if (user?.rol === "USUARIO" && user?.empresa_id) {
+                params.empresa_id = user.empresa_id;
             }
 
             const response = await ConveniosService.getConvenios(params)
@@ -300,29 +337,31 @@ function ConveniosPage() {
 
     const filters = (
         <div className="flex flex-wrap gap-2 items-center">
-            <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Empresa:</span>
-                <Dropdown.DropdownMenu>
-                    <Dropdown.DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
-                            <span className="truncate">
-                                {selectedEmpresa ? empresas.find(e => e.id === selectedEmpresa)?.nombre || "Seleccionar..." : "Todas"}
-                            </span>
-                            <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
-                        </Button>
-                    </Dropdown.DropdownMenuTrigger>
-                    <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
-                        <Dropdown.DropdownMenuItem onClick={() => setSelectedEmpresa(null)}>
-                            Todas
-                        </Dropdown.DropdownMenuItem>
-                        {empresas.map((empresa) => (
-                            <Dropdown.DropdownMenuItem key={empresa.id} onClick={() => setSelectedEmpresa(empresa.id)}>
-                                {empresa.nombre}
+            {user?.rol === "SUPER_USUARIO" && (
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Empresa:</span>
+                    <Dropdown.DropdownMenu>
+                        <Dropdown.DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
+                                <span className="truncate">
+                                    {selectedEmpresa ? empresas.find(e => e.id === selectedEmpresa)?.nombre || "Seleccionar..." : "Todas"}
+                                </span>
+                                <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                            </Button>
+                        </Dropdown.DropdownMenuTrigger>
+                        <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                            <Dropdown.DropdownMenuItem onClick={() => setSelectedEmpresa(null)}>
+                                Todas
                             </Dropdown.DropdownMenuItem>
-                        ))}
-                    </Dropdown.DropdownMenuContent>
-                </Dropdown.DropdownMenu>
-            </div>
+                            {empresas.map((empresa) => (
+                                <Dropdown.DropdownMenuItem key={empresa.id} onClick={() => setSelectedEmpresa(empresa.id)}>
+                                    {empresa.nombre}
+                                </Dropdown.DropdownMenuItem>
+                            ))}
+                        </Dropdown.DropdownMenuContent>
+                    </Dropdown.DropdownMenu>
+                </div>
+            )}
 
             <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Status:</span>
@@ -361,6 +400,15 @@ function ConveniosPage() {
                     Limpiar
                 </Button>
             )}
+
+            <div className="ml-auto flex items-center gap-3">
+                <BadgeStatus status="active" className="h-9 px-4 text-sm font-medium whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                    Activos: {summary.activo}
+                </BadgeStatus>
+                <BadgeStatus status="inactive" className="h-9 px-4 text-sm font-medium whitespace-nowrap bg-red-50 text-red-700 border-red-200">
+                    Inactivos: {summary.inactivo}
+                </BadgeStatus>
+            </div>
         </div>
     )
 

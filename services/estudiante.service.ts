@@ -49,6 +49,8 @@ export interface CreateEstudianteData {
     direccion: string;
     imagen_cedula_identidad?: string;
     imagen_certificado_alumno_regular?: string;
+    imagenes?: Record<string, string>;
+    convenio_id: number;
     status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
 }
 
@@ -60,6 +62,8 @@ export interface UpdateEstudianteData {
     direccion?: string;
     imagen_cedula_identidad?: string;
     imagen_certificado_alumno_regular?: string;
+    imagenes?: Record<string, string>;
+    convenio_id?: number;
     razon_rechazo?: string;
     status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
 }

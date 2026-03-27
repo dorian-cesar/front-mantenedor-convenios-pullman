@@ -18,6 +18,7 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { UsuariosService } from "@/services/usuario.service"
 import { RolesService, Role } from "@/services/roles.service"
+import { EmpresasService, Empresa } from "@/services/empresa.service"
 import { toast } from "sonner"
 
 interface AddUsuarioModalProps {
@@ -66,6 +67,8 @@ const usuarioSchema = z
 
         rol: z.string().min(1, "Debe seleccionar un rol"),
 
+        empresa_id: z.string().optional(),
+
         status: z.enum(["ACTIVO", "INACTIVO"]),
     })
     .refine((data) => data.password === data.confirmPassword, {
@@ -82,6 +85,7 @@ export default function AddUsuarioModal({
 }: AddUsuarioModalProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [roles, setRoles] = useState<Role[]>([])
+    const [empresas, setEmpresas] = useState<Empresa[]>([])
     const [showPassword, setShowPassword] = useState(false)
 
     const form = useForm<UsuarioFormValues>({
@@ -94,6 +98,7 @@ export default function AddUsuarioModal({
             password: "",
             confirmPassword: "",
             rol: "",
+            empresa_id: undefined,
             status: "ACTIVO",
         },
     })
@@ -110,8 +115,18 @@ export default function AddUsuarioModal({
         }
     }
 
+    const fetchEmpresas = async () => {
+        try {
+            const response = await EmpresasService.getEmpresas({ limit: 100, status: "ACTIVO" })
+            setEmpresas(response.rows)
+        } catch (error) {
+            console.error('Error fetching empresas:', error)
+        }
+    }
+
     useEffect(() => {
         fetchRoles()
+        fetchEmpresas()
     }, [])
 
     useEffect(() => {
@@ -133,6 +148,7 @@ export default function AddUsuarioModal({
                 nombre: data.nombre,
                 rut: data.rut || null,
                 telefono: data.telefono || null,
+                empresa_id: data.rol.toUpperCase().replace(/\s+/g, "_") === "USUARIO" ? (data.empresa_id ? Number(data.empresa_id) : null) : null,
             } as any)
 
             toast.success("Usuario creado correctamente")
@@ -290,6 +306,33 @@ export default function AddUsuarioModal({
                                 </Form.FormItem>
                             )}
                         />
+
+                        {form.watch("rol").toUpperCase().replace(/\s+/g, "_") === "USUARIO" && (
+                            <Form.FormField
+                                control={form.control}
+                                name="empresa_id"
+                                render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel>Empresa Asociada</Form.FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <Form.FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Seleccione una empresa" />
+                                                </SelectTrigger>
+                                            </Form.FormControl>
+                                            <SelectContent>
+                                                {empresas.map((empresa) => (
+                                                    <SelectItem key={empresa.id} value={empresa.id.toString()}>
+                                                        {empresa.nombre}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
+                        )}
 
                         <Form.FormField
                             control={form.control}

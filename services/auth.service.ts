@@ -12,6 +12,7 @@ export interface LoginResponse {
         nombre: string | null;
         telefono: string | null;
         rol: string;
+        empresa_id?: number | null;
     };
     token: string;
 }
@@ -24,6 +25,7 @@ export interface TokenValidation {
         id: number;
         correo: string;
         rol: string;
+        empresa_id?: number | null;
     };
 }
 
@@ -33,6 +35,7 @@ export type CurrentUser = {
     nombre: string | null
     telefono: string | null
     rol: string
+    empresa_id?: number | null
 }
 
 export class AuthService {

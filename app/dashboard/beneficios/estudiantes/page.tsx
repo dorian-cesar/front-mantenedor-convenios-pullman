@@ -28,6 +28,7 @@ import { useConvenios } from "@/hooks/use-convenios"
 import { useAuth } from "@/hooks/useAuth"
 
 export default function EstudiantesPage() {
+    const [summary, setSummary] = useState({ activo: 0, inactivo: 0, rechazado: 0 })
     const [searchValue, setSearchValue] = useState("")
     const [openExport, setOpenExport] = useState(false)
     const [openAdd, setOpenAdd] = useState(false)
@@ -73,9 +74,37 @@ export default function EstudiantesPage() {
         return EstudiantesService.getEstudiantes(params)
     }
 
+    const fetchSummary = async () => {
+        try {
+            const params: any = {}
+            if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
+            if (debouncedId.trim()) params.id = debouncedId.trim()
+            if (debouncedRut.trim()) params.rut = debouncedRut.trim().replace(/\./g, '')
+            if (debouncedEmail.trim()) params.correo = debouncedEmail.trim()
+
+            const [activeRes, inactiveRes, rejectedRes] = await Promise.all([
+                EstudiantesService.getEstudiantes({ ...params, status: 'ACTIVO', limit: 1 }),
+                EstudiantesService.getEstudiantes({ ...params, status: 'INACTIVO', limit: 1 }),
+                EstudiantesService.getEstudiantes({ ...params, status: 'RECHAZADO', limit: 1 })
+            ]);
+
+            setSummary({
+                activo: Number(activeRes?.totalItems ?? (activeRes as any)?.total ?? 0),
+                inactivo: Number(inactiveRes?.totalItems ?? (inactiveRes as any)?.total ?? 0),
+                rechazado: Number(rejectedRes?.totalItems ?? (rejectedRes as any)?.total ?? 0)
+            });
+        } catch (error) {
+            console.error('Error fetching summary:', error)
+        }
+    }
+
     const { data: response, error, isLoading, mutate } = useSWR(
         ['beneficiarios', 'estudiantes', pagination.page, pagination.limit, debouncedSearch, debouncedId, debouncedRut, debouncedEmail, statusFilter],
-        fetcher,
+        async () => {
+            const res = await fetcher();
+            fetchSummary();
+            return res;
+        },
         { keepPreviousData: true }
     )
 
@@ -127,6 +156,7 @@ export default function EstudiantesPage() {
             await EstudiantesService.rechazarEstudiante(id, { razon_rechazo, status: "RECHAZADO" })
             toast.success("Se rechazo la solicitud exitosamente")
             mutate()
+            setOpenRechazar(false)
         } catch (error) {
             console.error('Error rechazando solicitud:', error)
             toast.error("No se pudo rechazar la solicitud")
@@ -156,6 +186,7 @@ export default function EstudiantesPage() {
 
     const handleEstudianteUpdated = () => {
         mutate()
+        setOpenUpdate(false)
     }
 
     const handleDetailsEstudiante = async (estudiante: Estudiante) => {
@@ -339,6 +370,18 @@ export default function EstudiantesPage() {
                     Limpiar
                 </Button>
             )}
+
+            <div className="ml-auto flex items-center gap-3">
+                <BadgeStatus status="active" className="h-9 px-4 text-sm font-medium whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                    Activos: {summary.activo}
+                </BadgeStatus>
+                <BadgeStatus status="inactive" className="h-9 px-4 text-sm font-medium whitespace-nowrap bg-red-50 text-red-700 border-red-200">
+                    Inactivos: {summary.inactivo}
+                </BadgeStatus>
+                <BadgeStatus status="inactive" className="h-9 px-4 text-sm font-medium whitespace-nowrap bg-orange-50 text-orange-700 border-orange-200">
+                    Rechazados: {summary.rechazado}
+                </BadgeStatus>
+            </div>
         </div>
     )
 

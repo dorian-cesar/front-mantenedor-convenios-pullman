@@ -260,7 +260,7 @@ export default function UpdateEstudianteModal({
             const updateCategoryKeys = (currentImages: any, categoryKeys: string[], newValue: string | undefined) => {
                 const result = { ...currentImages }
                 let foundMatch = false
-                
+
                 // Actualizar todas las llaves que ya están presentes en el objeto
                 categoryKeys.forEach(key => {
                     if (result[key] !== undefined) {
@@ -273,7 +273,7 @@ export default function UpdateEstudianteModal({
                 if (!foundMatch && newValue) {
                     result[categoryKeys[0]] = newValue
                 }
-                
+
                 return result
             }
 
@@ -281,7 +281,7 @@ export default function UpdateEstudianteModal({
             updatedImagenes = updateCategoryKeys(updatedImagenes, cedulaKeys, data.imagen_cedula_identidad)
             updatedImagenes = updateCategoryKeys(updatedImagenes, certificadoKeys, data.imagen_certificado_alumno_regular)
 
-            const payload: any = { 
+            const payload: any = {
                 ...data,
                 imagenes: updatedImagenes
             }

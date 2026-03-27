@@ -18,6 +18,7 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { UsuariosService, Usuario } from "@/services/usuario.service"
 import { RolesService, Role } from "@/services/roles.service"
+import { EmpresasService, Empresa } from "@/services/empresa.service"
 import { toast } from "sonner"
 
 interface UpdateUsuarioModalProps {
@@ -68,6 +69,8 @@ const usuarioSchema = z
 
         rol: z.string().min(1, "Debe seleccionar un rol"),
 
+        empresa_id: z.string().optional(),
+
         status: z.enum(["ACTIVO", "INACTIVO"]),
     })
     .refine(
@@ -91,6 +94,7 @@ export default function UpdateUsuarioModal({
 }: UpdateUsuarioModalProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [roles, setRoles] = useState<Role[]>([])
+    const [empresas, setEmpresas] = useState<Empresa[]>([])
     const [showPassword, setShowPassword] = useState(false)
 
     const form = useForm<UsuarioFormValues>({
@@ -104,6 +108,7 @@ export default function UpdateUsuarioModal({
             password: "",
             confirmPassword: "",
             rol: "",
+            empresa_id: undefined,
             status: "ACTIVO",
         },
     })
@@ -117,8 +122,18 @@ export default function UpdateUsuarioModal({
         }
     }
 
+    const fetchEmpresas = async () => {
+        try {
+            const response = await EmpresasService.getEmpresas({ limit: 100, status: "ACTIVO" })
+            setEmpresas(response.rows)
+        } catch (error) {
+            console.error('Error fetching empresas:', error)
+        }
+    }
+
     useEffect(() => {
         fetchRoles()
+        fetchEmpresas()
     }, [])
 
     useEffect(() => {
@@ -131,6 +146,7 @@ export default function UpdateUsuarioModal({
                 password: "",
                 confirmPassword: "",
                 rol: usuario.rol ?? "USUARIO",
+                empresa_id: usuario.empresa_id?.toString() ?? undefined,
                 status: usuario.status,
             })
         }
@@ -150,6 +166,7 @@ export default function UpdateUsuarioModal({
                 telefono: data.telefono,
                 rol: data.rol.toUpperCase().replace(/\s+/g, "_"),
                 status: data.status,
+                empresa_id: data.rol.toUpperCase().replace(/\s+/g, "_") === "USUARIO" ? (data.empresa_id ? Number(data.empresa_id) : null) : null,
                 ...(data.password
                     ? { password: data.password }
                     : {}),
@@ -306,6 +323,33 @@ export default function UpdateUsuarioModal({
                                 </Form.FormItem>
                             )}
                         />
+
+                        {form.watch("rol").toUpperCase().replace(/\s+/g, "_") === "USUARIO" && (
+                            <Form.FormField
+                                control={form.control}
+                                name="empresa_id"
+                                render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel>Empresa Asociada</Form.FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <Form.FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Seleccione una empresa" />
+                                                </SelectTrigger>
+                                            </Form.FormControl>
+                                            <SelectContent>
+                                                {empresas.map((empresa) => (
+                                                    <SelectItem key={empresa.id} value={empresa.id.toString()}>
+                                                        {empresa.nombre}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )}
+                            />
+                        )}
 
                         <Form.FormField
                             control={form.control}

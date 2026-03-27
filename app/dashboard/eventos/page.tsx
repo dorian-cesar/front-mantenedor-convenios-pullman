@@ -48,7 +48,7 @@ export default function EventosPage() {
 
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 50,
         total: 0,
         totalPages: 0,
         hasNextPage: false,
@@ -93,6 +93,11 @@ export default function EventosPage() {
             }
             if (dateRange?.to) {
                 params.endDate = dateRange.to.toISOString()
+            }
+
+            // Restricción por Rol: Si es USUARIO, forzar su empresa_id
+            if (user?.rol === "USUARIO" && user?.empresa_id) {
+                params.empresa_id = user.empresa_id;
             }
 
             const response = await EventosService.getEventos(params)
@@ -170,6 +175,14 @@ export default function EventosPage() {
         setPagination(prev => ({ ...prev, page: newPage }))
     }
 
+    const handleLimitChange = (newLimit: number) => {
+        setPagination(prev => ({
+            ...prev,
+            limit: newLimit,
+            page: 1,
+        }))
+    }
+
     const handleRefresh = () => {
         fetchEventos()
     }
@@ -191,6 +204,11 @@ export default function EventosPage() {
             if (convenioFilter) params.convenio_id = convenioFilter
             if (dateRange?.from) params.fecha_inicio = format(dateRange.from, "yyyy-MM-dd")
             if (dateRange?.to) params.fecha_fin = format(dateRange.to, "yyyy-MM-dd")
+
+            // Restricción por Rol: Si es USUARIO, forzar su empresa_id
+            if (user?.rol === "USUARIO" && user?.empresa_id) {
+                params.empresa_id = user.empresa_id;
+            }
 
             const response = await EventosService.getEventos(params)
 
@@ -308,6 +326,7 @@ export default function EventosPage() {
                     </Dropdown.DropdownMenu>
                 </div>
 
+                {user?.rol === "SUPER_USUARIO" && (
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Empresa:</span>
                     <Dropdown.DropdownMenu>
@@ -331,6 +350,7 @@ export default function EventosPage() {
                         </Dropdown.DropdownMenuContent>
                     </Dropdown.DropdownMenu>
                 </div>
+            )}
 
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Convenio:</span>
@@ -465,6 +485,8 @@ export default function EventosPage() {
                         hasPrevPage={pagination.hasPrevPage}
                         hasNextPage={pagination.hasNextPage}
                         className="w-full"
+                        limit={pagination.limit}
+                        onLimitChange={handleLimitChange}
                     />
                 }
                 filters={filters}

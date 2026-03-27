@@ -133,6 +133,7 @@ export default function UsuariosPage() {
 
   const handleUsuarioUpdated = () => {
     fetchUsuarios()
+    setOpenUpdate(false)
   }
 
   const handleDetailsUsuario = (usuario: Usuario) => {

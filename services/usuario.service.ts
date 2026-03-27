@@ -9,6 +9,7 @@ export interface Usuario {
     status: "ACTIVO" | "INACTIVO";
     rol: string | null;
     rol_id: number | null;
+    empresa_id: number | null;
 }
 
 export interface GetUsuariosParams {
@@ -33,6 +34,10 @@ export interface CreateUsuarioData {
     password: string;
     rol?: string;
     status?: "ACTIVO" | "INACTIVO";
+    nombre?: string;
+    rut?: string | null;
+    telefono?: string | null;
+    empresa_id?: number | null;
 }
 
 export interface UpdateUsuarioData {
@@ -40,6 +45,10 @@ export interface UpdateUsuarioData {
     password?: string;
     rol?: string;
     status?: "ACTIVO" | "INACTIVO";
+    nombre?: string;
+    rut?: string | null;
+    telefono?: string | null;
+    empresa_id?: number | null;
 }
 
 export class UsuariosService {

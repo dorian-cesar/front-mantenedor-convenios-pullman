@@ -39,6 +39,7 @@ export default function CarabinerosPage() {
     const [statusFilter, setStatusFilter] = useState<string>("")
     const { convenioMap } = useConvenios()
     const { user } = useAuth()
+    const [summary, setSummary] = useState({ activo: 0, inactivo: 0, rechazado: 0 })
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -55,6 +56,30 @@ export default function CarabinerosPage() {
     const debouncedId = useDebounce(idFilter, 500)
     const debouncedRut = useDebounce(rutFilter, 500)
     const debouncedEmail = useDebounce(emailFilter, 500)
+
+    const fetchSummary = async () => {
+        try {
+            const params: any = {}
+            if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
+            if (debouncedId.trim()) params.id = debouncedId.trim()
+            if (debouncedRut.trim()) params.rut = debouncedRut.trim().replace(/\./g, '')
+            if (debouncedEmail.trim()) params.correo = debouncedEmail.trim()
+
+            const [activeRes, inactiveRes, rejectedRes] = await Promise.all([
+                CarabinerosService.getCarabineros({ ...params, status: 'ACTIVO', limit: 1 }),
+                CarabinerosService.getCarabineros({ ...params, status: 'INACTIVO', limit: 1 }),
+                CarabinerosService.getCarabineros({ ...params, status: 'RECHAZADO', limit: 1 })
+            ]);
+
+            setSummary({
+                activo: Number(activeRes?.totalItems ?? (activeRes as any)?.total ?? 0),
+                inactivo: Number(inactiveRes?.totalItems ?? (inactiveRes as any)?.total ?? 0),
+                rechazado: Number(rejectedRes?.totalItems ?? (rejectedRes as any)?.total ?? 0)
+            });
+        } catch (error) {
+            console.error('Error fetching summary:', error)
+        }
+    }
 
     const fetchCarabineros = async () => {
         setIsLoading(true)
@@ -90,6 +115,9 @@ export default function CarabinerosPage() {
                 hasPrevPage: (response.currentPage || (response as any).currentPage || 1) > 1,
                 hasNextPage: (response.currentPage || (response as any).currentPage || 1) < (response.totalPages || (response as any).pages || 1)
             }))
+
+            // Actualizar resumen
+            fetchSummary()
         } catch (error) {
             console.error('Error fetching carabineros:', error)
             toast.error("No se pudieron cargar los carabineros")
@@ -152,6 +180,7 @@ export default function CarabinerosPage() {
 
     const handleCarabineroUpdated = () => {
         fetchCarabineros()
+        setOpenUpdate(false)
     }
 
     const handleDetailsCarabinero = async (carabinero: Carabinero) => {
@@ -328,6 +357,18 @@ export default function CarabinerosPage() {
                     Limpiar
                 </Button>
             )}
+
+            <div className="ml-auto flex items-center gap-3">
+                <BadgeStatus status="active" className="h-9 px-4 text-sm font-medium whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                    Activos: {summary.activo}
+                </BadgeStatus>
+                <BadgeStatus status="inactive" className="h-9 px-4 text-sm font-medium whitespace-nowrap bg-red-50 text-red-700 border-red-200">
+                    Inactivos: {summary.inactivo}
+                </BadgeStatus>
+                <BadgeStatus status="inactive" className="h-9 px-4 text-sm font-medium whitespace-nowrap bg-orange-50 text-orange-700 border-orange-200">
+                    Rechazados: {summary.rechazado}
+                </BadgeStatus>
+            </div>
         </div>
     )
 
