@@ -41,7 +41,7 @@ export default function FileViewerModal({
     }
 
     const handleRotate = () => {
-        setRotation(prev => (prev + 90) % 360)
+        setRotation(prev => prev + 90)
     }
 
     const handleReset = () => {
