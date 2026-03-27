@@ -134,7 +134,7 @@ export function PageHeader({
                     )}
 
                     {filters && (
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-4">
                             {filters}
                         </div>
                     )}

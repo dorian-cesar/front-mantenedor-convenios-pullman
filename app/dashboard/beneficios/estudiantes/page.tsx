@@ -302,88 +302,104 @@ export default function EstudiantesPage() {
     });
 
     const filters = (
-        <div className="flex flex-wrap gap-2 items-center">
-            <div className="w-32">
-                <Input
-                    placeholder="ID"
-                    value={idFilter}
-                    onChange={(e) => setIdFilter(e.target.value)}
-                    className="h-9"
-                />
-            </div>
-            <div className="w-40">
-                <Input
-                    placeholder="RUT"
-                    value={rutFilter}
-                    onChange={(e) => setRutFilter(e.target.value)}
-                    className="h-9"
-                />
-            </div>
-            <div className="w-56">
-                <Input
-                    placeholder="Email"
-                    value={emailFilter}
-                    onChange={(e) => setEmailFilter(e.target.value)}
-                    className="h-9"
-                />
-            </div>
-            <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Status:</span>
-                <Dropdown.DropdownMenu>
-                    <Dropdown.DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
-                            {statusFilter === "ACTIVO" ? "Activo" : statusFilter === "INACTIVO" ? "Inactivo" : statusFilter === "RECHAZADO" ? "Rechazado" : "Todos"}
-                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                    </Dropdown.DropdownMenuTrigger>
-                    <Dropdown.DropdownMenuContent align="start">
-                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("")}>
-                            Todos
-                        </Dropdown.DropdownMenuItem>
-                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("ACTIVO")}>
-                            Activo
-                        </Dropdown.DropdownMenuItem>
-                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("INACTIVO")}>
-                            Inactivo
-                        </Dropdown.DropdownMenuItem>
-                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("RECHAZADO")}>
-                            Rechazado
-                        </Dropdown.DropdownMenuItem>
-                    </Dropdown.DropdownMenuContent>
-                </Dropdown.DropdownMenu>
+        <div className="flex flex-col gap-5 w-full">
+            <div className="flex flex-wrap items-center gap-3">
+                <div className="w-full sm:w-32">
+                    <Input
+                        placeholder="ID"
+                        value={idFilter}
+                        onChange={(e) => setIdFilter(e.target.value)}
+                        className="h-9"
+                    />
+                </div>
+                <div className="w-full sm:w-40">
+                    <Input
+                        placeholder="RUT"
+                        value={rutFilter}
+                        onChange={(e) => setRutFilter(e.target.value)}
+                        className="h-9"
+                    />
+                </div>
+                <div className="w-full sm:w-56">
+                    <Input
+                        placeholder="Email"
+                        value={emailFilter}
+                        onChange={(e) => setEmailFilter(e.target.value)}
+                        className="h-9"
+                    />
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium whitespace-nowrap text-muted-foreground border-r pr-2 mr-1">Status:</span>
+                    <Dropdown.DropdownMenu>
+                        <Dropdown.DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between shadow-sm">
+                                {statusFilter === "ACTIVO" ? "Activo" : statusFilter === "INACTIVO" ? "Inactivo" : statusFilter === "RECHAZADO" ? "Rechazado" : "Todos"}
+                                <Icon.ChevronDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        </Dropdown.DropdownMenuTrigger>
+                        <Dropdown.DropdownMenuContent align="start">
+                            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("")}>
+                                Todos
+                            </Dropdown.DropdownMenuItem>
+                            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("ACTIVO")}>
+                                Activo
+                            </Dropdown.DropdownMenuItem>
+                            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("INACTIVO")}>
+                                Inactivo
+                            </Dropdown.DropdownMenuItem>
+                            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("RECHAZADO")}>
+                                Rechazado
+                            </Dropdown.DropdownMenuItem>
+                        </Dropdown.DropdownMenuContent>
+                    </Dropdown.DropdownMenu>
+                </div>
+
+                {(statusFilter || idFilter || rutFilter || emailFilter) && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                            setStatusFilter("");
+                            setIdFilter("");
+                            setRutFilter("");
+                            setEmailFilter("");
+                        }}
+                        className="h-9 text-muted-foreground hover:text-foreground"
+                    >
+                        <Icon.X className="mr-2 h-4 w-4" />
+                        Limpiar Filtros
+                    </Button>
+                )}
             </div>
 
-
-            {(statusFilter || idFilter || rutFilter || emailFilter) && (
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                        setStatusFilter("");
-                        setIdFilter("");
-                        setRutFilter("");
-                        setEmailFilter("");
-                    }}
-                    className="h-9"
+            <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-gray-100">
+                <BadgeStatus 
+                    status="active" 
+                    className={`h-9 px-4 text-sm font-medium whitespace-nowrap cursor-pointer hover:opacity-80 transition-all border shadow-sm ${statusFilter === 'ACTIVO' ? 'ring-2 ring-primary ring-offset-2 border-primary bg-green-100' : 'bg-green-50 text-green-700 border-green-200'}`}
+                    onClick={() => setStatusFilter(statusFilter === 'ACTIVO' ? '' : 'ACTIVO')}
                 >
-                    <Icon.X className="mr-2 h-4 w-4" />
-                    Limpiar
-                </Button>
-            )}
-
-            <div className="ml-auto flex items-center gap-3">
-                <BadgeStatus status="active" className="h-9 px-4 text-sm font-medium whitespace-nowrap bg-green-50 text-green-700 border-green-200">
+                    <Icon.CheckCircle2 className="mr-2 h-4 w-4" />
                     Activos: {summary.activo}
                 </BadgeStatus>
-                <BadgeStatus status="inactive" className="h-9 px-4 text-sm font-medium whitespace-nowrap bg-red-50 text-red-700 border-red-200">
+                <BadgeStatus 
+                    status="inactive" 
+                    className={`h-9 px-4 text-sm font-medium whitespace-nowrap cursor-pointer hover:opacity-80 transition-all border shadow-sm ${statusFilter === 'INACTIVO' ? 'ring-2 ring-primary ring-offset-2 border-primary bg-red-100' : 'bg-red-50 text-red-700 border-red-200'}`}
+                    onClick={() => setStatusFilter(statusFilter === 'INACTIVO' ? '' : 'INACTIVO')}
+                >
+                    <Icon.XCircle className="mr-2 h-4 w-4" />
                     Inactivos: {summary.inactivo}
                 </BadgeStatus>
-                <BadgeStatus status="inactive" className="h-9 px-4 text-sm font-medium whitespace-nowrap bg-orange-50 text-orange-700 border-orange-200">
+                <BadgeStatus 
+                    status="inactive" 
+                    className={`h-9 px-4 text-sm font-medium whitespace-nowrap cursor-pointer hover:opacity-80 transition-all border shadow-sm ${statusFilter === 'RECHAZADO' ? 'ring-2 ring-primary ring-offset-2 border-primary bg-orange-100' : 'bg-orange-50 text-orange-700 border-orange-200'}`}
+                    onClick={() => setStatusFilter(statusFilter === 'RECHAZADO' ? '' : 'RECHAZADO')}
+                >
+                    <Icon.AlertCircle className="mr-2 h-4 w-4" />
                     Rechazados: {summary.rechazado}
                 </BadgeStatus>
             </div>
         </div>
-    )
+    );
 
     return (
         <div className="flex flex-col justify-center space-y-4">
