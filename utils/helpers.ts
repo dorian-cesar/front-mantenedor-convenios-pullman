@@ -105,3 +105,43 @@ export const isPDF = (base64?: string | null): boolean => {
     return false;
   }
 }
+
+/**
+ * Rota una imagen en base64 una cantidad específica de grados.
+ * Devuelve una promesa con el nuevo base64.
+ */
+export const rotateImage = (base64: string, degrees: number): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const normalizedDegrees = ((degrees % 360) + 360) % 360;
+      
+      if (normalizedDegrees % 180 === 0) {
+        canvas.width = img.width;
+        canvas.height = img.height;
+      } else {
+        canvas.width = img.height;
+        canvas.height = img.width;
+      }
+
+      if (!ctx) {
+        reject(new Error("No se pudo obtener el contexto del canvas"));
+        return;
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((normalizedDegrees * Math.PI) / 180);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+      resolve(canvas.toDataURL('image/jpeg', 0.9));
+    };
+
+    img.onerror = (err) => reject(err);
+    img.src = getFileSrc(base64) || "";
+  });
+}

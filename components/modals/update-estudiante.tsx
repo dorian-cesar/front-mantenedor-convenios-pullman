@@ -18,8 +18,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { fileToBase64, getFileSrc, isPDF } from "@/utils/helpers"
-import { FileTextIcon, UploadIcon, XIcon } from "lucide-react"
+import { fileToBase64, getFileSrc, isPDF, rotateImage } from "@/utils/helpers"
+import { FileTextIcon, UploadIcon, XIcon, RotateCwIcon } from "lucide-react"
 
 interface UpdateEstudianteModalProps {
     open: boolean
@@ -185,42 +185,83 @@ export default function UpdateEstudianteModal({
 
     const handleRemoveFile = (
         fieldName: "imagen_cedula_identidad" | "imagen_certificado_alumno_regular",
-        setPreview: (value: null) => void
+        setPreview: (value: { src: string; isPDF: boolean } | null) => void
     ) => {
-        form.setValue(fieldName, undefined) // Usar undefined en lugar de ""
+        form.setValue(fieldName, undefined)
         setPreview(null)
+    }
+
+    const handleRotateFile = async (
+        fieldName: "imagen_cedula_identidad" | "imagen_certificado_alumno_regular",
+        preview: { src: string; isPDF: boolean },
+        setPreview: (value: { src: string; isPDF: boolean } | null) => void
+    ) => {
+        if (preview.isPDF) return;
+
+        try {
+            const rotatedBase64 = await rotateImage(preview.src, 90);
+            form.setValue(fieldName, rotatedBase64);
+            setPreview({ ...preview, src: rotatedBase64 });
+            toast.success("Imagen rotada");
+        } catch {
+            toast.error("Error al rotar la imagen");
+        }
     }
 
     const renderFilePreview = (
         preview: { src: string; isPDF: boolean } | null,
         fieldName: "imagen_cedula_identidad" | "imagen_certificado_alumno_regular",
-        setPreview: (value: null) => void
+        setPreview: (value: { src: string; isPDF: boolean } | null) => void
     ) => {
         if (!preview) return null
 
         return (
-            <div className="relative">
-                {preview.isPDF ? (
-                    <div className="flex items-center justify-center p-4 bg-muted/30 rounded-lg">
-                        <FileTextIcon className="h-12 w-12 text-primary" />
-                        <span className="ml-2 text-sm text-muted-foreground">Documento PDF</span>
-                    </div>
-                ) : (
-                    <img
-                        src={getFileSrc(preview.src) || ""}
-                        alt="Preview"
-                        className="mx-auto max-h-40 rounded-md object-contain"
-                    />
-                )}
-                <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                    onClick={() => handleRemoveFile(fieldName, setPreview)}
-                >
-                    <XIcon className="h-4 w-4" />
-                </Button>
+            <div className="w-full flex flex-col items-center gap-2">
+                <div className="relative border rounded-lg bg-background p-2 w-full flex justify-center">
+                    {preview.isPDF ? (
+                        <div className="flex items-center justify-center p-4">
+                            <FileTextIcon className="h-12 w-12 text-primary" />
+                            <span className="ml-2 text-sm text-muted-foreground">Documento PDF</span>
+                        </div>
+                    ) : (
+                        <img
+                            src={getFileSrc(preview.src) || ""}
+                            alt="Preview"
+                            className="max-h-40 rounded-md object-contain"
+                        />
+                    )}
+                </div>
+                
+                <div className="flex gap-2 w-full justify-center">
+                    {!preview.isPDF && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 gap-1"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleRotateFile(fieldName, preview, setPreview);
+                            }}
+                        >
+                            <RotateCwIcon className="h-3 w-3" />
+                            <span>Rotar</span>
+                        </Button>
+                    )}
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="h-8 gap-1"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFile(fieldName, setPreview);
+                        }}
+                    >
+                        <XIcon className="h-3 w-3" />
+                        <span>Eliminar</span>
+                    </Button>
+                </div>
             </div>
         )
     }

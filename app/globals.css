@@ -30,6 +30,7 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    font-size: 65%;
   }
 
   .dark {
@@ -67,6 +68,5 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    zoom: 0.65;
   }
 }

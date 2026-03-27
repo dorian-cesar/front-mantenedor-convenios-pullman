@@ -2,7 +2,7 @@
 
 import * as Dialog from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { ZoomInIcon, ZoomOutIcon, FileTextIcon, DownloadIcon } from "lucide-react"
+import { ZoomInIcon, ZoomOutIcon, FileTextIcon, DownloadIcon, RotateCwIcon } from "lucide-react"
 import { useState, useEffect } from "react"
 import { getFileSrc, isPDF } from "@/utils/helpers"
 
@@ -20,12 +20,16 @@ export default function FileViewerModal({
     title = "Documento"
 }: FileViewerModalProps) {
     const [zoom, setZoom] = useState(100)
+    const [rotation, setRotation] = useState(0)
     const [isPdf, setIsPdf] = useState(false)
 
     useEffect(() => {
         if (fileSrc) {
             setIsPdf(isPDF(fileSrc))
         }
+        // Reset zoom and rotation when file changes
+        setZoom(100)
+        setRotation(0)
     }, [fileSrc])
 
     const handleZoomIn = () => {
@@ -36,8 +40,13 @@ export default function FileViewerModal({
         setZoom(prev => Math.max(prev - 25, 50))
     }
 
+    const handleRotate = () => {
+        setRotation(prev => (prev + 90) % 360)
+    }
+
     const handleReset = () => {
         setZoom(100)
+        setRotation(0)
     }
 
     const handleDownload = () => {
@@ -58,12 +67,20 @@ export default function FileViewerModal({
                     <div>
                         <Dialog.DialogTitle>{title}</Dialog.DialogTitle>
                         <Dialog.DialogDescription>
-                            {isPdf ? "Documento PDF" : `${zoom}% - Haz clic en la imagen para hacer zoom`}
+                            {isPdf ? "Documento PDF" : `${zoom}% - ${rotation}° - Haz clic en la imagen para hacer zoom`}
                         </Dialog.DialogDescription>
                     </div>
                     <div className="flex items-center gap-2">
                         {!isPdf && (
                             <>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={handleRotate}
+                                    title="Rotar 90°"
+                                >
+                                    <RotateCwIcon className="h-4 w-4" />
+                                </Button>
                                 <Button
                                     variant="outline"
                                     size="icon"
@@ -115,7 +132,7 @@ export default function FileViewerModal({
                                 src={getFileSrc(fileSrc) || ""}
                                 alt={title}
                                 style={{
-                                    transform: `scale(${zoom / 100})`,
+                                    transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
                                     transition: 'transform 0.2s ease-in-out',
                                     maxWidth: 'none',
                                     width: 'auto',
@@ -144,4 +161,4 @@ export default function FileViewerModal({
             </Dialog.DialogContent>
         </Dialog.Dialog>
     )
-}
+}
