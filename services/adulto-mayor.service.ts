@@ -49,6 +49,8 @@ export interface CreateAdultoMayorData {
     direccion: string;
     imagen_cedula_identidad?: string;
     imagen_certificado_residencia?: string;
+    imagenes?: Record<string, string>;
+    convenio_id: number;
     status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
 }
 
@@ -60,6 +62,8 @@ export interface UpdateAdultoMayorData {
     direccion?: string;
     imagen_cedula_identidad?: string;
     imagen_certificado_residencia?: string;
+    imagenes?: Record<string, string>;
+    convenio_id?: number;
     status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
 }
 

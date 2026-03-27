@@ -1,18 +1,38 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import * as Dialog from "@/components/ui/dialog"
-import * as Form from "@/components/ui/form"
-import * as Icon from "lucide-react"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { UsuariosFrecuentesService } from "@/services/usuario-frecuente.service"
+import { ConveniosService, type Convenio } from "@/services/convenio.service"
 import { toast } from "sonner"
-import { fileToBase64 } from "@/utils/helpers"
-import { FileTextIcon, UploadIcon, XIcon } from "lucide-react"
+import { fileToBase64, formatRut } from "@/utils/helpers"
+import { FileTextIcon, UploadIcon, XIcon, PlusIcon, Loader2Icon } from "lucide-react"
 
 interface AddUsuarioFrecuenteModalProps {
     open: boolean
@@ -20,31 +40,17 @@ interface AddUsuarioFrecuenteModalProps {
     onSuccess?: () => void
 }
 
-const usuarioFrecuenteSchema = z.object({
-    nombre: z
-        .string()
-        .min(3, "El nombre debe tener al menos 3 caracteres")
-        .max(100, "El nombre es demasiado largo"),
-    rut: z
-        .string()
-        .min(8, "RUT inválido")
-        .max(20, "RUT demasiado largo")
-        .transform((val) => val.replace(/\./g, ""))
-        .refine((val) => /^[0-9]+-[0-9kK]$/.test(val), {
-            message: "Formato de RUT inválido (ej: 12345678-9)",
-        }),
+const createSchema = () => z.object({
+    nombre: z.string().min(1, "El nombre es requerido"),
+    rut: z.string().min(1, "El RUT es requerido"),
     telefono: z.string().min(1, "El teléfono es requerido"),
     correo: z.string().email("Correo electrónico inválido"),
     direccion: z.string().min(1, "La dirección es requerida"),
-    imagen_cedula_identidad: z
-        .string()
-        .nonempty("La imagen de cédula es requerida"),
-    imagen_certificado: z
-        .string()
-        .nonempty("El certificado es requerido"),
+    convenio_id: z.number().int().positive("Debe seleccionar un convenio"),
+    imagenes: z.any().optional(),
 })
 
-type UsuarioFrecuenteFormValues = z.infer<typeof usuarioFrecuenteSchema>
+type UsuarioFrecuenteFormValues = z.infer<ReturnType<typeof createSchema>>
 
 export default function AddUsuarioFrecuenteModal({
     open,
@@ -52,337 +58,319 @@ export default function AddUsuarioFrecuenteModal({
     onSuccess,
 }: AddUsuarioFrecuenteModalProps) {
     const [isLoading, setIsLoading] = useState(false)
-    const [previewCedula, setPreviewCedula] = useState<{ src: string; isPDF: boolean } | null>(null)
-    const [previewCertificado, setPreviewCertificado] = useState<{ src: string; isPDF: boolean } | null>(null)
+    const [convenios, setConvenios] = useState<Convenio[]>([])
+    const [previews, setPreviews] = useState<Record<string, { src: string; isPDF: boolean }>>({})
+    const [loadingConvenios, setLoadingConvenios] = useState(false)
 
     const form = useForm<UsuarioFrecuenteFormValues>({
-        resolver: zodResolver(usuarioFrecuenteSchema),
+        resolver: zodResolver(createSchema()),
         defaultValues: {
             nombre: "",
             rut: "",
             telefono: "",
             correo: "",
             direccion: "",
-            imagen_cedula_identidad: "",
-            imagen_certificado: "",
+            convenio_id: undefined,
+            imagenes: {},
         },
     })
 
-    const handleOpenChange = (open: boolean) => {
-        if (!open) {
-            handleCancel()
+    const selectedConvenioId = form.watch("convenio_id")
+    const selectedConvenio = convenios.find(c => c.id === selectedConvenioId)
+
+    const fetchConvenios = async () => {
+        setLoadingConvenios(true)
+        try {
+            const res = await ConveniosService.getConvenios({ empresa_id: 80, status: 'ACTIVO' })
+            setConvenios(res.rows || [])
+        } catch (error) {
+            console.error("Error fetching convenios:", error)
+            toast.error("No se pudieron cargar los convenios")
+        } finally {
+            setLoadingConvenios(false)
         }
-        onOpenChange(open)
     }
 
-    const handleCancel = () => {
-        form.reset()
-        setPreviewCedula(null)
-        setPreviewCertificado(null)
-        onOpenChange(false)
+    useEffect(() => {
+        if (open) {
+            fetchConvenios()
+        }
+    }, [open])
+
+    useEffect(() => {
+        if (selectedConvenioId) {
+            form.setValue("imagenes", {})
+            setPreviews({})
+        }
+    }, [selectedConvenioId, form])
+
+    const handleOpenChange = (on: boolean) => {
+        if (!on) {
+            form.reset()
+            setPreviews({})
+        }
+        onOpenChange(on)
     }
 
-    const handleFileChange = async (
-        file: File,
-        fieldName: "imagen_cedula_identidad" | "imagen_certificado",
-        setPreview: (value: { src: string; isPDF: boolean } | null) => void
-    ) => {
+    const handleFileChange = async (file: File, label: string) => {
         if (!file) return
-
-        const fileSizeInMB = file.size / (1024 * 1024)
-
-        if (fileSizeInMB > 5) {
-            toast.error(`El archivo no puede superar 5MB. Este archivo pesa ${fileSizeInMB.toFixed(2)}MB`)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error(`El archivo "${label}" supera los 5MB.`)
             return
         }
 
         try {
             const base64 = await fileToBase64(file)
-            const base64SizeInMB = (base64.length * 3 / 4) / (1024 * 1024)
-
-            if (base64SizeInMB > 5) {
-                toast.error(`El archivo en base64 excede el límite de 5MB (${base64SizeInMB.toFixed(2)}MB)`)
-                return
-            }
-
-            form.setValue(fieldName, base64)
-
-            // Detectar si es PDF
-            const fileIsPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-            setPreview({ src: base64, isPDF: fileIsPDF })
-
-            toast.info(`Archivo cargado: ${fileSizeInMB.toFixed(2)}MB`)
+            const current = form.getValues("imagenes") || {}
+            form.setValue("imagenes", { ...current, [label]: base64 })
+            
+            const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+            setPreviews(p => ({ ...p, [label]: { src: base64, isPDF } }))
+            toast.info(`Cargado: ${label}`)
         } catch {
-            toast.error("Error al procesar el archivo")
+            toast.error("Error al cargar el archivo.")
         }
     }
 
-    const handleRemoveFile = (
-        fieldName: "imagen_cedula_identidad" | "imagen_certificado",
-        setPreview: (value: null) => void
-    ) => {
-        form.setValue(fieldName, "")
-        setPreview(null)
-    }
-
-    const renderFilePreview = (
-        preview: { src: string; isPDF: boolean } | null,
-        fieldName: "imagen_cedula_identidad" | "imagen_certificado",
-        setPreview: (value: null) => void
-    ) => {
-        if (!preview) return null
-
-        return (
-            <div className="relative">
-                {preview.isPDF ? (
-                    <div className="flex items-center justify-center p-4 bg-muted/30 rounded-lg">
-                        <FileTextIcon className="h-12 w-12 text-primary" />
-                        <span className="ml-2 text-sm text-muted-foreground">Documento PDF</span>
-                    </div>
-                ) : (
-                    <img
-                        src={preview.src}
-                        alt="Preview"
-                        className="mx-auto max-h-40 rounded-md object-contain"
-                    />
-                )}
-                <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                    onClick={() => handleRemoveFile(fieldName, setPreview)}
-                >
-                    <XIcon className="h-4 w-4" />
-                </Button>
-            </div>
-        )
+    const handleRemove = (label: string) => {
+        const cur = { ...form.getValues("imagenes") || {} }
+        delete cur[label]
+        form.setValue("imagenes", cur)
+        const p = { ...previews }
+        delete p[label]
+        setPreviews(p)
     }
 
     const onSubmit = async (data: UsuarioFrecuenteFormValues) => {
-        // Validar tamaño de los archivos
-        const cedulaSizeInMB = (data.imagen_cedula_identidad.length * 3 / 4) / (1024 * 1024)
-        const certificadoSizeInMB = (data.imagen_certificado.length * 3 / 4) / (1024 * 1024)
-
-        if (cedulaSizeInMB > 5 || certificadoSizeInMB > 5) {
-            toast.error(`Algunos archivos exceden el límite de 5MB. Por favor, selecciona archivos más pequeños.`)
-            return
+        if (selectedConvenio?.imagenes?.length) {
+            const missing = selectedConvenio.imagenes.filter(l => !data.imagenes?.[l])
+            if (missing.length) {
+                toast.error(`Faltan los siguientes archivos: ${missing.join(", ")}`)
+                return
+            }
         }
 
         setIsLoading(true)
-
         try {
-            await UsuariosFrecuentesService.createUsuarioFrecuente(data)
-
+            await UsuariosFrecuentesService.createUsuarioFrecuente(data as any)
             toast.success("Usuario Frecuente creado correctamente")
-
             form.reset()
-            setPreviewCedula(null)
-            setPreviewCertificado(null)
+            setPreviews({})
             onSuccess?.()
             onOpenChange(false)
         } catch (error) {
             console.error("Error creating usuario frecuente:", error)
-            toast.error("No se pudo crear el usuario frecuente")
+            toast.error("Error al crear el usuario frecuente")
         } finally {
             setIsLoading(false)
         }
     }
 
     return (
-        <Dialog.Dialog open={open} onOpenChange={handleOpenChange}>
-            <Dialog.DialogContent className="max-w-2xl">
-                <Dialog.DialogHeader>
-                    <Dialog.DialogTitle>Agregar Nuevo Usuario Frecuente</Dialog.DialogTitle>
-                    <Dialog.DialogDescription>
-                        Complete los datos del nuevo usuario frecuente.
-                    </Dialog.DialogDescription>
-                </Dialog.DialogHeader>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>Agregar Nuevo Usuario Frecuente</DialogTitle>
+                    <DialogDescription>
+                        Ingrese los datos del usuario frecuente y cargue los documentos según el convenio seleccionado.
+                    </DialogDescription>
+                </DialogHeader>
 
-                <Form.Form {...form}>
+                <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
-                            <Form.FormField
+                            <FormField
                                 control={form.control}
                                 name="nombre"
                                 render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Nombre</Form.FormLabel>
-                                        <Form.FormControl>
+                                    <FormItem>
+                                        <FormLabel>Nombre</FormLabel>
+                                        <FormControl>
                                             <Input placeholder="Nombre completo" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
-
-                            <Form.FormField
+                            <FormField
                                 control={form.control}
                                 name="rut"
                                 render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>RUT</Form.FormLabel>
-                                        <Form.FormControl>
-                                            <Input placeholder="12.345.678-9" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
+                                    <FormItem>
+                                        <FormLabel>RUT</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                placeholder="12.345.678-9" 
+                                                {...field} 
+                                                onChange={(e) => field.onChange(formatRut(e.target.value))}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
-
-                            <Form.FormField
+                            <FormField
                                 control={form.control}
                                 name="telefono"
                                 render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Teléfono</Form.FormLabel>
-                                        <Form.FormControl>
+                                    <FormItem>
+                                        <FormLabel>Teléfono</FormLabel>
+                                        <FormControl>
                                             <Input placeholder="+569..." {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
-
-                            <Form.FormField
+                            <FormField
                                 control={form.control}
                                 name="correo"
                                 render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Correo</Form.FormLabel>
-                                        <Form.FormControl>
+                                    <FormItem>
+                                        <FormLabel>Correo</FormLabel>
+                                        <FormControl>
                                             <Input placeholder="usuario@ejemplo.com" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
-
-                            <Form.FormField
+                            <FormField
                                 control={form.control}
                                 name="direccion"
                                 render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Dirección</Form.FormLabel>
-                                        <Form.FormControl>
+                                    <FormItem>
+                                        <FormLabel>Dirección</FormLabel>
+                                        <FormControl>
                                             <Input placeholder="Dirección completa" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="convenio_id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Convenio</FormLabel>
+                                        <Select 
+                                            onValueChange={(v) => field.onChange(Number(v))} 
+                                            value={field.value?.toString() || ""}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder={loadingConvenios ? "Cargando..." : "Seleccionar convenio"} />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {convenios.map((c) => (
+                                                    <SelectItem key={c.id} value={c.id.toString()}>
+                                                        {c.nombre}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <Form.FormField
-                                control={form.control}
-                                name="imagen_cedula_identidad"
-                                render={() => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Foto frontal de Carnet de Identidad</Form.FormLabel>
-                                        <Form.FormControl>
-                                            <div
-                                                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition min-h-[200px] flex items-center justify-center"
-                                                onClick={() => document.getElementById("fileInputCedula")?.click()}
-                                            >
-                                                <input
-                                                    id="fileInputCedula"
-                                                    type="file"
-                                                    accept="image/*,application/pdf"
-                                                    className="hidden"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0]
-                                                        if (file)
-                                                            handleFileChange(
-                                                                file,
-                                                                "imagen_cedula_identidad",
-                                                                setPreviewCedula
-                                                            )
-                                                    }}
-                                                />
+                        {selectedConvenio?.imagenes && selectedConvenio.imagenes.length > 0 && (
+                            <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                                <div className="col-span-2">
+                                    <label className="text-sm font-semibold">Archivos requeridos por el convenio</label>
+                                </div>
+                                {selectedConvenio.imagenes.map((label, index) => (
+                                    <FormField
+                                        key={index}
+                                        control={form.control}
+                                        name={`imagenes.${label}` as any}
+                                        render={() => (
+                                            <FormItem>
+                                                <FormLabel>{label}</FormLabel>
+                                                <FormControl>
+                                                    <div
+                                                        className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition flex items-center justify-center min-h-[120px]"
+                                                        onClick={() => document.getElementById(`file-${label}`)?.click()}
+                                                    >
+                                                        <input
+                                                            id={`file-${label}`}
+                                                            type="file"
+                                                            accept="image/*,application/pdf"
+                                                            className="hidden"
+                                                            onChange={(e) => {
+                                                                const file = e.target.files?.[0]
+                                                                if (file) handleFileChange(file, label)
+                                                            }}
+                                                        />
 
-                                                {previewCedula ? (
-                                                    renderFilePreview(previewCedula, "imagen_cedula_identidad", setPreviewCedula)
-                                                ) : (
-                                                    <div className="flex flex-col items-center text-muted-foreground">
-                                                        <UploadIcon className="h-8 w-8 mb-2" />
-                                                        <p>Haz click para subir el carnet</p>
-                                                        <p className="text-xs mt-1">Imagen o PDF (Máximo 5MB)</p>
+                                                        {previews[label] ? (
+                                                            <div className="relative w-full">
+                                                                {previews[label].isPDF ? (
+                                                                    <div className="flex flex-col items-center">
+                                                                        <FileTextIcon className="h-10 w-10 text-primary" />
+                                                                        <span className="text-xs mt-1 truncate max-w-full italic text-muted-foreground">Documento PDF</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <img
+                                                                        src={previews[label].src}
+                                                                        alt={label}
+                                                                        className="mx-auto max-h-24 rounded object-contain"
+                                                                    />
+                                                                )}
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="destructive"
+                                                                    size="icon"
+                                                                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        handleRemove(label)
+                                                                    }}
+                                                                >
+                                                                    <XIcon className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex flex-col items-center text-muted-foreground">
+                                                                <UploadIcon className="h-6 w-6 mb-1" />
+                                                                <p className="text-xs">Subir {label}</p>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </div>
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
-                                )}
-                            />
-
-                            <Form.FormField
-                                control={form.control}
-                                name="imagen_certificado"
-                                render={() => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Certificado</Form.FormLabel>
-                                        <Form.FormControl>
-                                            <div
-                                                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition min-h-[200px] flex items-center justify-center"
-                                                onClick={() => document.getElementById("fileInputCertificado")?.click()}
-                                            >
-                                                <input
-                                                    id="fileInputCertificado"
-                                                    type="file"
-                                                    accept="image/*,application/pdf"
-                                                    className="hidden"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0]
-                                                        if (file)
-                                                            handleFileChange(
-                                                                file,
-                                                                "imagen_certificado",
-                                                                setPreviewCertificado
-                                                            )
-                                                    }}
-                                                />
-
-                                                {previewCertificado ? (
-                                                    renderFilePreview(previewCertificado, "imagen_certificado", setPreviewCertificado)
-                                                ) : (
-                                                    <div className="flex flex-col items-center text-muted-foreground">
-                                                        <UploadIcon className="h-8 w-8 mb-2" />
-                                                        <p>Haz click para subir el certificado</p>
-                                                        <p className="text-xs mt-1">Imagen o PDF (Máximo 5MB)</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
-                                )}
-                            />
-                        </div>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                ))}
+                            </div>
+                        )}
 
                         <div className="flex justify-end space-x-2 pt-4">
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={handleCancel}
+                                onClick={() => onOpenChange(false)}
                                 disabled={isLoading}
                             >
                                 Cancelar
                             </Button>
 
-                            <Button type="submit" disabled={isLoading}>
+                            <Button type="submit" disabled={isLoading || !selectedConvenioId}>
                                 {isLoading ? (
-                                    <Icon.Loader2Icon className="h-4 w-4 animate-spin mr-2" />
+                                    <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
                                 ) : (
-                                    <Icon.PlusIcon className="h-4 w-4 mr-2" />
+                                    <PlusIcon className="h-4 w-4 mr-2" />
                                 )}
-                                Crear Usuario
+                                Crear Usuario Frecuente
                             </Button>
                         </div>
                     </form>
-                </Form.Form>
-            </Dialog.DialogContent>
-        </Dialog.Dialog>
+                </Form>
+            </DialogContent>
+        </Dialog>
     )
 }

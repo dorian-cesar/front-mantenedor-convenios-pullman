@@ -49,6 +49,8 @@ export interface CreateUsuarioFrecuenteData {
     direccion: string;
     imagen_cedula_identidad?: string;
     imagen_certificado?: string;
+    imagenes?: Record<string, string>;
+    convenio_id: number;
     status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
 }
 
@@ -60,6 +62,8 @@ export interface UpdateUsuarioFrecuenteData {
     direccion?: string;
     imagen_cedula_identidad?: string;
     imagen_certificado?: string;
+    imagenes?: Record<string, string>;
+    convenio_id?: number;
     status?: "ACTIVO" | "INACTIVO" | "RECHAZADO";
 }
 
