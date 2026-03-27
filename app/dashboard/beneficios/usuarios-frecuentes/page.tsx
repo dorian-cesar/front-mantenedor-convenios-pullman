@@ -385,8 +385,8 @@ export default function UsuariosFrecuentesPage() {
     return (
         <div className="flex flex-col justify-center space-y-4">
             <PageHeader
-                title="Usuarios Frecuentes"
-                description="Listado de usuarios frecuentes beneficiarios del sistema."
+                title="Pasajeros Frecuentes"
+                description="Listado de pasajeros frecuentes beneficiarios del sistema."
                 actionButtons={actionButtons}
                 actionMenu={{
                     title: "Detalles",

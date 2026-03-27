@@ -153,14 +153,14 @@ export default function AddUsuarioFrecuenteModal({
         setIsLoading(true)
         try {
             await UsuariosFrecuentesService.createUsuarioFrecuente(data as any)
-            toast.success("Usuario Frecuente creado correctamente")
+            toast.success("Pasajero Frecuente creado correctamente")
             form.reset()
             setPreviews({})
             onSuccess?.()
             onOpenChange(false)
         } catch (error) {
             console.error("Error creating usuario frecuente:", error)
-            toast.error("Error al crear el usuario frecuente")
+            toast.error("Error al crear el pasajero frecuente")
         } finally {
             setIsLoading(false)
         }
@@ -170,9 +170,9 @@ export default function AddUsuarioFrecuenteModal({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Agregar Nuevo Usuario Frecuente</DialogTitle>
+                    <DialogTitle>Agregar Nuevo Pasajero Frecuente</DialogTitle>
                     <DialogDescription>
-                        Ingrese los datos del usuario frecuente y cargue los documentos según el convenio seleccionado.
+                        Ingrese los datos del pasajero frecuente y cargue los documentos según el convenio seleccionado.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -365,7 +365,7 @@ export default function AddUsuarioFrecuenteModal({
                                 ) : (
                                     <PlusIcon className="h-4 w-4 mr-2" />
                                 )}
-                                Crear Usuario Frecuente
+                                Crear Pasajero Frecuente
                             </Button>
                         </div>
                     </form>

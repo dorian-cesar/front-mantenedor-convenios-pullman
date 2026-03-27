@@ -119,7 +119,7 @@ export const NAVIGATION: NavItem[] = [
             },
             {
                 id: "frecuentes",
-                title: "Usuarios Frecuentes",
+                title: "Pasajeros Frecuentes",
                 href: "/dashboard/beneficios/usuarios-frecuentes",
                 icon: BadgeCheck,
                 description: "beneficios · alianzas · usuarios frecuentes · descuentos",
