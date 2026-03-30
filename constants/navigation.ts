@@ -14,7 +14,8 @@ import {
     GraduationCap,
     ShieldUser,
     Swords,
-    BookUser
+    BookUser,
+    FileDown
 } from "lucide-react"
 
 export type UserRole = "SUPER_USUARIO" | "USUARIO" | "SISTEMA"
@@ -164,5 +165,15 @@ export const NAVIGATION: NavItem[] = [
         description: "pasajeros · clientes · personas · tipos de usuarios",
         group: "Operación",
         section: "tertiary",
+    },
+    {
+        id: "exportaciones",
+        title: "Exportaciones",
+        href: "/dashboard/exportaciones",
+        icon: FileDown,
+        description: "exportar datos · descargar · beneficiarios",
+        group: "Reportes",
+        section: "tertiary",
+        roles: ["SUPER_USUARIO"]
     },
 ]
