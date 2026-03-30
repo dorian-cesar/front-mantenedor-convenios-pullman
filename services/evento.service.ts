@@ -18,6 +18,7 @@ export interface Evento {
     terminal_destino: string;
     tarifa_base: number;
     porcentaje_descuento_aplicado: number;
+    monto_descuento?: number;
     monto_pagado: number;
     monto_devolucion?: number;
     is_deleted?: boolean;

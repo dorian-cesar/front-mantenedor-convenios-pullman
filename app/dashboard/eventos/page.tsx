@@ -219,20 +219,23 @@ export default function EventosPage() {
 
             const formattedData = response.rows.map((evento) => ({
                 ID: evento.id,
-                Tipo: getTipoEventoLabel(evento),
-                "Origen - Destino": `${evento.terminal_origen} → ${evento.terminal_destino}`,
-                "Fecha Viaje": formatDateOnly(evento.fecha_viaje),
-                "Hora Salida": evento.hora_salida ?? "N/A",
-                "Fecha Evento": formatDateOnly(evento.fecha_evento),
+                Tipo: evento.tipo_evento || "COMPRA",
                 "Fecha Compra": formatDateTime(evento.fecha_compra),
-                "Tarifa Base": `$${formatNumber(evento.tarifa_base)}`,
-                "Monto Pagado": `$${formatNumber(evento.monto_pagado)}`,
-                Descuento: `${evento.porcentaje_descuento_aplicado}%`,
-                "Código Autorización": evento.codigo_autorizacion ?? "N/A",
-                Empresa: evento.empresa?.nombre || "N/A",
+                PNR: evento.pnr || "N/A",
+                Ticket: evento.numero_ticket || "S/N",
+                Asiento: evento.numero_asiento || "N/A",
+                "Origen": evento.terminal_origen,
+                "Destino": evento.terminal_destino,
+                "Fecha Viaje": formatDateOnly(evento.fecha_viaje),
+                "Hora Salida": evento.hora_salida || "N/A",
                 Pasajero: evento.pasajero
                     ? `${evento.pasajero.nombres} ${evento.pasajero.apellidos}`
                     : "N/A",
+                Empresa: evento.empresa?.nombre || "N/A",
+                "Tarifa Base": `$${formatNumber(evento.tarifa_base || 0)}`,
+                "Monto Descuento": `$${formatNumber(evento.monto_descuento ?? ((evento.tarifa_base || 0) - (evento.monto_pagado || 0)))}`,
+                "Monto Pagado": `$${formatNumber(evento.monto_pagado)}`,
+                "Código Autorización": evento.codigo_autorizacion ?? "N/A",
                 Convenio: evento.convenio?.nombre || "N/A",
                 Estado:
                     evento.estado === "anulado"
@@ -496,18 +499,14 @@ export default function EventosPage() {
                     <Table.TableHeader>
                         <Table.TableRow>
                             <Table.TableHead>ID</Table.TableHead>
-                            <Table.TableHead>Tipo</Table.TableHead>
-                            <Table.TableHead>Origen - Destino</Table.TableHead>
-                            <Table.TableHead>Fecha Viaje</Table.TableHead>
-                            <Table.TableHead>Hora Salida</Table.TableHead>
                             <Table.TableHead>Fecha Compra</Table.TableHead>
+                            <Table.TableHead>PNR / Ticket</Table.TableHead>
+                            <Table.TableHead>Trayecto</Table.TableHead>
+                            <Table.TableHead>Pasajero / Empresa</Table.TableHead>
                             <Table.TableHead>Tarifa Base</Table.TableHead>
-                            <Table.TableHead>Monto Pagado</Table.TableHead>
                             <Table.TableHead>Descuento</Table.TableHead>
-                            <Table.TableHead>Código Autorización</Table.TableHead>
-                            <Table.TableHead>Empresa</Table.TableHead>
-                            <Table.TableHead>Pasajero</Table.TableHead>
-                            <Table.TableHead>Convenio</Table.TableHead>
+                            <Table.TableHead>Monto Pagado</Table.TableHead>
+                            <Table.TableHead>Autorización</Table.TableHead>
                             <Table.TableHead>Estado</Table.TableHead>
                         </Table.TableRow>
                     </Table.TableHeader>
@@ -529,41 +528,56 @@ export default function EventosPage() {
                         ) : (
                             filteredEventos.map((evento) => (
                                 <Table.TableRow key={evento.id}>
-                                    <Table.TableCell>{evento.id}</Table.TableCell>
+                                    <Table.TableCell className="font-medium text-xs">
+                                        <div className="flex flex-col gap-1">
+                                            <span>#{evento.id}</span>
+                                            <Badge variant="secondary" className="w-fit text-[9px] px-1 py-0 h-4 uppercase">
+                                                {evento.tipo_evento || "COMPRA"}
+                                            </Badge>
+                                        </div>
+                                    </Table.TableCell>
+                                    <Table.TableCell className="text-xs">{formatDateTime(evento.fecha_compra)}</Table.TableCell>
                                     <Table.TableCell>
-                                        <BadgeStatus
-                                            status={
-                                                evento.estado === "anulado" ? "inactive" : "active"
-                                            }
-                                        >
-                                            {getTipoEventoLabel(evento)}
-                                        </BadgeStatus>
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-sm text-primary">{evento.pnr || "N/A"}</span>
+                                            <div className="flex flex-col text-[10px] text-muted-foreground leading-tight">
+                                                <span>Tkt: {evento.numero_ticket || "S/N"}</span>
+                                                {evento.numero_asiento && <span>Asiento: {evento.numero_asiento}</span>}
+                                            </div>
+                                        </div>
                                     </Table.TableCell>
                                     <Table.TableCell>
-                                        {evento.terminal_origen} → {evento.terminal_destino}
-                                    </Table.TableCell>
-                                    <Table.TableCell>{formatDateOnly(evento.fecha_viaje)}</Table.TableCell>
-                                    <Table.TableCell>{evento.hora_salida ?? "N/A"}</Table.TableCell>
-                                    <Table.TableCell>{formatDateTime(evento.fecha_compra)}</Table.TableCell>
-                                    <Table.TableCell>${formatNumber(evento.tarifa_base)}</Table.TableCell>
-                                    <Table.TableCell>${formatNumber(evento.monto_pagado)}</Table.TableCell>
-                                    <Table.TableCell>{evento.porcentaje_descuento_aplicado}%</Table.TableCell>
-                                    <Table.TableCell>{evento.codigo_autorizacion ?? "N/A"}</Table.TableCell>
-                                    <Table.TableCell>
-                                        {evento.empresa?.nombre || "N/A"}
-                                    </Table.TableCell>
-                                    <Table.TableCell>
-                                        {evento.pasajero
-                                            ? `${evento.pasajero.nombres} ${evento.pasajero.apellidos}`
-                                            : "N/A"
-                                        }
+                                        <div className="flex flex-col text-[11px] leading-tight">
+                                            <div className="font-medium">
+                                                {evento.terminal_origen} <span className="text-muted-foreground font-normal">→</span> {evento.terminal_destino}
+                                            </div>
+                                            {evento.fecha_viaje && (
+                                                <div className="flex items-center gap-1 text-primary/80 font-medium mt-0.5">
+                                                    <Icon.Calendar className="h-3 w-3" />
+                                                    <span>{formatDateOnly(evento.fecha_viaje)} {evento.hora_salida}</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </Table.TableCell>
                                     <Table.TableCell>
-                                        {evento.convenio?.nombre || "N/A"}
+                                        <div className="flex flex-col text-xs">
+                                            <span className="font-medium">
+                                                {evento.pasajero ? `${evento.pasajero.nombres} ${evento.pasajero.apellidos}` : "N/A"}
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground uppercase">{evento.empresa?.nombre || "N/A"}</span>
+                                        </div>
+                                    </Table.TableCell>
+                                    <Table.TableCell className="text-xs text-muted-foreground">${formatNumber(evento.tarifa_base || 0)}</Table.TableCell>
+                                    <Table.TableCell className="text-xs text-red-500 font-medium">${formatNumber(evento.monto_descuento ?? ((evento.tarifa_base || 0) - (evento.monto_pagado || 0)))}</Table.TableCell>
+                                    <Table.TableCell className="font-bold text-xs text-green-600">${formatNumber(evento.monto_pagado)}</Table.TableCell>
+                                    <Table.TableCell>
+                                        <Badge variant="outline" className="font-mono text-[10px] bg-slate-50">
+                                            {evento.codigo_autorizacion || "N/A"}
+                                        </Badge>
                                     </Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={evento.status || evento.estado}>
-                                            {evento.status?.toLowerCase() === "error_confirmacion" ? "Error Confirmación" :
+                                            {evento.status?.toLowerCase() === "error_confirmacion" ? "Error" :
                                                 evento.status?.toLowerCase() === "revisar" ? "Revisar" :
                                                     evento.estado || evento.status || "N/A"}
                                         </BadgeStatus>
