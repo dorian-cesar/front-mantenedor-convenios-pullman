@@ -4,46 +4,67 @@ import { useState } from "react"
 import { PageHeader } from "@/components/dashboard/page-header"
 import * as Card from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileDown, Loader2 } from "lucide-react"
+import { FileDown, FileSpreadsheet, Loader2 } from "lucide-react"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 import { downloadBlob } from "@/utils/download"
+import * as XLSX from "xlsx"
 
 export default function ExportacionesPage() {
-    const [isExporting, setIsExporting] = useState(false)
+    const [isExporting, setIsExporting] = useState<null | 'csv' | 'xlsx'>(null)
 
-    const handleExportBeneficiarios = async () => {
-        setIsExporting(true)
-        const toastId = toast.loading("Preparando descarga de beneficiarios...")
+    const handleExportBeneficiarios = async (format: 'csv' | 'xlsx') => {
+        setIsExporting(format)
+        const toastId = toast.loading(`Preparando descarga de beneficiarios (${format.toUpperCase()})...`)
 
         try {
-            const response = await api.get("export/beneficiarios", {
-                responseType: "blob",
-            })
+            // Si es CSV, lo descargamos como blob directamente
+            if (format === 'csv') {
+                const response = await api.get("export/beneficiarios", {
+                    responseType: "blob",
+                })
 
-            // Intentar obtener el nombre del archivo de la cabecera content-disposition
-            const contentDisposition = response.headers["content-disposition"]
-            let fileName = "beneficiarios_completos.csv"
-            if (contentDisposition) {
-                const fileNameMatch = contentDisposition.match(/filename="?(.+)"?/)
-                if (fileNameMatch && fileNameMatch.length === 2) {
-                    fileName = fileNameMatch[1]
+                const contentDisposition = response.headers["content-disposition"]
+                let fileName = "beneficiarios_completos.csv"
+                if (contentDisposition) {
+                    const fileNameMatch = contentDisposition.match(/filename="?(.+)"?/)
+                    if (fileNameMatch && fileNameMatch.length === 2) {
+                        fileName = fileNameMatch[1]
+                    }
                 }
-            }
 
-            // Usar la utilidad de descarga optimizada
-            downloadBlob(
-                response.data, 
-                fileName, 
-                response.headers["content-type"] || "text/csv"
-            )
+                downloadBlob(response.data, fileName, response.headers["content-type"] || "text/csv")
+            } else {
+                // Si es XLSX, obtenemos el texto y lo convertimos
+                const response = await api.get("export/beneficiarios", {
+                    responseType: "text",
+                })
+
+                const rawData = response.data as string
+                
+                // Parseamos el CSV (asumiendo ; como separador según el log del usuario)
+                const rows = rawData.split('\n').filter(row => row.trim() !== '').map(row => {
+                    return row.split(';').map(cell => {
+                        // Limpiar comillas si existen
+                        return cell.replace(/^"(.*)"$/, '$1').trim()
+                    })
+                })
+
+                // Convertir a hoja de Excel
+                const worksheet = XLSX.utils.aoa_to_sheet(rows)
+                const workbook = XLSX.utils.book_new()
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Beneficiarios")
+
+                // Descargar
+                XLSX.writeFile(workbook, "beneficiarios_completos.xlsx")
+            }
 
             toast.success("Descarga completada correctamente", { id: toastId })
         } catch (error) {
-            console.error("Error al exportar beneficiarios:", error)
+            console.error(`Error al exportar beneficiarios (${format}):`, error)
             toast.error("No se pudo completar la exportación", { id: toastId })
         } finally {
-            setIsExporting(false)
+            setIsExporting(null)
         }
     }
 
@@ -67,27 +88,47 @@ export default function ExportacionesPage() {
                     </Card.CardHeader>
                     <Card.CardContent className="flex-1">
                         <p className="text-sm text-muted-foreground leading-relaxed">
-                            Este reporte genera un archivo (Excel/CSV) con el listado detallado de todos los beneficiarios en el sistema, vinculando cada <strong>RUT</strong> con su respectivo <strong>Convenio</strong> o beneficio asignado.
+                            Este reporte genera un archivo con el listado detallado de todos los beneficiarios en el sistema, vinculando cada <strong>RUT</strong> con su respectivo <strong>Convenio</strong> o beneficio asignado.
                         </p>
                     </Card.CardContent>
-                    <Card.CardFooter className="pt-4">
-                        <Button 
-                            onClick={handleExportBeneficiarios} 
-                            disabled={isExporting}
-                            className="w-full bg-primary hover:bg-primary/90"
-                        >
-                            {isExporting ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Preparando archivo...
-                                </>
-                            ) : (
-                                <>
-                                    <FileDown className="mr-2 h-4 w-4" />
-                                    Descargar Beneficiarios
-                                </>
-                            )}
-                        </Button>
+                    <Card.CardFooter className="pt-4 flex flex-col gap-2">
+                        <div className="grid grid-cols-2 gap-2 w-full">
+                            <Button 
+                                variant="outline"
+                                onClick={() => handleExportBeneficiarios('csv')} 
+                                disabled={isExporting !== null}
+                                className="w-full border-primary/20 hover:bg-primary/5"
+                            >
+                                {isExporting === 'csv' ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileDown className="mr-2 h-4 w-4" />
+                                        CSV
+                                    </>
+                                )}
+                            </Button>
+                            <Button 
+                                onClick={() => handleExportBeneficiarios('xlsx')} 
+                                disabled={isExporting !== null}
+                                className="w-full bg-primary hover:bg-primary/90"
+                            >
+                                {isExporting === 'xlsx' ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                        Excel
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </Card.CardFooter>
                 </Card.Card>
                 
