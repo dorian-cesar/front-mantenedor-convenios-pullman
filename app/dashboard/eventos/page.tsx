@@ -6,16 +6,25 @@ import * as Table from "@/components/ui/table"
 import * as Icon from "lucide-react"
 import { BadgeStatus } from "@/components/ui/badge-status"
 import * as Card from "@/components/ui/card"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { PageHeader } from "@/components/dashboard/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Pagination } from "@/components/dashboard/Pagination"
 import { Calendar } from "@/components/ui/calendar"
 import { formatDateOnly, formatNumber, formatDateTime } from "@/utils/helpers"
+import { Input } from "@/components/ui/input"
 import { es } from "date-fns/locale"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { DateRange } from "react-day-picker"
 import ExportModal from "@/components/modals/export"
+import {
+    Combobox,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxTrigger,
+} from "@/components/ui/combobox"
 import { format } from "date-fns"
 import { EventosService, type Evento, type GetEventosParams } from "@/services/evento.service"
 import { toast } from "sonner"
@@ -40,11 +49,35 @@ export default function EventosPage() {
     const [pasajeroFilter, setPasajeroFilter] = useState<number | null>(null)
     const [convenioFilter, setConvenioFilter] = useState<number | null>(null)
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+    const [rutFilter, setRutFilter] = useState("")
+    const [nombreFilter, setNombreFilter] = useState("")
+    const [idFilter, setIdFilter] = useState("")
+    const [pnrFilter, setPnrFilter] = useState("")
+    const [ticketFilter, setTicketFilter] = useState("")
 
     // Datos para selectores
     const [empresas, setEmpresas] = useState<Empresa[]>([])
     const [pasajeros, setPasajeros] = useState<Pasajero[]>([])
     const [convenios, setConvenios] = useState<Convenio[]>([])
+    const [pasajeroSearch, setPasajeroSearch] = useState("")
+
+    const [stats, setStats] = useState({
+        confirmados: 0,
+        anulados: 0,
+        error_confirmacion: 0,
+        revisar: 0,
+        total: 0
+    })
+
+    const filteredPasajerosList = useMemo(() => {
+        if (!pasajeroSearch.trim()) return pasajeros;
+        const search = pasajeroSearch.toLowerCase();
+        return pasajeros.filter(p =>
+            p.nombres?.toLowerCase().includes(search) ||
+            p.apellidos?.toLowerCase().includes(search) ||
+            p.rut?.toLowerCase().includes(search)
+        );
+    }, [pasajeros, pasajeroSearch]);
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -56,6 +89,11 @@ export default function EventosPage() {
     })
 
     const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedRut = useDebounce(rutFilter, 500)
+    const debouncedNombre = useDebounce(nombreFilter, 500)
+    const debouncedId = useDebounce(idFilter, 500)
+    const debouncedPnr = useDebounce(pnrFilter, 500)
+    const debouncedTicket = useDebounce(ticketFilter, 500)
 
     const fetchEventos = async () => {
         setIsLoading(true)
@@ -95,10 +133,17 @@ export default function EventosPage() {
                 params.endDate = dateRange.to.toISOString()
             }
 
-            // Restricción por Rol: Si es USUARIO, forzar su empresa_id
             if (user?.rol === "USUARIO" && user?.empresa_id) {
                 params.empresa_id = user.empresa_id;
             }
+
+            // Nuevos parámetros de búsqueda servidor
+            if (debouncedSearch) params.search = debouncedSearch
+            if (debouncedRut) params.rut = debouncedRut
+            if (debouncedNombre) params.nombre = debouncedNombre
+            if (debouncedId) params.id = debouncedId
+            if (debouncedPnr) params.pnr = debouncedPnr
+            if (debouncedTicket) params.numero_ticket = debouncedTicket
 
             const response = await EventosService.getEventos(params)
             setEventos(response.rows)
@@ -114,6 +159,43 @@ export default function EventosPage() {
             toast.error("No se pudieron cargar los eventos")
         } finally {
             setIsLoading(false)
+        }
+    }
+
+    const fetchStats = async () => {
+        try {
+            const baseParams: any = {
+                limit: 1,
+                tipo_evento: 'COMPRA',
+            }
+
+            if (empresaFilter) baseParams.empresa_id = empresaFilter
+            if (pasajeroFilter) baseParams.pasajero_id = pasajeroFilter
+            if (convenioFilter) baseParams.convenio_id = convenioFilter
+            if (dateRange?.from) baseParams.startDate = dateRange.from.toISOString()
+            if (dateRange?.to) baseParams.endDate = dateRange.to.toISOString()
+
+            if (user?.rol === "USUARIO" && user?.empresa_id) {
+                baseParams.empresa_id = user.empresa_id;
+            }
+
+            const [all, conf, anul, err, rev] = await Promise.all([
+                EventosService.getEventos({ ...baseParams }),
+                EventosService.getEventos({ ...baseParams, estado: 'confirmado' }),
+                EventosService.getEventos({ ...baseParams, estado: 'anulado' }),
+                EventosService.getEventos({ ...baseParams, estado: 'error_confirmacion' }),
+                EventosService.getEventos({ ...baseParams, estado: 'revisar' }),
+            ])
+
+            setStats({
+                total: all.totalItems,
+                confirmados: conf.totalItems,
+                anulados: anul.totalItems,
+                error_confirmacion: err.totalItems,
+                revisar: rev.totalItems,
+            })
+        } catch (error) {
+            console.error('Error fetching stats:', error)
         }
     }
 
@@ -157,14 +239,32 @@ export default function EventosPage() {
     }
 
     useEffect(() => {
-        fetchEventos()
         fetchEmpresas()
         fetchPasajeros()
         fetchConvenios()
+    }, [])
+
+    useEffect(() => {
+        fetchEventos()
     }, [
         pagination.page,
         pagination.limit,
         statusFilter,
+        empresaFilter,
+        pasajeroFilter,
+        convenioFilter,
+        dateRange,
+        debouncedSearch,
+        debouncedRut,
+        debouncedNombre,
+        debouncedId,
+        debouncedPnr,
+        debouncedTicket
+    ])
+
+    useEffect(() => {
+        fetchStats()
+    }, [
         empresaFilter,
         pasajeroFilter,
         convenioFilter,
@@ -274,26 +374,6 @@ export default function EventosPage() {
         return "compra"
     }
 
-    // Client-side filtering for immediate feedback
-    const filteredEventos = eventos.filter(evento => {
-        if (!searchValue.trim()) return true;
-        const searchLower = searchValue.toLowerCase();
-        const passengerName = evento.pasajero ? `${evento.pasajero.nombres} ${evento.pasajero.apellidos}`.toLowerCase() : "";
-        const passengerRut = evento.pasajero?.rut?.toLowerCase() || "";
-        const companyName = evento.empresa?.nombre?.toLowerCase() || "";
-        const convenioName = evento.convenio?.nombre?.toLowerCase() || "";
-        const authCode = evento.codigo_autorizacion?.toLowerCase() || "";
-
-        return (
-            passengerName.includes(searchLower) ||
-            passengerRut.includes(searchLower) ||
-            companyName.includes(searchLower) ||
-            convenioName.includes(searchLower) ||
-            authCode.includes(searchLower) ||
-            evento.id.toString().includes(searchLower)
-        );
-    });
-
     const filters = (
         <div className="flex flex-col gap-4">
             <div className="flex flex-wrap gap-2 items-center">
@@ -381,26 +461,33 @@ export default function EventosPage() {
 
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Pasajero:</span>
-                    <Dropdown.DropdownMenu>
-                        <Dropdown.DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
-                                <span className="truncate">
-                                    {pasajeroFilter ? pasajeros.find(p => p.id === pasajeroFilter)?.nombres || "Seleccionar..." : "Todos"}
-                                </span>
-                                <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
-                            </Button>
-                        </Dropdown.DropdownMenuTrigger>
-                        <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
-                            <Dropdown.DropdownMenuItem onClick={() => setPasajeroFilter(null)}>
+                    <Combobox
+                        value={pasajeros.find((p) => p.id === pasajeroFilter) || null}
+                        onValueChange={(val: any) => {
+                            setPasajeroFilter(val?.id || null);
+                            setPasajeroSearch("");
+                        }}
+                        items={filteredPasajerosList}
+                        itemToStringValue={(p: any) => p ? `${p.nombres} ${p.apellidos}` : "Todos"}
+                    >
+                        <ComboboxInput
+                            placeholder="Buscar pasajero..."
+                            className="h-9 w-[220px]"
+                            value={pasajeroSearch}
+                            onChange={(e) => setPasajeroSearch(e.target.value)}
+                        />
+                        <ComboboxContent>
+                            <ComboboxEmpty>No hay resultados</ComboboxEmpty>
+                            <ComboboxItem value={null!}>
                                 Todos
-                            </Dropdown.DropdownMenuItem>
-                            {pasajeros.map((pasajero) => (
-                                <Dropdown.DropdownMenuItem key={pasajero.id} onClick={() => setPasajeroFilter(pasajero.id)}>
-                                    {pasajero.nombres} {pasajero.apellidos}
-                                </Dropdown.DropdownMenuItem>
+                            </ComboboxItem>
+                            {filteredPasajerosList.map((p: Pasajero) => (
+                                <ComboboxItem key={p.id} value={p}>
+                                    {p.nombres} {p.apellidos}
+                                </ComboboxItem>
                             ))}
-                        </Dropdown.DropdownMenuContent>
-                    </Dropdown.DropdownMenu>
+                        </ComboboxContent>
+                    </Combobox>
                 </div>
             </div>
 
@@ -439,13 +526,65 @@ export default function EventosPage() {
                     </Popover>
                 </div>
 
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Nombre:</span>
+                    <Input
+                        placeholder="Buscar por nombre..."
+                        value={nombreFilter}
+                        onChange={(e) => setNombreFilter(e.target.value)}
+                        className="h-9 w-[180px]"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">RUT:</span>
+                    <Input
+                        placeholder="Buscar por RUT..."
+                        value={rutFilter}
+                        onChange={(e) => setRutFilter(e.target.value)}
+                        className="h-9 w-[150px]"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">ID Boleto:</span>
+                    <Input
+                        placeholder="ID..."
+                        value={idFilter}
+                        onChange={(e) => setIdFilter(e.target.value)}
+                        className="h-9 w-[100px]"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">PNR:</span>
+                    <Input
+                        placeholder="PNR..."
+                        value={pnrFilter}
+                        onChange={(e) => setPnrFilter(e.target.value)}
+                        className="h-9 w-[120px]"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Ticket:</span>
+                    <Input
+                        placeholder="Tkt..."
+                        value={ticketFilter}
+                        onChange={(e) => setTicketFilter(e.target.value)}
+                        className="h-9 w-[120px]"
+                    />
+                </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4">
                 <div className="ml-auto flex items-center gap-2">
                     <Badge variant="secondary" className="h-9 px-4 text-sm font-medium whitespace-nowrap">
                         Total: {pagination.total} registros
                     </Badge>
                 </div>
 
-                {(statusFilter || empresaFilter || pasajeroFilter || convenioFilter || dateRange?.from) && (
+                {(statusFilter || empresaFilter || pasajeroFilter || convenioFilter || dateRange?.from || rutFilter || nombreFilter || idFilter || pnrFilter || ticketFilter) && (
                     <Button
                         variant="ghost"
                         size="sm"
@@ -455,6 +594,12 @@ export default function EventosPage() {
                             setPasajeroFilter(null)
                             setConvenioFilter(null)
                             setDateRange(undefined)
+                            setRutFilter("")
+                            setNombreFilter("")
+                            setIdFilter("")
+                            setPnrFilter("")
+                            setTicketFilter("")
+                            setSearchValue("")
                         }}
                         className="h-9"
                     >
@@ -494,6 +639,78 @@ export default function EventosPage() {
                 }
                 filters={filters}
             />
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <Card.Card
+                    className={`cursor-pointer transition-all hover:ring-2 hover:ring-primary/20 ${statusFilter === null ? 'ring-2 ring-primary bg-primary/5' : ''}`}
+                    onClick={() => setStatusFilter(null)}
+                >
+                    <Card.CardHeader className="pb-2">
+                        <Card.CardTitle className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-2">
+                            <Icon.List className="h-3 w-3" /> Total General
+                        </Card.CardTitle>
+                    </Card.CardHeader>
+                    <Card.CardContent>
+                        <div className="text-2xl font-bold">{stats.total}</div>
+                    </Card.CardContent>
+                </Card.Card>
+
+                <Card.Card
+                    className={`cursor-pointer transition-all hover:ring-2 hover:ring-green-500/20 ${statusFilter === 'compra' ? 'ring-2 ring-green-500 bg-green-50/50' : ''}`}
+                    onClick={() => setStatusFilter('compra')}
+                >
+                    <Card.CardHeader className="pb-2">
+                        <Card.CardTitle className="text-[10px] font-bold text-green-600 uppercase flex items-center gap-2">
+                            <Icon.CheckCircle2 className="h-3 w-3" /> Confirmados
+                        </Card.CardTitle>
+                    </Card.CardHeader>
+                    <Card.CardContent>
+                        <div className="text-2xl font-bold text-green-600">{stats.confirmados}</div>
+                    </Card.CardContent>
+                </Card.Card>
+
+                <Card.Card
+                    className={`cursor-pointer transition-all hover:ring-2 hover:ring-red-500/20 ${statusFilter === 'error_confirmacion' ? 'ring-2 ring-red-500 bg-red-50/50' : ''}`}
+                    onClick={() => setStatusFilter('error_confirmacion')}
+                >
+                    <Card.CardHeader className="pb-2">
+                        <Card.CardTitle className="text-[10px] font-bold text-red-600 uppercase flex items-center gap-2">
+                            <Icon.AlertTriangle className="h-3 w-3" /> Error Confirmación
+                        </Card.CardTitle>
+                    </Card.CardHeader>
+                    <Card.CardContent>
+                        <div className="text-2xl font-bold text-red-600">{stats.error_confirmacion}</div>
+                    </Card.CardContent>
+                </Card.Card>
+
+                <Card.Card
+                    className={`cursor-pointer transition-all hover:ring-2 hover:ring-amber-500/20 ${statusFilter === 'revisar' ? 'ring-2 ring-amber-500 bg-amber-50/50' : ''}`}
+                    onClick={() => setStatusFilter('revisar')}
+                >
+                    <Card.CardHeader className="pb-2">
+                        <Card.CardTitle className="text-[10px] font-bold text-amber-600 uppercase flex items-center gap-2">
+                            <Icon.Search className="h-3 w-3" /> Por Revisar
+                        </Card.CardTitle>
+                    </Card.CardHeader>
+                    <Card.CardContent>
+                        <div className="text-2xl font-bold text-amber-600">{stats.revisar}</div>
+                    </Card.CardContent>
+                </Card.Card>
+
+                <Card.Card
+                    className={`cursor-pointer transition-all hover:ring-2 hover:ring-slate-500/20 ${statusFilter === 'anulado' ? 'ring-2 ring-slate-500 bg-slate-50/50' : ''}`}
+                    onClick={() => setStatusFilter('anulado')}
+                >
+                    <Card.CardHeader className="pb-2">
+                        <Card.CardTitle className="text-[10px] font-bold text-slate-600 uppercase flex items-center gap-2">
+                            <Icon.XCircle className="h-3 w-3" /> Anulados
+                        </Card.CardTitle>
+                    </Card.CardHeader>
+                    <Card.CardContent>
+                        <div className="text-2xl font-bold text-slate-600">{stats.anulados}</div>
+                    </Card.CardContent>
+                </Card.Card>
+            </div>
+
             <Card.Card>
                 <Table.Table>
                     <Table.TableHeader>
@@ -519,14 +736,14 @@ export default function EventosPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : filteredEventos.length === 0 ? (
+                        ) : eventos.length === 0 ? (
                             <Table.TableRow>
                                 <Table.TableCell colSpan={14} className="text-center py-8">
                                     No se encontraron eventos
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            filteredEventos.map((evento) => (
+                            eventos.map((evento) => (
                                 <Table.TableRow key={evento.id}>
                                     <Table.TableCell className="font-medium text-xs">
                                         <div className="flex flex-col gap-1">

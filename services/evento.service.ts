@@ -61,6 +61,12 @@ export interface GetEventosParams {
     fecha_fin?: string;
     estado?: "confirmado" | "anulado";
     status?: string;
+    search?: string;
+    nombre?: string;
+    rut?: string;
+    id?: number | string;
+    pnr?: string;
+    numero_ticket?: string;
 }
 
 export interface EventosResponse {
