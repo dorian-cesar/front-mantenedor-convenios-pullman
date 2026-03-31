@@ -17,6 +17,7 @@ import { es } from "date-fns/locale"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { DateRange } from "react-day-picker"
 import ExportModal from "@/components/modals/export"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import {
     Combobox,
     ComboboxContent,
@@ -639,6 +640,27 @@ export default function EventosPage() {
                 }
                 filters={filters}
             />
+
+            {stats.error_confirmacion > 0 && (
+                <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-4 duration-500">
+                    <Icon.AlertOctagon className="h-4 w-4" />
+                    <AlertTitle className="font-bold">Alarma: Errores de Confirmación Detectados</AlertTitle>
+                    <AlertDescription className="flex items-center justify-between">
+                        <span>
+                            Se han detectado {stats.error_confirmacion} boletos con errores. Es imperativo revisar estos tickets de inmediato.
+                        </span>
+                        <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            className="h-7 text-[10px] ml-4 bg-red-600 hover:bg-red-700 font-bold"
+                            onClick={() => setStatusFilter('error_confirmacion')}
+                        >
+                            Ver Errores Ahora
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            )}
+
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <Card.Card
                     className={`cursor-pointer transition-all hover:ring-2 hover:ring-primary/20 ${statusFilter === null ? 'ring-2 ring-primary bg-primary/5' : ''}`}
@@ -669,16 +691,20 @@ export default function EventosPage() {
                 </Card.Card>
 
                 <Card.Card
-                    className={`cursor-pointer transition-all hover:ring-2 hover:ring-red-500/20 ${statusFilter === 'error_confirmacion' ? 'ring-2 ring-red-500 bg-red-50/50' : ''}`}
+                    className={`cursor-pointer transition-all hover:ring-2 hover:ring-red-500/20 ${
+                        statusFilter === 'error_confirmacion' ? 'ring-2 ring-red-500 bg-red-50/50' : ''
+                    } ${stats.error_confirmacion > 0 ? 'animate-pulse border-red-500 ring-2 ring-red-500/30 bg-red-50/50' : ''}`}
                     onClick={() => setStatusFilter('error_confirmacion')}
                 >
                     <Card.CardHeader className="pb-2">
-                        <Card.CardTitle className="text-[10px] font-bold text-red-600 uppercase flex items-center gap-2">
-                            <Icon.AlertTriangle className="h-3 w-3" /> Error Confirmación
+                        <Card.CardTitle className={`text-[10px] font-bold uppercase flex items-center gap-2 ${stats.error_confirmacion > 0 ? 'text-red-700' : 'text-red-600'}`}>
+                            <Icon.AlertTriangle className={`h-3 w-3 ${stats.error_confirmacion > 0 ? 'animate-bounce' : ''}`} /> Error Confirmación
                         </Card.CardTitle>
                     </Card.CardHeader>
                     <Card.CardContent>
-                        <div className="text-2xl font-bold text-red-600">{stats.error_confirmacion}</div>
+                        <div className={`text-2xl font-bold ${stats.error_confirmacion > 0 ? 'text-red-700' : 'text-red-600'}`}>
+                            {stats.error_confirmacion}
+                        </div>
                     </Card.CardContent>
                 </Card.Card>
 
