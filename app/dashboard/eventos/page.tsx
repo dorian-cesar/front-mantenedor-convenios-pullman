@@ -26,6 +26,11 @@ import {
     ComboboxItem,
     ComboboxTrigger,
 } from "@/components/ui/combobox"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { format } from "date-fns"
 import { EventosService, type Evento, type GetEventosParams } from "@/services/evento.service"
 import { toast } from "sonner"
@@ -39,6 +44,26 @@ import { useAuth } from "@/hooks/useAuth"
 
 export default function EventosPage() {
     const [openExport, setOpenExport] = useState(false);
+    const [dismissedErrorCount, setDismissedErrorCount] = useState(0);
+    const [dismissedRevisarCount, setDismissedRevisarCount] = useState(0);
+    const [stats, setStats] = useState({
+        confirmados: 0,
+        anulados: 0,
+        error_confirmacion: 0,
+        revisar: 0,
+        total: 0
+    })
+
+    // Si los contadores de errores o pendientes bajan, sincronizamos el umbral de descarte
+    useEffect(() => {
+        if (stats.error_confirmacion < dismissedErrorCount) {
+            setDismissedErrorCount(stats.error_confirmacion)
+        }
+        if (stats.revisar < dismissedRevisarCount) {
+            setDismissedRevisarCount(stats.revisar)
+        }
+    }, [stats.error_confirmacion, stats.revisar, dismissedErrorCount, dismissedRevisarCount])
+
     const [searchValue, setSearchValue] = useState("")
     const [eventos, setEventos] = useState<Evento[]>([])
     const [isLoading, setIsLoading] = useState(true)
@@ -61,14 +86,6 @@ export default function EventosPage() {
     const [pasajeros, setPasajeros] = useState<Pasajero[]>([])
     const [convenios, setConvenios] = useState<Convenio[]>([])
     const [pasajeroSearch, setPasajeroSearch] = useState("")
-
-    const [stats, setStats] = useState({
-        confirmados: 0,
-        anulados: 0,
-        error_confirmacion: 0,
-        revisar: 0,
-        total: 0
-    })
 
     const filteredPasajerosList = useMemo(() => {
         if (!pasajeroSearch.trim()) return pasajeros;
@@ -114,9 +131,9 @@ export default function EventosPage() {
                 params.estado = "confirmado"
             } else if (statusFilter === "error_confirmacion") {
                 params.estado = "error_confirmacion"
-            } else if (statusFilter === "revisar") {
-                params.estado = "revisar"
             }
+            // Para "revisar" (N/A) no enviamos el filtro al API para poder filtrar los blancos en el front
+
 
             if (empresaFilter) {
                 params.empresa_id = empresaFilter
@@ -146,12 +163,31 @@ export default function EventosPage() {
             if (debouncedPnr) params.pnr = debouncedPnr
             if (debouncedTicket) params.numero_ticket = debouncedTicket
 
-            const response = await EventosService.getEventos(params)
-            setEventos(response.rows)
+            const fetchParams = { ...params }
+            // Si el filtro es N/A, traemos un bloque grande (400) para buscar los "blancos" en el front
+            if (statusFilter === "revisar") {
+                fetchParams.limit = 400
+            }
+
+            const response = await EventosService.getEventos(fetchParams)
+            let finalRows = response.rows
+            let totalToUse = response.totalItems
+
+            // Si el filtro es N/A, filtramos manualmente para incluir los que tienen estado vacío
+            if (statusFilter === "revisar") {
+                finalRows = response.rows.filter((evento: Evento) => 
+                    !evento.estado || 
+                    evento.status?.toLowerCase() === "revisar"
+                )
+                // Usamos el total calculado en las stats para la paginación de N/A
+                totalToUse = stats.revisar
+            }
+
+            setEventos(finalRows)
             setPagination(prev => ({
                 ...prev,
-                total: response.totalItems,
-                totalPages: response.totalPages || 1,
+                total: totalToUse,
+                totalPages: Math.ceil(totalToUse / (statusFilter === "revisar" ? 400 : pagination.limit)) || 1,
                 hasPrevPage: (response.currentPage || 1) > 1,
                 hasNextPage: (response.currentPage || 1) < (response.totalPages || 1)
             }))
@@ -286,6 +322,15 @@ export default function EventosPage() {
 
     const handleRefresh = () => {
         fetchEventos()
+        fetchStats()
+    }
+
+    const handleCopyToClipboard = (text: string, label: string) => {
+        navigator.clipboard.writeText(text)
+        toast.success(`${label} ${text} copiado al portapapeles`, {
+            icon: <Icon.Copy className="h-4 w-4" />,
+            duration: 2000
+        })
     }
 
     const handleExport = async (type: "csv" | "excel") => {
@@ -641,22 +686,43 @@ export default function EventosPage() {
                 filters={filters}
             />
 
-            {stats.error_confirmacion > 0 && (
-                <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-4 duration-500">
+            {(stats.error_confirmacion > dismissedErrorCount || stats.revisar > dismissedRevisarCount) && (
+                <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-4 duration-500 shadow-lg border-red-200">
                     <Icon.AlertOctagon className="h-4 w-4" />
-                    <AlertTitle className="font-bold">Alarma: Errores de Confirmación Detectados</AlertTitle>
-                    <AlertDescription className="flex items-center justify-between">
-                        <span>
-                            Se han detectado {stats.error_confirmacion} boletos con errores. Es imperativo revisar estos tickets de inmediato.
-                        </span>
-                        <Button 
-                            variant="destructive" 
-                            size="sm" 
-                            className="h-7 text-[10px] ml-4 bg-red-600 hover:bg-red-700 font-bold"
-                            onClick={() => setStatusFilter('error_confirmacion')}
-                        >
-                            Ver Errores Ahora
-                        </Button>
+                    <AlertTitle className="font-bold">Alarma: Nuevos Incidentes Detectados</AlertTitle>
+                    <AlertDescription className="flex items-center justify-between gap-4">
+                        <div className="flex flex-col gap-1">
+                            {stats.error_confirmacion > dismissedErrorCount && (
+                                <span>• Se detectaron <strong>{stats.error_confirmacion - dismissedErrorCount}</strong> nuevos boletos con error de confirmación.</span>
+                            )}
+                            {stats.revisar > dismissedRevisarCount && (
+                                <span>• Se detectaron <strong>{stats.revisar - dismissedRevisarCount}</strong> nuevos boletos pendientes (N/A) por revisar.</span>
+                            )}
+                            <span className="text-[10px] text-red-700/80 mt-1 italic">
+                                Total acumulado: {stats.error_confirmacion} errores y {stats.revisar} pendientes.
+                            </span>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-7 text-[10px] border-red-300 text-red-900 hover:bg-red-100/50 bg-white/50"
+                                onClick={() => {
+                                    setDismissedErrorCount(stats.error_confirmacion);
+                                    setDismissedRevisarCount(stats.revisar);
+                                }}
+                            >
+                                Marcar como Vistos
+                            </Button>
+                            <Button 
+                                variant="destructive" 
+                                size="sm" 
+                                className="h-7 text-[10px] bg-red-600 hover:bg-red-700 font-bold"
+                                onClick={() => setStatusFilter(stats.error_confirmacion > dismissedErrorCount ? 'error_confirmacion' : 'revisar')}
+                            >
+                                Revisar Ahora
+                            </Button>
+                        </div>
                     </AlertDescription>
                 </Alert>
             )}
@@ -782,9 +848,29 @@ export default function EventosPage() {
                                     <Table.TableCell className="text-xs">{formatDateTime(evento.fecha_compra)}</Table.TableCell>
                                     <Table.TableCell>
                                         <div className="flex flex-col">
-                                            <span className="font-bold text-sm text-primary">{evento.pnr || "N/A"}</span>
-                                            <div className="flex flex-col text-[10px] text-muted-foreground leading-tight">
-                                                <span>Tkt: {evento.numero_ticket || "S/N"}</span>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span 
+                                                        className="font-bold text-sm text-primary cursor-pointer hover:underline underline-offset-4 active:scale-95 transition-all"
+                                                        onClick={() => handleCopyToClipboard(evento.pnr || "", "PNR")}
+                                                    >
+                                                        {evento.pnr || "N/A"}
+                                                    </span>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">Clic para copiar PNR</TooltipContent>
+                                            </Tooltip>
+                                            <div className="flex flex-col text-[10px] text-muted-foreground leading-tight mt-1">
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <span 
+                                                            className="cursor-pointer hover:text-primary transition-colors"
+                                                            onClick={() => handleCopyToClipboard(evento.numero_ticket || "", "Ticket")}
+                                                        >
+                                                            Tkt: {evento.numero_ticket || "S/N"}
+                                                        </span>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="bottom">Clic para copiar Ticket</TooltipContent>
+                                                </Tooltip>
                                                 {evento.numero_asiento && <span>Asiento: {evento.numero_asiento}</span>}
                                             </div>
                                         </div>
@@ -804,10 +890,31 @@ export default function EventosPage() {
                                     </Table.TableCell>
                                     <Table.TableCell>
                                         <div className="flex flex-col text-xs">
-                                            <span className="font-medium">
-                                                {evento.pasajero ? `${evento.pasajero.nombres} ${evento.pasajero.apellidos}` : "N/A"}
-                                            </span>
-                                            <span className="text-[10px] text-muted-foreground uppercase">{evento.empresa?.nombre || "N/A"}</span>
+                                            {evento.pasajero ? (
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <span 
+                                                            className="font-medium cursor-pointer hover:text-primary transition-colors decoration-dotted underline-offset-4 hover:underline active:scale-95 transition-transform"
+                                                            onClick={() => handleCopyToClipboard(evento.pasajero!.rut, "RUT")}
+                                                            title="Clic para copiar RUT"
+                                                        >
+                                                            {evento.pasajero.nombres} {evento.pasajero.apellidos}
+                                                        </span>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="right" className="flex flex-col gap-1 p-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <Icon.User className="h-3 w-3 text-primary" />
+                                                            <span className="font-bold text-[10px]">Datos del Pasajero</span>
+                                                        </div>
+                                                        <div className="text-[10px] space-y-0.5">
+                                                            <p><span className="text-muted-foreground mr-1 text-[9px]">RUT:</span> <span className="font-mono">{evento.pasajero.rut}</span></p>
+                                                        </div>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            ) : (
+                                                <span className="font-medium text-muted-foreground">N/A</span>
+                                            )}
+                                            <span className="text-[10px] text-muted-foreground uppercase mt-0.5">{evento.empresa?.nombre || "N/A"}</span>
                                         </div>
                                     </Table.TableCell>
                                     <Table.TableCell className="text-xs text-muted-foreground">${formatNumber(evento.tarifa_base || 0)}</Table.TableCell>
