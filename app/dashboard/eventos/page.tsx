@@ -192,7 +192,7 @@ export default function EventosPage() {
                 confirmados: conf.totalItems,
                 anulados: anul.totalItems,
                 error_confirmacion: err.totalItems,
-                revisar: rev.totalItems,
+                revisar: all.totalItems - conf.totalItems - anul.totalItems - err.totalItems,
             })
         } catch (error) {
             console.error('Error fetching stats:', error)
@@ -338,9 +338,9 @@ export default function EventosPage() {
                 "Código Autorización": evento.codigo_autorizacion ?? "N/A",
                 Convenio: evento.convenio?.nombre || "N/A",
                 Estado:
-                    evento.estado === "anulado"
-                        ? "anulado"
-                        : "confirmado",
+                    evento.status?.toLowerCase() === "error_confirmacion" ? "Error" :
+                    (evento.status?.toLowerCase() === "revisar" || !evento.estado) ? "N/A" :
+                    evento.estado || "N/A",
             }))
 
             if (type === "csv") {
@@ -385,7 +385,7 @@ export default function EventosPage() {
                                 {statusFilter === "compra" ? "Confirmados" :
                                  statusFilter === "anulado" ? "Anulados" :
                                  statusFilter === "error_confirmacion" ? "Error Confirmación" :
-                                 statusFilter === "revisar" ? "Revisar" : "Todos"}
+                                 statusFilter === "revisar" ? "N/A" : "Todos"}
                                 <Icon.ChevronDown className="ml-2 h-4 w-4" />
                             </Button>
                         </Dropdown.DropdownMenuTrigger>
@@ -403,7 +403,7 @@ export default function EventosPage() {
                                 Error Confirmación
                             </Dropdown.DropdownMenuItem>
                             <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("revisar")}>
-                                Revisar
+                                N/A
                             </Dropdown.DropdownMenuItem>
                         </Dropdown.DropdownMenuContent>
                     </Dropdown.DropdownMenu>
@@ -688,7 +688,7 @@ export default function EventosPage() {
                 >
                     <Card.CardHeader className="pb-2">
                         <Card.CardTitle className="text-[10px] font-bold text-amber-600 uppercase flex items-center gap-2">
-                            <Icon.Search className="h-3 w-3" /> Por Revisar
+                            <Icon.Search className="h-3 w-3" /> N/A
                         </Card.CardTitle>
                     </Card.CardHeader>
                     <Card.CardContent>
@@ -795,7 +795,7 @@ export default function EventosPage() {
                                     <Table.TableCell>
                                         <BadgeStatus status={evento.status || evento.estado}>
                                             {evento.status?.toLowerCase() === "error_confirmacion" ? "Error" :
-                                                evento.status?.toLowerCase() === "revisar" ? "Revisar" :
+                                                evento.status?.toLowerCase() === "revisar" ? "N/A" :
                                                     evento.estado || evento.status || "N/A"}
                                         </BadgeStatus>
                                     </Table.TableCell>
