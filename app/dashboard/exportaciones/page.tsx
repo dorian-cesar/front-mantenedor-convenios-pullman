@@ -13,14 +13,17 @@ import * as XLSX from "xlsx"
 export default function ExportacionesPage() {
     const [isExporting, setIsExporting] = useState<string | null>(null)
 
-    const handleExport = async (type: 'beneficiarios' | 'convenios', format: 'csv' | 'xlsx') => {
+    const handleExport = async (type: 'beneficiarios' | 'convenios' | 'eventos', format: 'csv' | 'xlsx') => {
         const loadingKey = `${type}-${format}`
         setIsExporting(loadingKey)
         
-        const label = type === 'beneficiarios' ? 'beneficiarios' : 'convenios'
-        const endpoint = type === 'beneficiarios' ? 'export/beneficiarios' : 'export/convenios'
-        const defaultFileName = type === 'beneficiarios' ? 'beneficiarios_completos' : 'convenios_completos'
-        
+        const config = {
+            beneficiarios: { label: 'beneficiarios', endpoint: 'export/beneficiarios', fileName: 'beneficiarios_completos', sheet: 'Beneficiarios' },
+            convenios: { label: 'convenios', endpoint: 'export/convenios', fileName: 'convenios_completos', sheet: 'Convenios' },
+            eventos: { label: 'eventos (boletos)', endpoint: 'export/eventos', fileName: 'eventos_completos', sheet: 'Eventos' }
+        }
+
+        const { label, endpoint, fileName: defaultFileName, sheet: sheetName } = config[type]
         const toastId = toast.loading(`Preparando descarga de ${label} (${format.toUpperCase()})...`)
 
         try {
@@ -54,7 +57,6 @@ export default function ExportacionesPage() {
 
                 const worksheet = XLSX.utils.aoa_to_sheet(rows)
                 const workbook = XLSX.utils.book_new()
-                const sheetName = type === 'beneficiarios' ? 'Beneficiarios' : 'Convenios'
                 XLSX.utils.book_append_sheet(workbook, worksheet, sheetName)
 
                 XLSX.writeFile(workbook, `${defaultFileName}.xlsx`)
@@ -190,19 +192,62 @@ export default function ExportacionesPage() {
                         </div>
                     </Card.CardFooter>
                 </Card.Card>
-                
-                {/* Espacio para futuras herramientas de exportación */}
-                <Card.Card className="flex flex-col h-full border-dashed border-muted-foreground/20 bg-muted/5 opacity-60">
+
+                {/* Eventos Card */}
+                <Card.Card className="flex flex-col h-full border-primary/10 shadow-sm hover:shadow-md transition-shadow">
                     <Card.CardHeader>
-                        <Card.CardTitle className="text-muted-foreground text-sm flex items-center gap-2">
-                             Más Reportes Próximamente
+                        <Card.CardTitle className="flex items-center gap-2 text-primary">
+                            <FileDown className="h-5 w-5" />
+                            Eventos (Boletos)
                         </Card.CardTitle>
+                        <Card.CardDescription>
+                            Exportación masiva de todos los boletos emitidos.
+                        </Card.CardDescription>
                     </Card.CardHeader>
-                    <Card.CardContent className="flex-1 items-center justify-center flex py-8">
-                        <p className="text-xs text-center text-muted-foreground italic">
-                            Se añadirán más herramientas de exportación masiva próximamente.
+                    <Card.CardContent className="flex-1">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                            Genera un reporte con el histórico de todos los <strong>boletos (eventos)</strong> emitidos, incluyendo detalles de transacciones, convenios aplicados y códigos de autorización.
                         </p>
                     </Card.CardContent>
+                    <Card.CardFooter className="pt-4 flex flex-col gap-2">
+                        <div className="grid grid-cols-2 gap-2 w-full">
+                            <Button 
+                                variant="outline"
+                                onClick={() => handleExport('eventos', 'csv')} 
+                                disabled={isExporting !== null}
+                                className="w-full border-primary/20 hover:bg-primary/5"
+                            >
+                                {isExporting === 'eventos-csv' ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileDown className="mr-2 h-4 w-4" />
+                                        CSV
+                                    </>
+                                )}
+                            </Button>
+                            <Button 
+                                onClick={() => handleExport('eventos', 'xlsx')} 
+                                disabled={isExporting !== null}
+                                className="w-full bg-primary hover:bg-primary/90"
+                            >
+                                {isExporting === 'eventos-xlsx' ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                        Excel
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </Card.CardFooter>
                 </Card.Card>
             </div>
         </div>
