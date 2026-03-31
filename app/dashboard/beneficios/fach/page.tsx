@@ -22,6 +22,12 @@ import { useDebounce } from "@/hooks/use-debounce"
 import { formatRut } from "@/utils/helpers"
 import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useAuth } from "@/hooks/useAuth"
 import { useConvenios } from "@/hooks/use-convenios"
 
@@ -211,6 +217,14 @@ export default function FachPage() {
 
     const handleRefresh = () => {
         fetchFach();
+    }
+
+    const handleCopyToClipboard = (text: string, label: string) => {
+        navigator.clipboard.writeText(text)
+        toast.success(`${label} ${text} copiado al portapapeles`, {
+            icon: <Icon.Copy className="h-4 w-4" />,
+            duration: 2000
+        })
     }
 
     const handleExport = async (type: "csv" | "excel") => {
@@ -453,6 +467,8 @@ export default function FachPage() {
                         <Table.TableRow>
                             <Table.TableHead>ID</Table.TableHead>
                             <Table.TableHead>Nombre</Table.TableHead>
+                            <Table.TableHead>RUT</Table.TableHead>
+                            <Table.TableHead>Correo</Table.TableHead>
                             <Table.TableHead>Empresa</Table.TableHead>
                             <Table.TableHead>Estado</Table.TableHead>
                             <Table.TableHead>Convenio</Table.TableHead>
@@ -470,16 +486,75 @@ export default function FachPage() {
                             </Table.TableRow>
                         ) : filteredFach.length === 0 ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={5} className="text-center py-8">
+                                <Table.TableCell colSpan={8} className="text-center py-8">
                                     No se encontraron registros de la Armada de Chile
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
                             filteredFach.map((fach, index) => (
                                 <Table.TableRow key={`${fach.id}-${index}`}>
-                                    <Table.TableCell className="font-medium">{fach.id}</Table.TableCell>
-                                    <Table.TableCell className="font-medium">{fach.nombre_completo}</Table.TableCell>
-                                    <Table.TableCell>{fach.empresa.nombre}</Table.TableCell>
+                                    <Table.TableCell>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span 
+                                                        className="font-mono text-[10px] text-muted-foreground cursor-pointer hover:text-primary transition-colors hover:underline underline-offset-2"
+                                                        onClick={() => handleCopyToClipboard(fach.id.toString(), "ID")}
+                                                    >
+                                                        {fach.id}
+                                                    </span>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="right">Clic para copiar ID</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </Table.TableCell>
+                                    <Table.TableCell className="font-medium text-sm">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span 
+                                                        className="cursor-pointer hover:text-primary transition-colors hover:underline underline-offset-4 active:scale-95 transition-transform"
+                                                        onClick={() => handleCopyToClipboard(fach.nombre_completo, "Nombre")}
+                                                    >
+                                                        {fach.nombre_completo}
+                                                    </span>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">Clic para copiar Nombre</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span 
+                                                        className="cursor-pointer hover:text-primary transition-colors decoration-dotted underline-offset-4 hover:underline active:scale-95 transition-transform"
+                                                        onClick={() => handleCopyToClipboard(fach.rut, "RUT")}
+                                                        title="Clic para copiar RUT"
+                                                    >
+                                                        {formatRut(fach.rut)}
+                                                    </span>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">Clic para copiar RUT</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span 
+                                                        className="cursor-pointer hover:text-primary transition-colors hover:underline underline-offset-4 active:scale-95 transition-transform truncate max-w-[150px] inline-block"
+                                                        onClick={() => handleCopyToClipboard(fach.correo || "", "Email")}
+                                                    >
+                                                        {fach.correo || "-"}
+                                                    </span>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="bottom">Clic para copiar Email</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </Table.TableCell>
+                                    <Table.TableCell className="text-xs text-muted-foreground">{fach.empresa.nombre}</Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={fach.status === "ACTIVO" ? "active" : "inactive"}>
                                             {fach.status === "ACTIVO" ? "Activo" : "Inactivo"}

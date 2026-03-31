@@ -22,6 +22,12 @@ import { useDebounce } from "@/hooks/use-debounce"
 import { formatRut } from "@/utils/helpers"
 import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 
 import { useConvenios } from "@/hooks/use-convenios"
@@ -204,6 +210,14 @@ export default function EstudiantesPage() {
 
     const handleRefresh = () => {
         mutate();
+    }
+
+    const handleCopyToClipboard = (text: string, label: string) => {
+        navigator.clipboard.writeText(text)
+        toast.success(`${label} ${text} copiado al portapapeles`, {
+            icon: <Icon.Copy className="h-4 w-4" />,
+            duration: 2000
+        })
     }
 
     const handleExport = async (type: "csv" | "excel") => {
@@ -472,11 +486,68 @@ export default function EstudiantesPage() {
                         ) : (
                             filteredEstudiantes.map((estudiante) => (
                                 <Table.TableRow key={estudiante.id}>
-                                    <Table.TableCell>{estudiante.id}</Table.TableCell>
-                                    <Table.TableCell className="font-medium">{estudiante.nombre}</Table.TableCell>
-                                    <Table.TableCell>{formatRut(estudiante.rut)}</Table.TableCell>
-                                    <Table.TableCell>{estudiante.correo}</Table.TableCell>
-                                    <Table.TableCell>{estudiante.telefono}</Table.TableCell>
+                                    <Table.TableCell>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span 
+                                                        className="font-mono text-[10px] text-muted-foreground cursor-pointer hover:text-primary transition-colors hover:underline underline-offset-2"
+                                                        onClick={() => handleCopyToClipboard(estudiante.id.toString(), "ID")}
+                                                    >
+                                                        {estudiante.id}
+                                                    </span>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="right">Clic para copiar ID</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </Table.TableCell>
+                                    <Table.TableCell className="font-medium text-sm">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span 
+                                                        className="cursor-pointer hover:text-primary transition-colors hover:underline underline-offset-4 active:scale-95 transition-transform"
+                                                        onClick={() => handleCopyToClipboard(estudiante.nombre, "Nombre")}
+                                                    >
+                                                        {estudiante.nombre}
+                                                    </span>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">Clic para copiar Nombre</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span 
+                                                        className="cursor-pointer hover:text-primary transition-colors decoration-dotted underline-offset-4 hover:underline active:scale-95 transition-transform"
+                                                        onClick={() => handleCopyToClipboard(estudiante.rut, "RUT")}
+                                                        title="Clic para copiar RUT"
+                                                    >
+                                                        {formatRut(estudiante.rut)}
+                                                    </span>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top">Clic para copiar RUT</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span 
+                                                        className="cursor-pointer hover:text-primary transition-colors hover:underline underline-offset-4 active:scale-95 transition-transform truncate max-w-[150px] inline-block"
+                                                        onClick={() => handleCopyToClipboard(estudiante.correo || "", "Email")}
+                                                    >
+                                                        {estudiante.correo}
+                                                    </span>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="bottom">Clic para copiar Email</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </Table.TableCell>
+                                    <Table.TableCell className="text-xs text-muted-foreground">{estudiante.telefono}</Table.TableCell>
                                     <Table.TableCell>
                                         {estudiante.convenio?.nombre || (estudiante.convenio_id ? convenioMap[estudiante.convenio_id] : null) || "Sin convenio"}
                                     </Table.TableCell>

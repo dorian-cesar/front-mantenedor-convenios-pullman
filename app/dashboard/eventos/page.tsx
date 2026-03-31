@@ -839,7 +839,17 @@ export default function EventosPage() {
                                 <Table.TableRow key={evento.id}>
                                     <Table.TableCell className="font-medium text-xs">
                                         <div className="flex flex-col gap-1">
-                                            <span>#{evento.id}</span>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span 
+                                                        className="cursor-pointer hover:text-primary transition-colors hover:underline underline-offset-2"
+                                                        onClick={() => handleCopyToClipboard(evento.id.toString(), "ID")}
+                                                    >
+                                                        #{evento.id}
+                                                    </span>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="right">Clic para copiar ID</TooltipContent>
+                                            </Tooltip>
                                             <Badge variant="secondary" className="w-fit text-[9px] px-1 py-0 h-4 uppercase">
                                                 {evento.tipo_evento || "COMPRA"}
                                             </Badge>
