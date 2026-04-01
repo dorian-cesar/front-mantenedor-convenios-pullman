@@ -46,11 +46,13 @@ export default function EventosPage() {
     const [openExport, setOpenExport] = useState(false);
     const [dismissedErrorCount, setDismissedErrorCount] = useState(0);
     const [dismissedRevisarCount, setDismissedRevisarCount] = useState(0);
+    const [dismissedExpiradoCount, setDismissedExpiradoCount] = useState(0);
     const [stats, setStats] = useState({
         confirmados: 0,
         anulados: 0,
         error_confirmacion: 0,
         revisar: 0,
+        expirados: 0,
         total: 0
     })
 
@@ -62,7 +64,10 @@ export default function EventosPage() {
         if (stats.revisar < dismissedRevisarCount) {
             setDismissedRevisarCount(stats.revisar)
         }
-    }, [stats.error_confirmacion, stats.revisar, dismissedErrorCount, dismissedRevisarCount])
+        if (stats.expirados < dismissedExpiradoCount) {
+            setDismissedExpiradoCount(stats.expirados)
+        }
+    }, [stats.error_confirmacion, stats.revisar, stats.expirados, dismissedErrorCount, dismissedRevisarCount, dismissedExpiradoCount])
 
     const [searchValue, setSearchValue] = useState("")
     const [eventos, setEventos] = useState<Evento[]>([])
@@ -70,7 +75,7 @@ export default function EventosPage() {
     const { user } = useAuth()
 
     // Filtros
-    const [statusFilter, setStatusFilter] = useState<"compra" | "anulado" | "error_confirmacion" | "revisar" | "" | null>(null)
+    const [statusFilter, setStatusFilter] = useState<"compra" | "anulado" | "error_confirmacion" | "revisar" | "expirado" | "" | null>(null)
     const [empresaFilter, setEmpresaFilter] = useState<number | null>(null)
     const [pasajeroFilter, setPasajeroFilter] = useState<number | null>(null)
     const [convenioFilter, setConvenioFilter] = useState<number | null>(null)
@@ -131,6 +136,8 @@ export default function EventosPage() {
                 params.estado = "confirmado"
             } else if (statusFilter === "error_confirmacion") {
                 params.estado = "error_confirmacion"
+            } else if (statusFilter === "expirado") {
+                params.estado = "expirado"
             }
             // Para "revisar" (N/A) no enviamos el filtro al API para poder filtrar los blancos en el front
 
@@ -216,12 +223,13 @@ export default function EventosPage() {
                 baseParams.empresa_id = user.empresa_id;
             }
 
-            const [all, conf, anul, err, rev] = await Promise.all([
+            const [all, conf, anul, err, rev, exp] = await Promise.all([
                 EventosService.getEventos({ ...baseParams }),
                 EventosService.getEventos({ ...baseParams, estado: 'confirmado' }),
                 EventosService.getEventos({ ...baseParams, estado: 'anulado' }),
                 EventosService.getEventos({ ...baseParams, estado: 'error_confirmacion' }),
                 EventosService.getEventos({ ...baseParams, estado: 'revisar' }),
+                EventosService.getEventos({ ...baseParams, estado: 'expirado' }),
             ])
 
             setStats({
@@ -229,7 +237,8 @@ export default function EventosPage() {
                 confirmados: conf.totalItems,
                 anulados: anul.totalItems,
                 error_confirmacion: err.totalItems,
-                revisar: all.totalItems - conf.totalItems - anul.totalItems - err.totalItems,
+                expirados: exp.totalItems,
+                revisar: all.totalItems - conf.totalItems - anul.totalItems - err.totalItems - exp.totalItems,
             })
         } catch (error) {
             console.error('Error fetching stats:', error)
@@ -345,6 +354,7 @@ export default function EventosPage() {
             // Aplicar mismos filtros que la tabla
             if (statusFilter === "anulado") params.estado = "anulado"
             if (statusFilter === "compra") params.estado = "confirmado"
+            if (statusFilter === "expirado") params.estado = "expirado"
             if (empresaFilter) params.empresa_id = empresaFilter
             if (pasajeroFilter) params.pasajero_id = pasajeroFilter
             if (convenioFilter) params.convenio_id = convenioFilter
@@ -431,7 +441,8 @@ export default function EventosPage() {
                                 {statusFilter === "compra" ? "Confirmados" :
                                  statusFilter === "anulado" ? "Anulados" :
                                  statusFilter === "error_confirmacion" ? "Error Confirmación" :
-                                 statusFilter === "revisar" ? "N/A" : "Todos"}
+                                 statusFilter === "revisar" ? "N/A" :
+                                 statusFilter === "expirado" ? "Expirados" : "Todos"}
                                 <Icon.ChevronDown className="ml-2 h-4 w-4" />
                             </Button>
                         </Dropdown.DropdownMenuTrigger>
@@ -449,7 +460,10 @@ export default function EventosPage() {
                                 Error Confirmación
                             </Dropdown.DropdownMenuItem>
                             <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("revisar")}>
-                                N/A
+                                Todos los Revisar
+                            </Dropdown.DropdownMenuItem>
+                            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("expirado")}>
+                                Expirados
                             </Dropdown.DropdownMenuItem>
                         </Dropdown.DropdownMenuContent>
                     </Dropdown.DropdownMenu>
@@ -686,7 +700,7 @@ export default function EventosPage() {
                 filters={filters}
             />
 
-            {(stats.error_confirmacion > dismissedErrorCount || stats.revisar > dismissedRevisarCount) && (
+            {(stats.error_confirmacion > dismissedErrorCount || stats.revisar > dismissedRevisarCount || stats.expirados > dismissedExpiradoCount) && (
                 <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-4 duration-500 shadow-lg border-red-200">
                     <Icon.AlertOctagon className="h-4 w-4" />
                     <AlertTitle className="font-bold">Alarma: Nuevos Incidentes Detectados</AlertTitle>
@@ -698,8 +712,11 @@ export default function EventosPage() {
                             {stats.revisar > dismissedRevisarCount && (
                                 <span>• Se detectaron <strong>{stats.revisar - dismissedRevisarCount}</strong> nuevos boletos pendientes (N/A) por revisar.</span>
                             )}
+                            {stats.expirados > dismissedExpiradoCount && (
+                                <span>• Se detectaron <strong>{stats.expirados - dismissedExpiradoCount}</strong> nuevos boletos **expirados**.</span>
+                            )}
                             <span className="text-[10px] text-red-700/80 mt-1 italic">
-                                Total acumulado: {stats.error_confirmacion} errores y {stats.revisar} pendientes.
+                                Total acumulado: {stats.error_confirmacion} errores, {stats.revisar} pendientes y {stats.expirados} expirados.
                             </span>
                         </div>
                         <div className="flex gap-2 shrink-0">
@@ -710,6 +727,7 @@ export default function EventosPage() {
                                 onClick={() => {
                                     setDismissedErrorCount(stats.error_confirmacion);
                                     setDismissedRevisarCount(stats.revisar);
+                                    setDismissedExpiradoCount(stats.expirados);
                                 }}
                             >
                                 Marcar como Vistos
@@ -718,7 +736,7 @@ export default function EventosPage() {
                                 variant="destructive" 
                                 size="sm" 
                                 className="h-7 text-[10px] bg-red-600 hover:bg-red-700 font-bold"
-                                onClick={() => setStatusFilter(stats.error_confirmacion > dismissedErrorCount ? 'error_confirmacion' : 'revisar')}
+                                onClick={() => setStatusFilter(stats.error_confirmacion > dismissedErrorCount ? 'error_confirmacion' : stats.expirados > dismissedExpiradoCount ? 'expirado' : 'revisar')}
                             >
                                 Revisar Ahora
                             </Button>
@@ -785,6 +803,24 @@ export default function EventosPage() {
                     </Card.CardHeader>
                     <Card.CardContent>
                         <div className="text-2xl font-bold text-amber-600">{stats.revisar}</div>
+                    </Card.CardContent>
+                </Card.Card>
+
+                <Card.Card
+                    className={`cursor-pointer transition-all hover:ring-2 hover:ring-slate-500/20 ${
+                        statusFilter === 'expirado' ? 'ring-2 ring-slate-500 bg-slate-50/50' : ''
+                    } ${stats.expirados > dismissedExpiradoCount ? 'animate-pulse border-red-500 ring-2 ring-red-500/30 bg-red-50/50' : ''}`}
+                    onClick={() => setStatusFilter('expirado')}
+                >
+                    <Card.CardHeader className="pb-2">
+                        <Card.CardTitle className={`text-[10px] font-bold uppercase flex items-center gap-2 ${stats.expirados > dismissedExpiradoCount ? 'text-red-700' : 'text-slate-600'}`}>
+                            <Icon.TimerIcon className={`h-3 w-3 ${stats.expirados > dismissedExpiradoCount ? 'animate-bounce' : ''}`} /> Expirados
+                        </Card.CardTitle>
+                    </Card.CardHeader>
+                    <Card.CardContent>
+                        <div className={`text-2xl font-bold ${stats.expirados > dismissedExpiradoCount ? 'text-red-700' : 'text-slate-600'}`}>
+                            {stats.expirados}
+                        </div>
                     </Card.CardContent>
                 </Card.Card>
 

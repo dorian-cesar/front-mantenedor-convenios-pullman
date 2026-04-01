@@ -27,7 +27,7 @@ export interface Evento {
     fecha_compra?: string;
     codigo_autorizacion?: string;
     token?: string;
-    estado?: "confirmado" | "anulado";
+    estado?: "confirmado" | "anulado" | "expirado";
     created_at?: string;
     updated_at?: string;
     status?: string;
@@ -59,7 +59,7 @@ export interface GetEventosParams {
     convenio_id?: number;
     fecha_inicio?: string;
     fecha_fin?: string;
-    estado?: "confirmado" | "anulado";
+    estado?: "confirmado" | "anulado" | "expirado";
     status?: string;
     search?: string;
     nombre?: string;

@@ -8,12 +8,14 @@ const BADGE_STATUS_CLASSES: Record<string, string> = {
     active: "bg-green-500/50 text-green-900 dark:text-black hover:bg-green-100",
     inactive: "bg-red-500/50 text-red-900 dark:text-black hover:bg-red-100",
     pending: "bg-yellow-500/50 text-yellow-900 dark:text-black hover:bg-yellow-100",
+    expirado: "bg-slate-500/50 text-slate-900 dark:text-black hover:bg-slate-100",
 }
 
 function normalizeStatus(value: StatusValue): string {
     if (value === 1 || value === true || value === "active" || value === "completado" || value === "CONFIRMADO" || value === "confirmado") return "active"
     if (value === 0 || value === false || value === "inactive" || value === "cancelado" || value === "ANULADO" || value === "anulado") return "inactive"
     if (value === "pending" || value === "error_confirmacion" || value === "revisar") return "pending"
+    if (value === "expirado") return "expirado"
     return "pending"
 }
 
