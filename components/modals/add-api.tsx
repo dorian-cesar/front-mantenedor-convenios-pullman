@@ -13,11 +13,22 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { ApisService } from "@/services/api.service"
+import { EmpresasService, type Empresa } from "@/services/empresa.service"
 
 interface AddApiModalProps {
     open: boolean
@@ -32,6 +43,7 @@ export const apiSchema = z.object({
     endpoint: z.string()
         .min(1, "El endpoint es requerido")
         .max(500, "El endpoint no puede exceder los 500 caracteres"),
+    empresa_id: z.number().nullable(),
     status: z.enum(["ACTIVO", "INACTIVO"], {
         message: "Debe seleccionar un estado"
     }),
@@ -46,6 +58,8 @@ export default function AddApiModal({
 }: AddApiModalProps) {
 
     const [loading, setLoading] = React.useState(false)
+    const [empresas, setEmpresas] = React.useState<Empresa[]>([])
+    const [openEmpresaPopover, setOpenEmpresaPopover] = React.useState(false)
 
     const form = useForm<ApiFormValues>({
         resolver: zodResolver(apiSchema),
@@ -53,13 +67,24 @@ export default function AddApiModal({
         defaultValues: {
             nombre: "",
             endpoint: "",
+            empresa_id: null,
             status: "ACTIVO"
         },
     })
 
+    const empresaSeleccionadaId = form.watch("empresa_id")
+    const empresaSeleccionada = empresas.find(e => e.id === empresaSeleccionadaId)
+
+    React.useEffect(() => {
+        EmpresasService.getEmpresas({ page: 1, limit: 200, status: "ACTIVO" })
+            .then(r => setEmpresas(r.rows))
+            .catch(() => console.error("No se pudieron cargar las empresas"))
+    }, [])
+
     React.useEffect(() => {
         if (open) {
             form.reset()
+            setOpenEmpresaPopover(false)
         }
     }, [open])
 
@@ -69,7 +94,8 @@ export default function AddApiModal({
             await ApisService.createApi({
                 nombre: data.nombre,
                 endpoint: data.endpoint,
-                status: data.status
+                status: data.status,
+                empresa_id: data.empresa_id,
             })
 
             toast.success("API creada correctamente")
@@ -92,7 +118,7 @@ export default function AddApiModal({
                         Agregar API
                     </Dialog.DialogTitle>
                     <Dialog.DialogDescription>
-                        Complete los datos para agregar una nueva API
+                        Complete los datos para agregar una nueva API de consulta
                     </Dialog.DialogDescription>
                 </Dialog.DialogHeader>
 
@@ -133,6 +159,50 @@ export default function AddApiModal({
                                 </Form.FormItem>
                             )}
                         />
+
+                        <Form.FormField control={form.control} name="empresa_id" render={({ field }) => (
+                            <Form.FormItem className="flex flex-col">
+                                <Form.FormLabel>Empresa</Form.FormLabel>
+                                <Popover open={openEmpresaPopover} onOpenChange={setOpenEmpresaPopover}>
+                                    <PopoverTrigger asChild>
+                                        <Form.FormControl>
+                                            <Button variant="outline" role="combobox" className={cn("w-full justify-between", !field.value && "text-muted-foreground")}>
+                                                {empresaSeleccionada ? empresaSeleccionada.nombre : "Sin empresa (Público)"}
+                                                <Icon.ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </Form.FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-full p-0">
+                                        <Command>
+                                            <CommandInput placeholder="Buscar empresa..." />
+                                            <CommandList>
+                                                <CommandEmpty>No se encontró.</CommandEmpty>
+                                                <CommandGroup>
+                                                    <CommandItem
+                                                        value="Sin empresa"
+                                                        onSelect={() => {
+                                                            field.onChange(null)
+                                                            setOpenEmpresaPopover(false)
+                                                        }}
+                                                    >
+                                                        <Icon.CheckIcon className={cn("mr-2 h-4 w-4", field.value === null ? "opacity-100" : "opacity-0")} />
+                                                        Sin empresa (Público)
+                                                    </CommandItem>
+                                                    {empresas.map(e => (
+                                                        <CommandItem key={e.id} value={e.nombre}
+                                                            onSelect={() => { field.onChange(e.id); setOpenEmpresaPopover(false) }}>
+                                                            <Icon.CheckIcon className={cn("mr-2 h-4 w-4", e.id === field.value ? "opacity-100" : "opacity-0")} />
+                                                            {e.nombre}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                                <Form.FormMessage />
+                            </Form.FormItem>
+                        )} />
 
                         <Form.FormField
                             control={form.control}

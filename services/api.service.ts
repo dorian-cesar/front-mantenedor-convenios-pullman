@@ -5,6 +5,12 @@ export interface Api {
     nombre: string;
     endpoint: string;
     status: "ACTIVO" | "INACTIVO";
+    empresa_id?: number | null;
+    empresa?: {
+        id: number;
+        nombre: string;
+        rut?: string;
+    } | null;
 }
 
 export interface GetApisParams {
@@ -29,12 +35,14 @@ export interface CreateApiData {
     nombre: string;
     endpoint: string;
     status?: "ACTIVO" | "INACTIVO";
+    empresa_id?: number | null;
 }
 
 export interface UpdateApiData {
     nombre?: string;
     endpoint?: string;
     status?: "ACTIVO" | "INACTIVO";
+    empresa_id?: number | null;
 }
 
 export class ApisService {

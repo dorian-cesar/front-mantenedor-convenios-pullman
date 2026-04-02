@@ -2,17 +2,20 @@
 
 import * as Dialog from "@/components/ui/dialog"
 import { Api } from "@/services/api.service"
+import { Empresa } from "@/services/empresa.service"
 
 interface DetailsApiModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     api: Api | null
+    empresas?: Empresa[]
 }
 
 export default function DetailsApiModal({
     open,
     onOpenChange,
     api,
+    empresas = [],
 }: DetailsApiModalProps) {
     return (
         <Dialog.Dialog open={open} onOpenChange={onOpenChange}>
@@ -48,6 +51,17 @@ export default function DetailsApiModal({
                         </p>
                         <p className="text-sm text-muted-foreground font-mono break-all">
                             {api?.endpoint}
+                        </p>
+                    </div>
+
+                    <div>
+                        <p className="text-sm font-medium leading-none">
+                            Empresa
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            {api?.empresa?.nombre
+                                ?? (api?.empresa_id ? empresas.find(e => e.id === api.empresa_id)?.nombre : null)
+                                ?? "Sin empresa (Público)"}
                         </p>
                     </div>
 

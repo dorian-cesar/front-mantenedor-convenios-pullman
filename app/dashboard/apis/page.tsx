@@ -14,6 +14,7 @@ import AddApiModal from "@/components/modals/add-api"
 import UpdateApiModal from "@/components/modals/update-api"
 import DetailsApiModal from "@/components/modals/details-api"
 import { ApisService, type Api, type GetApisParams } from "@/services/api.service"
+import { EmpresasService, type Empresa } from "@/services/empresa.service"
 import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
 import { exportToCSV } from "@/utils/exportCSV"
@@ -29,6 +30,7 @@ export default function ApisPage() {
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedApi, setSelectedApi] = useState<Api | null>(null)
     const [statusFilter, setStatusFilter] = useState<string>("")
+    const [empresas, setEmpresas] = useState<Empresa[]>([])
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -83,6 +85,12 @@ export default function ApisPage() {
     useEffect(() => {
         fetchApis()
     }, [pagination.page, pagination.limit, debouncedSearch, statusFilter])
+
+    useEffect(() => {
+        EmpresasService.getEmpresas({ page: 1, limit: 200, status: "ACTIVO" })
+            .then(r => setEmpresas(r.rows))
+            .catch(() => console.error("Error cargando empresas"))
+    }, [])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -292,6 +300,7 @@ export default function ApisPage() {
                             <Table.TableHead>ID</Table.TableHead>
                             <Table.TableHead>Nombre</Table.TableHead>
                             <Table.TableHead>Endpoint</Table.TableHead>
+                            <Table.TableHead>Empresa</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
@@ -320,6 +329,13 @@ export default function ApisPage() {
                                     <Table.TableCell>
                                         <span className="font-mono text-sm">
                                             {api.endpoint}
+                                        </span>
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        <span className="text-sm text-muted-foreground">
+                                            {api.empresa?.nombre
+                                                ?? (api.empresa_id ? empresas.find(e => e.id === api.empresa_id)?.nombre : null)
+                                                ?? <span className="italic text-muted-foreground/60">Sin empresa</span>}
                                         </span>
                                     </Table.TableCell>
                                     <Table.TableCell>
@@ -403,6 +419,7 @@ export default function ApisPage() {
                 open={openDetails}
                 onOpenChange={setOpenDetails}
                 api={selectedApi}
+                empresas={empresas}
             />
         </div>
     )
