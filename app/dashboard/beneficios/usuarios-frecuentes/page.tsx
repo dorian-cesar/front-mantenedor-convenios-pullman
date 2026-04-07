@@ -264,7 +264,7 @@ export default function UsuariosFrecuentesPage() {
         }
     }
 
-    const actionButtons = user?.rol === "SISTEMA" ? [] : [
+    const actionButtons = [
         {
             label: "Nuevo Pasajero Frecuente",
             onClick: () => setOpenAdd(true),

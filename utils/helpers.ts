@@ -7,9 +7,34 @@ export const formatRut = (rut: string | null | undefined) => {
   if (!rut) return ""
   if (rut.includes('-')) return rut
 
-  const rutBody = rut.slice(0, -1)
-  const dv = rut.slice(-1)
+  const cleanRut = rut.replace(/\./g, '').replace(/-/g, '')
+  if (cleanRut.length < 2) return rut
+
+  const rutBody = cleanRut.slice(0, -1)
+  const dv = cleanRut.slice(-1)
   return `${rutBody.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${dv}`
+}
+
+export const validateRut = (rut: string | null | undefined) => {
+  if (!rut) return false
+  const cleanRut = rut.replace(/\./g, '').replace(/-/g, '')
+  if (cleanRut.length < 8) return false
+
+  const body = cleanRut.slice(0, -1)
+  const dv = cleanRut.slice(-1).toUpperCase()
+
+  let sum = 0
+  let mul = 2
+
+  for (let i = body.length - 1; i >= 0; i--) {
+    sum += Number(body[i]) * mul
+    mul = mul === 7 ? 2 : mul + 1
+  }
+
+  const res = 11 - (sum % 11)
+  const expectedDv = res === 11 ? '0' : res === 10 ? 'K' : res.toString()
+
+  return dv === expectedDv
 }
 
 export const formatDate = (isoDate: string) => {
