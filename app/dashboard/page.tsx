@@ -145,7 +145,7 @@ export default function DashboardPage() {
 
             <PageHeader
                 title="Dashboard"
-                description="Resumen de rendimiento y actividad del sistema."
+                description={`Resumen de rendimiento y actividad del sistema. ${user?.rol === 'USUARIO' ? `| Empresa ID: ${user?.empresa_id || 'No asignada'}` : ''}`}
                 showRefreshButton={true}
                 onRefresh={handleRefresh}
             />

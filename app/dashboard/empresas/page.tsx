@@ -19,6 +19,7 @@ import { useDebounce } from "@/hooks/use-debounce"
 import { formatRut } from "@/utils/helpers"
 import { exportToCSV } from "@/utils/exportCSV"
 import { exportToExcel } from "@/utils/exportXLSX"
+import { useAuth } from "@/hooks/useAuth"
 
 
 export default function EmpresasPage() {
@@ -31,6 +32,15 @@ export default function EmpresasPage() {
     const [openDetails, setOpenDetails] = useState(false)
     const [selectedEmpresa, setSelectedEmpresa] = useState<Empresa | null>(null)
     const [statusFilter, setStatusFilter] = useState<string>("")
+    const { user, initialized: authInitialized } = useAuth()
+    
+    // Lógica de Rol y Empresa robusta
+    const isUserRole = user?.rol === "USUARIO";
+    const effectiveEmpresaId = user?.empresa_id || user?.empresaId || user?.id_empresa || user?.empresa?.id;
+
+    useEffect(() => {
+        // Diagnostic log removed for production
+    }, [user, authInitialized]);
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -46,6 +56,12 @@ export default function EmpresasPage() {
         str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
     const fetchEmpresas = async () => {
+        // Esperar a que la autenticación esté lista Y enriquecida si es necesario
+        const isWaitingForID = (user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user") && 
+                               !effectiveEmpresaId;
+        
+        if (!authInitialized || isWaitingForID) return;
+        
         setIsLoading(true)
         try {
             const params: GetEmpresasParams = {
@@ -58,6 +74,27 @@ export default function EmpresasPage() {
             const searchTerm = debouncedSearch.trim()
             if (searchTerm) {
                 params.search = searchTerm
+            }
+
+            if (selectedEmpresa) {
+                params.id = selectedEmpresa.id
+            } else {
+                // Lógica de filtrado combinando React y localStorage para máxima seguridad
+                const reactEmpresaId = user?.empresa_id || user?.empresaId || user?.id_empresa || user?.empresa?.id;
+                let manualEmpresaId = null;
+                if (typeof window !== 'undefined') {
+                    const rawUser = localStorage.getItem('user');
+                    if (rawUser) {
+                        const parsedUser = JSON.parse(rawUser);
+                        manualEmpresaId = parsedUser.empresa_id || parsedUser.empresaId || parsedUser.id_empresa || parsedUser.empresa?.id;
+                    }
+                }
+
+                const finalId = reactEmpresaId || manualEmpresaId;
+                
+                if (isUserRole && finalId) {
+                    params.id = finalId;
+                }
             }
 
             if (statusFilter) {
@@ -84,8 +121,9 @@ export default function EmpresasPage() {
     }
 
     useEffect(() => {
+        if (!authInitialized) return;
         fetchEmpresas()
-    }, [pagination.page, pagination.limit, debouncedSearch, statusFilter])
+    }, [pagination.page, pagination.limit, debouncedSearch, statusFilter, authInitialized, user])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -151,8 +189,13 @@ export default function EmpresasPage() {
                 order: "DESC",
             }
 
-            if (debouncedSearch.trim()) {
+            if (selectedEmpresa) {
                 params.search = debouncedSearch.trim()
+            }
+
+            // Restricción por Rol para exportación
+            if (isUserRole && effectiveEmpresaId) {
+                params.id = effectiveEmpresaId;
             }
 
             const response = await EmpresasService.getEmpresas(params)
@@ -187,7 +230,7 @@ export default function EmpresasPage() {
         }
     }
 
-    const actionButtons = [
+    const actionButtons = isUserRole ? [] : [
         {
             label: "Nueva Empresa",
             onClick: () => setOpenAdd(true),
@@ -350,28 +393,33 @@ export default function EmpresasPage() {
                                                     <Icon.EyeIcon className="h-4 w-4 mr-2" />
                                                     Ver detalles
                                                 </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuItem
-                                                    onClick={() => handleEditEmpresa(empresa)}
-                                                >
-                                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
-                                                    Editar
-                                                </Dropdown.DropdownMenuItem>
-                                                <Dropdown.DropdownMenuSeparator />
-                                                {empresa.status === "ACTIVO" ? (
-                                                    <Dropdown.DropdownMenuItem
-                                                        variant="destructive"
-                                                        onClick={() => handleToggleStatus(empresa.id, empresa.status)}
-                                                    >
-                                                        <Icon.BanIcon className="h-4 w-4 mr-2" />
-                                                        Desactivar
-                                                    </Dropdown.DropdownMenuItem>
-                                                ) : (
-                                                    <Dropdown.DropdownMenuItem
-                                                        onClick={() => handleToggleStatus(empresa.id, empresa.status)}
-                                                    >
-                                                        <Icon.CheckIcon className="h-4 w-4 mr-2" />
-                                                        Activar
-                                                    </Dropdown.DropdownMenuItem>
+                                                
+                                                {!isUserRole && (
+                                                    <>
+                                                        <Dropdown.DropdownMenuItem
+                                                            onClick={() => handleEditEmpresa(empresa)}
+                                                        >
+                                                            <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                                            Editar
+                                                        </Dropdown.DropdownMenuItem>
+                                                        <Dropdown.DropdownMenuSeparator />
+                                                        {empresa.status === "ACTIVO" ? (
+                                                            <Dropdown.DropdownMenuItem
+                                                                variant="destructive"
+                                                                onClick={() => handleToggleStatus(empresa.id, empresa.status)}
+                                                            >
+                                                                <Icon.BanIcon className="h-4 w-4 mr-2" />
+                                                                Desactivar
+                                                            </Dropdown.DropdownMenuItem>
+                                                        ) : (
+                                                            <Dropdown.DropdownMenuItem
+                                                                onClick={() => handleToggleStatus(empresa.id, empresa.status)}
+                                                            >
+                                                                <Icon.CheckIcon className="h-4 w-4 mr-2" />
+                                                                Activar
+                                                            </Dropdown.DropdownMenuItem>
+                                                        )}
+                                                    </>
                                                 )}
                                             </Dropdown.DropdownMenuContent>
                                         </Dropdown.DropdownMenu>

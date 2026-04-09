@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, Menu } from "lucide-react";
+import { Bell, Search, Menu, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,6 +26,10 @@ interface NavbarProps {
     correo: string;
     nombre: string | null;
     rol: string;
+    empresa_id?: number | null;
+    empresaId?: number | null;
+    id_empresa?: number | null;
+    empresa?: { id: number; nombre?: string } | null;
   } | null;
   onLogout: () => void;
 }
@@ -36,7 +40,32 @@ export function Navbar({
   user,
   onLogout
 }: NavbarProps) {
+  
+  const findEmpresaId = (obj: any): any => {
+      if (!obj) return null;
 
+      const standard = obj.empresa_id || obj.empresaId || obj.id_empresa || obj.empresa?.id || obj.user?.empresa_id || obj.user?.id_empresa;
+      if (standard) return standard;
+      
+      for (const key in obj) {
+          const val = obj[key];
+          const keyLower = key.toLowerCase();
+          
+          if (keyLower.includes('empresa') || keyLower.includes('emp_id')) {
+              if (typeof val === 'number') return val;
+              if (typeof val === 'string' && /^\d+$/.test(val)) return parseInt(val, 10);
+          }
+          
+          if (typeof val === 'object' && val !== null) {
+              const nested = findEmpresaId(val);
+              if (nested) return nested;
+          }
+      }
+      return null;
+  };
+
+  const finalEmpresaId = findEmpresaId(user);
+  
   const getInitials = () => {
     if (!user?.nombre) return user?.correo?.charAt(0).toUpperCase() || "AD";
 
@@ -78,64 +107,19 @@ export function Navbar({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* <Button variant="ghost" size="icon" className="md:hidden text-foreground">
-            <Search className="h-5 w-5" />
-            <span className="sr-only">Buscar</span>
-          </Button> */}
+          <div className="hidden sm:flex items-center gap-2 mr-2">
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-secondary border border-border rounded-full text-[10px] font-bold text-muted-foreground uppercase tracking-wider shadow-sm">
+               <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+               ROL: {user?.rol || "S/R"}
+               {user?.rol !== "SUPER_USUARIO" && (
+                 <>
+                   <span className="mx-1 opacity-20">|</span>
+                   ID EMPRESA: {finalEmpresaId || "0"}
+                 </>
+               )}
+            </span>
+          </div>
 
-          {/* <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative text-foreground">
-                <Bell className="h-5 w-5" />
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
-                  4
-                </Badge>
-                <span className="sr-only">Notificaciones</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">Notificaciones</span>
-                  <Badge variant="secondary" className="text-xs">
-                    4 nuevas
-                  </Badge>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 cursor-pointer">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-primary" />
-                  <span className="font-medium text-sm">Nuevo usuario registrado</span>
-                </div>
-                <span className="text-xs text-muted-foreground pl-4">
-                  Hace 5 minutos
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 cursor-pointer">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-primary" />
-                  <span className="font-medium text-sm">Pedido completado #1234</span>
-                </div>
-                <span className="text-xs text-muted-foreground pl-4">
-                  Hace 15 minutos
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex flex-col items-start gap-1 py-3 cursor-pointer">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-chart-3" />
-                  <span className="font-medium text-sm">Alerta de inventario bajo</span>
-                </div>
-                <span className="text-xs text-muted-foreground pl-4">
-                  Hace 1 hora
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-center justify-center text-primary cursor-pointer">
-                Ver todas las notificaciones
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu> */}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -13,6 +13,10 @@ interface DashboardLayoutProps {
         correo: string;
         nombre: string | null;
         rol: string;
+        empresa_id?: number | null;
+        empresaId?: number | null;
+        id_empresa?: number | null;
+        empresa?: { id: number; nombre?: string } | null;
     } | null;
     onLogout: () => void;
 }
