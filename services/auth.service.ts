@@ -44,6 +44,40 @@ export class AuthService {
 
         const token = response.data.token;
         localStorage.setItem("token", token);
+        
+        // Consultar el endpoint de usuarios o descubrir el empresa_id real
+        try {
+            const userId = response.data.user.id;
+            let realEmpresaId = null;
+
+            // SOLO si el empresa_id no viene en el login, intentar descubrirlo (Discovery FALLBACK)
+            if (!response.data.user.empresa_id) {
+                if (response.data.user.rol === 'ADMIN' || response.data.user.rol === 'SUPERADMIN' || response.data.user.rol === 'SUPER_USUARIO') {
+                    // Si es ADMIN/SUPER_USUARIO, intentar ver su perfil completo
+                    try {
+                        const userDetails = await api.get(`/admin/usuarios/${userId}`);
+                        realEmpresaId = userDetails.data?.empresa_id;
+                    } catch (e) {
+                         console.log("Admin enrichment skipped or failed");
+                    }
+                } else {
+                    // Discovery limitado para USUARIO (solo si no viene el ID)
+                    const conveniosRes = await api.get('/convenios', { params: { limit: 1 } });
+                    
+                    if (conveniosRes.data?.rows && conveniosRes.data.rows.length > 0 && conveniosRes.data.rows[0].empresa_id) {
+                        realEmpresaId = conveniosRes.data.rows[0].empresa_id;
+                    }
+                }
+                
+                if (realEmpresaId) {
+                    response.data.user.empresa_id = realEmpresaId;
+                    console.log(`Empresa ID descubierto: ${realEmpresaId}`);
+                }
+            }
+        } catch (error) {
+            console.error('Error al sincronizar datos del usuario:', error);
+        }
+
         localStorage.setItem("user", JSON.stringify(response.data.user));
 
         // Sincronizar con cookie para middleware

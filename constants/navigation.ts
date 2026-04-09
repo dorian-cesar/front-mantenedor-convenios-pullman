@@ -72,6 +72,16 @@ export const NAVIGATION: NavItem[] = [
         section: "main",
     },
     {
+        id: "tablas-clientes-corporativos",
+        title: "Clientes Corporativos",
+        href: "/dashboard/tablas-clientes-corporativos",
+        icon: Building2,
+        description: "nóminas · empresas · tablas dinámicas · grupos",
+        group: "Empresas",
+        section: "main",
+        roles: ["SUPER_USUARIO"]
+    },
+    {
         id: "api",
         title: "API Externa",
         href: "/dashboard/apis",
@@ -165,6 +175,7 @@ export const NAVIGATION: NavItem[] = [
         description: "pasajeros · clientes · personas · tipos de usuarios",
         group: "Operación",
         section: "tertiary",
+        roles: ["SUPER_USUARIO", "SISTEMA"]
     },
     {
         id: "exportaciones",

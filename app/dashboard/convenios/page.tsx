@@ -20,7 +20,7 @@ import { EmpresasService, type Empresa } from "@/services/empresa.service"
 import { ApisService, type Api } from "@/services/api.service"
 import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
-import { AuthService, CurrentUser } from "@/services/auth.service"
+import { useAuth } from "@/hooks/useAuth"
 import { formatDateOnly, formatNumber } from "@/utils/helpers"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -54,8 +54,16 @@ function ConveniosPage() {
     const [selectedConvenio, setSelectedConvenio] = useState<Convenio | null>(null)
     const [selectedEmpresa, setSelectedEmpresa] = useState<number | null>(null)
     const [statusFilter, setStatusFilter] = useState<string>("")
-    const [user, setUser] = useState<CurrentUser | null>(null)
+    const { user, initialized: authInitialized } = useAuth()
     const [summary, setSummary] = useState({ activo: 0, inactivo: 0 })
+
+    const isUserRole = user?.rol === "USUARIO";
+    const effectiveEmpresaId = user?.empresa_id || user?.empresaId || user?.id_empresa || user?.empresa?.id;
+
+    useEffect(() => {
+        if (authInitialized) {
+        }
+    }, [user, authInitialized]);
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -74,8 +82,9 @@ function ConveniosPage() {
         try {
             const baseParams: GetConveniosParams = {}
             if (selectedEmpresa) baseParams.empresa_id = selectedEmpresa
-            if (user?.rol === "USUARIO" && user?.empresa_id) {
-                baseParams.empresa_id = user.empresa_id;
+            // Si es USUARIO (o user), forzar su empresa_id
+            if (isUserRole && effectiveEmpresaId) {
+                baseParams.empresa_id = effectiveEmpresaId;
             }
 
             const [activeRes, inactiveRes] = await Promise.all([
@@ -93,6 +102,12 @@ function ConveniosPage() {
     }
 
     const fetchConvenios = async () => {
+        // Esperar a que la autenticación esté lista Y enriquecida si es necesario
+        const isWaitingForID = (user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user") && 
+                               !effectiveEmpresaId;
+        
+        if (!authInitialized || isWaitingForID) return;
+        
         setIsLoading(true)
         try {
             const params: GetConveniosParams = {
@@ -113,11 +128,23 @@ function ConveniosPage() {
 
             if (selectedEmpresa) {
                 params.empresa_id = selectedEmpresa
-            }
+            } else {
+                // Lógica de filtrado combinando React y localStorage
+                const reactEmpresaId = user?.empresa_id || user?.empresaId || user?.id_empresa || user?.empresa?.id;
+                let manualEmpresaId = null;
+                if (typeof window !== 'undefined') {
+                    const rawUser = localStorage.getItem('user');
+                    if (rawUser) {
+                        const parsedUser = JSON.parse(rawUser);
+                        manualEmpresaId = parsedUser.empresa_id || parsedUser.empresaId || parsedUser.id_empresa || parsedUser.empresa?.id;
+                    }
+                }
 
-            // Restricción por Rol: Si es USUARIO, forzar su empresa_id
-            if (user?.rol === "USUARIO" && user?.empresa_id) {
-                params.empresa_id = user.empresa_id;
+                const finalId = reactEmpresaId || manualEmpresaId;
+                
+                if (isUserRole && finalId) {
+                    params.empresa_id = finalId;
+                }
             }
 
             const response = await ConveniosService.getConvenios(params)
@@ -131,7 +158,6 @@ function ConveniosPage() {
                 hasNextPage: (response.currentPage || 1) < (response.totalPages || 1)
             }))
 
-            // Actualizar resumen también
             fetchSummary()
         } catch (error) {
             console.error('Error fetching convenios:', error)
@@ -164,14 +190,12 @@ function ConveniosPage() {
     }
 
     useEffect(() => {
+        if (!authInitialized) return;
         fetchConvenios()
         fetchEmpresas()
         fetchApis()
-    }, [pagination.page, pagination.limit, debouncedSearch, selectedEmpresa, statusFilter])
+    }, [pagination.page, pagination.limit, debouncedSearch, selectedEmpresa, statusFilter, user, authInitialized])
 
-    useEffect(() => {
-        setUser(AuthService.getCurrentUser())
-    }, [])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -273,9 +297,8 @@ function ConveniosPage() {
                 params.empresa_id = selectedEmpresa
             }
 
-            // Restricción por Rol: Si es USUARIO, forzar su empresa_id
-            if (user?.rol === "USUARIO" && user?.empresa_id) {
-                params.empresa_id = user.empresa_id;
+            if (isUserRole && unifiedEmpresaId) {
+                params.empresa_id = unifiedEmpresaId;
             }
 
             const response = await ConveniosService.getConvenios(params)
@@ -426,7 +449,7 @@ function ConveniosPage() {
             <PageHeader
                 title="Convenios"
                 description="Gestione los convenios de las empresas aquí."
-                actionButtons={user?.rol === "SISTEMA" ? [] : [
+                actionButtons={isUserRole ? [] : [
                     {
                         label: "Nuevo Convenio",
                         onClick: () => setOpenAdd(true),
@@ -594,7 +617,7 @@ function ConveniosPage() {
                                                     Ver detalles
                                                 </Dropdown.DropdownMenuItem>
 
-                                                {user?.rol !== "SISTEMA" && (
+                                                {!isUserRole && (
                                                     <>
                                                         <Dropdown.DropdownMenuItem
                                                             onClick={() => handleEditConvenio(convenio)}

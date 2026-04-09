@@ -72,7 +72,12 @@ export default function EventosPage() {
     const [searchValue, setSearchValue] = useState("")
     const [eventos, setEventos] = useState<Evento[]>([])
     const [isLoading, setIsLoading] = useState(true)
-    const { user } = useAuth()
+    const { user, initialized: authInitialized } = useAuth()
+    
+    // Lógica de Rol y Empresa robusta
+    const isUserRole = user?.rol === "USUARIO";
+    const effectiveEmpresaId = user?.empresa_id || user?.empresaId || user?.id_empresa || user?.empresa?.id;
+
 
     // Filtros
     const [statusFilter, setStatusFilter] = useState<"compra" | "anulado" | "error_confirmacion" | "revisar" | "expirado" | "" | null>(null)
@@ -119,6 +124,12 @@ export default function EventosPage() {
     const debouncedTicket = useDebounce(ticketFilter, 500)
 
     const fetchEventos = async () => {
+        // Esperar a que la autenticación esté lista Y enriquecida si es necesario
+        const isWaitingForID = (user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user") && 
+                               !effectiveEmpresaId;
+        
+        if (!authInitialized || isWaitingForID) return;
+        
         setIsLoading(true)
         try {
             const params: any = {
@@ -158,8 +169,9 @@ export default function EventosPage() {
                 params.endDate = dateRange.to.toISOString()
             }
 
-            if (user?.rol === "USUARIO" && user?.empresa_id) {
-                params.empresa_id = user.empresa_id;
+            // Restricción por Rol: Si es USUARIO (o user), forzar su empresa_id
+            if (isUserRole && effectiveEmpresaId) {
+                params.empresa_id = effectiveEmpresaId;
             }
 
             // Nuevos parámetros de búsqueda servidor
@@ -207,6 +219,11 @@ export default function EventosPage() {
     }
 
     const fetchStats = async () => {
+        // Esperar a que la autenticación esté lista Y enriquecida si es necesario
+        const isWaitingForID = (user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user") && 
+                               !effectiveEmpresaId;
+        
+        if (!authInitialized || isWaitingForID) return;
         try {
             const baseParams: any = {
                 limit: 1,
@@ -219,8 +236,9 @@ export default function EventosPage() {
             if (dateRange?.from) baseParams.startDate = dateRange.from.toISOString()
             if (dateRange?.to) baseParams.endDate = dateRange.to.toISOString()
 
-            if (user?.rol === "USUARIO" && user?.empresa_id) {
-                baseParams.empresa_id = user.empresa_id;
+            // Restricción por Rol: Si es USUARIO (o user), forzar su empresa_id
+            if (isUserRole && effectiveEmpresaId) {
+                baseParams.empresa_id = effectiveEmpresaId;
             }
 
             const [all, conf, anul, err, rev, exp] = await Promise.all([
@@ -305,16 +323,19 @@ export default function EventosPage() {
         debouncedNombre,
         debouncedId,
         debouncedPnr,
-        debouncedTicket
+        debouncedTicket,
+        user,
+        authInitialized
     ])
 
     useEffect(() => {
         fetchStats()
     }, [
-        empresaFilter,
         pasajeroFilter,
         convenioFilter,
-        dateRange
+        dateRange,
+        user,
+        authInitialized
     ])
 
     const handlePageChange = (newPage: number) => {
@@ -361,9 +382,11 @@ export default function EventosPage() {
             if (dateRange?.from) params.fecha_inicio = format(dateRange.from, "yyyy-MM-dd")
             if (dateRange?.to) params.fecha_fin = format(dateRange.to, "yyyy-MM-dd")
 
-            // Restricción por Rol: Si es USUARIO, forzar su empresa_id
-            if (user?.rol === "USUARIO" && user?.empresa_id) {
-                params.empresa_id = user.empresa_id;
+            // Restricción por Rol: Si es USUARIO (o user), forzar su empresa_id
+            if (isUserRole && effectiveEmpresaId) {
+                params.empresa_id = effectiveEmpresaId;
+            } else if (empresaFilter) {
+                params.empresa_id = empresaFilter;
             }
 
             const response = await EventosService.getEventos(params)

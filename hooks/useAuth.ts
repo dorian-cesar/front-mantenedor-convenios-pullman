@@ -32,10 +32,18 @@ export function useAuth(expirationThresholdMinutes: number = 10): UseAuthReturn 
         }
 
         const validation = AuthService.validateToken(token);
+        console.log("🛠️ [AUTH DEBUG] Token validation user:", validation.user);
 
         if (validation.isValid && !validation.isExpired) {
             setIsAuthenticated(true);
-            setUser(currentUser);
+            
+            // Combinar datos del usuario del localStorage con los del Token Payload por seguridad
+            const syncedUser = {
+                ...currentUser,
+                ...(validation.user || {})
+            };
+            
+            setUser(syncedUser);
             setExpiresIn(validation.expiresIn || null);
 
             const isExpiringSoon = validation.expiresIn
@@ -59,6 +67,52 @@ export function useAuth(expirationThresholdMinutes: number = 10): UseAuthReturn 
 
         setInitialized(true);
     }, [expirationThresholdMinutes]);
+
+    // EFECTO DE ENRIQUECIMIENTO: Si el rol es USUARIO pero no tiene empresa_id, ir a buscarlo
+    useEffect(() => {
+        const enrichUser = async () => {
+            if (!initialized || !isAuthenticated || !user?.id) return;
+
+            const hasId = !!(user?.empresa_id || user?.empresaId || user?.id_empresa || user?.empresa?.id);
+            const isUser = user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user";
+
+            if (isUser && !hasId) {
+                try {
+                    // INTENTO 1: Perfil de Usuario (El más seguro)
+                    console.log("🔍 [AUTH] Intentando enriquecimiento vía Admin Profile UID:", user.id);
+                    const { UsuariosService } = await import('@/services/usuario.service');
+                    const fullUser = await UsuariosService.getUsuarioById(user.id);
+                    
+                    if (fullUser && fullUser.empresa_id) {
+                        setUser((prev: any) => ({ ...prev, ...fullUser }));
+                        console.log("✅ [AUTH] Sesión enriquecida exitosamente vía Perfil.");
+                        return;
+                    }
+                } catch (error: any) {
+                    console.warn("⚠️ [AUTH] No se pudo obtener perfil. Intentando descubrimiento limitado...");
+                    try {
+                        // INTENTO 2: Descubrimiento limitado (Asegurando que no sobrescribimos si ya apareció el ID)
+                        const { ConveniosService } = await import('@/services/convenio.service');
+                        const conveniosRes = await ConveniosService.getConvenios({ limit: 1 });
+                        
+                        if (conveniosRes.rows?.[0]?.empresa_id) {
+                            const foundId = conveniosRes.rows[0].empresa_id;
+                            setUser((prev: any) => {
+                                // Doble chequeo: no sobrescribir si ya tiene ID
+                                if (prev?.empresa_id || prev?.id_empresa) return prev;
+                                return { ...prev, empresa_id: foundId };
+                            });
+                            console.log("✅ [AUTH] ID descubierto vía Convenios:", foundId);
+                        }
+                    } catch (fallbackError) {
+                        console.error("❌ [AUTH] Error en cadena de descubrimiento:", fallbackError);
+                    }
+                }
+            }
+        };
+
+        enrichUser();
+    }, [user?.id, user?.rol, isAuthenticated, initialized]);
 
     useEffect(() => {
         checkToken();
