@@ -75,8 +75,7 @@ export interface RechazarEstudianteData {
 
 export class EstudiantesService {
     static async getEstudiantes(params?: GetEstudiantesParams): Promise<EstudiantesResponse> {
-        const queryParams = { ...params, empresa_id: 71 };
-        const response = await api.get<EstudiantesResponse>('/beneficiarios', { params: queryParams });
+        const response = await api.get<EstudiantesResponse>('/beneficiarios', { params });
         return response.data;
     }
 

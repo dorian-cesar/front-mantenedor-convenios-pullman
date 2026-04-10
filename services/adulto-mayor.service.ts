@@ -74,8 +74,7 @@ export interface RechazarAdultoMayorData {
 
 export class AdultosMayoresService {
     static async getAdultosMayores(params?: GetAdultosMayoresParams): Promise<AdultosMayoresResponse> {
-        const queryParams = { ...params, empresa_id: 72 };
-        const response = await api.get<AdultosMayoresResponse>('/beneficiarios', { params: queryParams });
+        const response = await api.get<AdultosMayoresResponse>('/beneficiarios', { params });
         return response.data;
     }
 

@@ -15,26 +15,35 @@ export const formatRut = (rut: string | null | undefined) => {
   return `${rutBody.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${dv}`
 }
 
-export const validateRut = (rut: string | null | undefined) => {
+export const validateRut = (rut: string | null | undefined): boolean => {
   if (!rut) return false
-  const cleanRut = rut.replace(/\./g, '').replace(/-/g, '')
+  
+  // Limpiar puntos y guión
+  const cleanRut = rut.replace(/\./g, "").replace(/-/g, "").toUpperCase()
   if (cleanRut.length < 8) return false
 
-  const body = cleanRut.slice(0, -1)
-  const dv = cleanRut.slice(-1).toUpperCase()
+  const cuerpo = cleanRut.slice(0, -1)
+  const dv = cleanRut.slice(-1)
 
-  let sum = 0
-  let mul = 2
+  // Validar formato del cuerpo
+  if (!/^\d+$/.test(cuerpo)) return false
 
-  for (let i = body.length - 1; i >= 0; i--) {
-    sum += Number(body[i]) * mul
-    mul = mul === 7 ? 2 : mul + 1
+  // Calcular Dígito Verificador
+  let suma = 0
+  let multiplo = 2
+
+  for (let i = cuerpo.length - 1; i >= 0; i--) {
+    suma += multiplo * parseInt(cuerpo.charAt(i))
+    multiplo = multiplo < 7 ? multiplo + 1 : 2
   }
 
-  const res = 11 - (sum % 11)
-  const expectedDv = res === 11 ? '0' : res === 10 ? 'K' : res.toString()
+  const dvEsperado = 11 - (suma % 11)
+  let dvCalc = ""
+  if (dvEsperado === 11) dvCalc = "0"
+  else if (dvEsperado === 10) dvCalc = "K"
+  else dvCalc = dvEsperado.toString()
 
-  return dv === expectedDv
+  return dv === dvCalc
 }
 
 export const formatDate = (isoDate: string) => {

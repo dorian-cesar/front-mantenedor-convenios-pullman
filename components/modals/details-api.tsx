@@ -73,6 +73,15 @@ export default function DetailsApiModal({
                             {api?.status}
                         </p>
                     </div>
+
+                    <div>
+                        <p className="text-sm font-medium leading-none">
+                            Empresa
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            {api?.empresa?.nombre || "General (N/A)"}
+                        </p>
+                    </div>
                 </div>
             </Dialog.DialogContent>
         </Dialog.Dialog>
