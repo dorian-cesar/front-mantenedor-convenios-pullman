@@ -268,7 +268,7 @@ export default function FachPage() {
         }
     }
 
-    const actionButtons = user?.rol === "SISTEMA" ? [] : [
+    const actionButtons = (user?.rol === "SISTEMA" || user?.rol === "USUARIO") ? [] : [
         {
             label: "Nuevo Fach",
             onClick: () => setOpenAdd(true),

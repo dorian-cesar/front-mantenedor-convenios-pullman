@@ -291,6 +291,7 @@ export default function ApisPage() {
                         <Table.TableRow>
                             <Table.TableHead>ID</Table.TableHead>
                             <Table.TableHead>Nombre</Table.TableHead>
+                            <Table.TableHead>Empresa</Table.TableHead>
                             <Table.TableHead>Endpoint</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
@@ -316,9 +317,14 @@ export default function ApisPage() {
                             filteredApis.map((api) => (
                                 <Table.TableRow key={api.id}>
                                     <Table.TableCell>{api.id}</Table.TableCell>
-                                    <Table.TableCell>{api.nombre}</Table.TableCell>
+                                    <Table.TableCell className="font-medium text-sm">{api.nombre}</Table.TableCell>
+                                    <Table.TableCell className="text-sm">
+                                        <span className={api.empresa ? "" : "text-muted-foreground italic text-xs"}>
+                                            {api.empresa?.nombre || "General (N/A)"}
+                                        </span>
+                                    </Table.TableCell>
                                     <Table.TableCell>
-                                        <span className="font-mono text-sm">
+                                        <span className="font-mono text-[10px] text-muted-foreground">
                                             {api.endpoint}
                                         </span>
                                     </Table.TableCell>

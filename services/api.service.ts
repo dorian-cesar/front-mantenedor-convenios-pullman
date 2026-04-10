@@ -5,6 +5,8 @@ export interface Api {
     nombre: string;
     endpoint: string;
     status: "ACTIVO" | "INACTIVO";
+    empresa?: { id: number; nombre: string };
+    convenio?: { id: number; nombre: string };
 }
 
 export interface GetApisParams {
