@@ -261,7 +261,7 @@ export default function AdultosMayoresPage() {
         }
     }
 
-    const actionButtons = (user?.rol === "SISTEMA" || user?.rol === "USUARIO") ? [] : [
+    const actionButtons = user?.rol === "USUARIO" ? [] : [
         {
             label: "Nuevo Adulto Mayor",
             onClick: () => setOpenAdd(true),

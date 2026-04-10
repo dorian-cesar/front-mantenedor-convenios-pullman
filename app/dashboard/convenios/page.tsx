@@ -297,8 +297,8 @@ function ConveniosPage() {
                 params.empresa_id = selectedEmpresa
             }
 
-            if (isUserRole && unifiedEmpresaId) {
-                params.empresa_id = unifiedEmpresaId;
+            if (isUserRole && effectiveEmpresaId) {
+                params.empresa_id = effectiveEmpresaId;
             }
 
             const response = await ConveniosService.getConvenios(params)

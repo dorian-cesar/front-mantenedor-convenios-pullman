@@ -267,7 +267,7 @@ export default function EstudiantesPage() {
         }
     }
 
-    const actionButtons = (user?.rol === "SISTEMA" || user?.rol === "USUARIO") ? [] : [
+    const actionButtons = user?.rol === "USUARIO" ? [] : [
         {
             label: "Nuevo Estudiante",
             onClick: () => setOpenAdd(true),

@@ -250,7 +250,7 @@ export default function CarabinerosPage() {
         }
     }
 
-    const actionButtons = (user?.rol === "SISTEMA" || user?.rol === "USUARIO") ? [] : [
+    const actionButtons = user?.rol === "USUARIO" ? [] : [
         {
             label: "Nuevo Carabinero",
             onClick: () => setOpenAdd(true),

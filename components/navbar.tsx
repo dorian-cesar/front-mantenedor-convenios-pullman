@@ -111,7 +111,7 @@ export function Navbar({
             <span className="flex items-center gap-1.5 px-3 py-1 bg-secondary border border-border rounded-full text-[10px] font-bold text-muted-foreground uppercase tracking-wider shadow-sm">
                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                ROL: {user?.rol || "S/R"}
-               {user?.rol !== "SUPER_USUARIO" && (
+               {user?.rol === "USUARIO" && (
                  <>
                    <span className="mx-1 opacity-20">|</span>
                    ID EMPRESA: {finalEmpresaId || "0"}

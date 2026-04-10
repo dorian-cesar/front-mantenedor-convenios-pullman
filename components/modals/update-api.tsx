@@ -85,7 +85,7 @@ export default function UpdateApiModal({
             form.reset({
                 nombre: api.nombre,
                 endpoint: api.endpoint,
-                empresa_id: api.empresa_id ?? null,
+                empresa_id: api.empresa?.id ?? null,
                 status: api.status,
             })
             setOpenEmpresaPopover(false)

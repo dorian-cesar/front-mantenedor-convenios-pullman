@@ -59,9 +59,7 @@ export default function DetailsApiModal({
                             Empresa
                         </p>
                         <p className="text-sm text-muted-foreground">
-                            {api?.empresa?.nombre
-                                ?? (api?.empresa_id ? empresas.find(e => e.id === api.empresa_id)?.nombre : null)
-                                ?? "Sin empresa (Público)"}
+                            {api?.empresa?.nombre || "General (N/A)"}
                         </p>
                     </div>
 
@@ -71,15 +69,6 @@ export default function DetailsApiModal({
                         </p>
                         <p className="text-sm text-muted-foreground">
                             {api?.status}
-                        </p>
-                    </div>
-
-                    <div>
-                        <p className="text-sm font-medium leading-none">
-                            Empresa
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            {api?.empresa?.nombre || "General (N/A)"}
                         </p>
                     </div>
                 </div>

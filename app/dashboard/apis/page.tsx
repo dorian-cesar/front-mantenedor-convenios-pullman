@@ -299,7 +299,6 @@ export default function ApisPage() {
                         <Table.TableRow>
                             <Table.TableHead>ID</Table.TableHead>
                             <Table.TableHead>Nombre</Table.TableHead>
-                            <Table.TableHead>Empresa</Table.TableHead>
                             <Table.TableHead>Endpoint</Table.TableHead>
                             <Table.TableHead>Empresa</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
@@ -310,7 +309,7 @@ export default function ApisPage() {
                     <Table.TableBody>
                         {isLoading ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={5} className="text-center py-8">
+                                <Table.TableCell colSpan={6} className="text-center py-8">
                                     <div className="flex justify-center">
                                         <Icon.Loader2Icon className="h-6 w-6 animate-spin" />
                                     </div>
@@ -318,7 +317,7 @@ export default function ApisPage() {
                             </Table.TableRow>
                         ) : filteredApis.length === 0 ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={5} className="text-center py-8">
+                                <Table.TableCell colSpan={6} className="text-center py-8">
                                     No se encontraron APIs
                                 </Table.TableCell>
                             </Table.TableRow>
@@ -327,21 +326,14 @@ export default function ApisPage() {
                                 <Table.TableRow key={api.id}>
                                     <Table.TableCell>{api.id}</Table.TableCell>
                                     <Table.TableCell className="font-medium text-sm">{api.nombre}</Table.TableCell>
-                                    <Table.TableCell className="text-sm">
-                                        <span className={api.empresa ? "" : "text-muted-foreground italic text-xs"}>
-                                            {api.empresa?.nombre || "General (N/A)"}
-                                        </span>
-                                    </Table.TableCell>
                                     <Table.TableCell>
                                         <span className="font-mono text-[10px] text-muted-foreground">
                                             {api.endpoint}
                                         </span>
                                     </Table.TableCell>
-                                    <Table.TableCell>
-                                        <span className="text-sm text-muted-foreground">
-                                            {api.empresa?.nombre
-                                                ?? (api.empresa_id ? empresas.find(e => e.id === api.empresa_id)?.nombre : null)
-                                                ?? <span className="italic text-muted-foreground/60">Sin empresa</span>}
+                                    <Table.TableCell className="text-sm">
+                                        <span className={api.empresa ? "" : "text-muted-foreground italic text-xs"}>
+                                            {api.empresa?.nombre || "General (N/A)"}
                                         </span>
                                     </Table.TableCell>
                                     <Table.TableCell>
