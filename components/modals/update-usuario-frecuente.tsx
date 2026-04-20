@@ -2,15 +2,30 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import * as Dialog from "@/components/ui/dialog"
-import * as Form from "@/components/ui/form"
-import * as Icon from "lucide-react"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { UsuariosFrecuentesService, UsuarioFrecuente } from "@/services/usuario-frecuente.service"
+import { UsuariosFrecuentesService } from "@/services/usuario-frecuente.service"
+import { ConveniosService, type Convenio } from "@/services/convenio.service"
 import { toast } from "sonner"
+import { fileToBase64, formatRut, getFileSrc, isPDF, rotateImage } from "@/utils/helpers"
+import { UploadIcon, RotateCwIcon, XIcon, FileTextIcon, Loader2Icon, PencilIcon } from "lucide-react"
 import {
     Select,
     SelectContent,
@@ -18,38 +33,25 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { fileToBase64, getFileSrc, isPDF, rotateImage } from "@/utils/helpers"
-import { FileTextIcon, UploadIcon, XIcon, RotateCwIcon } from "lucide-react"
 
 interface UpdateUsuarioFrecuenteModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
-    usuarioFrecuente: UsuarioFrecuente | null
+    usuarioFrecuente: any | null
     onSuccess?: () => void
 }
 
-const usuarioFrecuenteSchema = z.object({
-    nombre: z
-        .string()
-        .min(3, "El nombre debe tener al menos 3 caracteres")
-        .max(100, "El nombre es demasiado largo"),
-    rut: z
-        .string()
-        .min(8, "RUT inválido")
-        .max(20, "RUT demasiado largo")
-        .transform((val) => val.replace(/\./g, ""))
-        .refine((val) => /^[0-9]+-[0-9kK]$/.test(val), {
-            message: "Formato de RUT inválido (ej: 12345678-9)",
-        }),
+const updateSchema = () => z.object({
+    nombre: z.string().min(1, "El nombre es requerido"),
+    rut: z.string().min(1, "El RUT es requerido"),
     telefono: z.string().min(1, "El teléfono es requerido"),
     correo: z.string().email("Correo electrónico inválido"),
     direccion: z.string().min(1, "La dirección es requerida"),
     status: z.enum(["ACTIVO", "INACTIVO", "RECHAZADO"]),
-    imagen_cedula_identidad: z.string().optional(),
-    imagen_certificado: z.string().optional(),
+    imagenes: z.any().optional(),
 })
 
-type UsuarioFrecuenteFormValues = z.infer<typeof usuarioFrecuenteSchema>
+type UsuarioFrecuenteFormValues = z.infer<ReturnType<typeof updateSchema>>
 
 export default function UpdateUsuarioFrecuenteModal({
     open,
@@ -58,13 +60,12 @@ export default function UpdateUsuarioFrecuenteModal({
     onSuccess,
 }: UpdateUsuarioFrecuenteModalProps) {
     const [isLoading, setIsLoading] = useState(false)
-    const [previewCedula, setPreviewCedula] = useState<{ src: string; isPDF: boolean } | null>(null)
-    const [previewCertificado, setPreviewCertificado] = useState<{ src: string; isPDF: boolean } | null>(null)
-    const [originalCedula, setOriginalCedula] = useState<string | undefined>()
-    const [originalCertificado, setOriginalCertificado] = useState<string | undefined>()
+    const [selectedConvenio, setSelectedConvenio] = useState<Convenio | null>(null)
+    const [previews, setPreviews] = useState<Record<string, { src: string; isPDF: boolean }>>({})
+    const [loadingConvenio, setLoadingConvenio] = useState(false)
 
     const form = useForm<UsuarioFrecuenteFormValues>({
-        resolver: zodResolver(usuarioFrecuenteSchema),
+        resolver: zodResolver(updateSchema()),
         defaultValues: {
             nombre: "",
             rut: "",
@@ -72,24 +73,24 @@ export default function UpdateUsuarioFrecuenteModal({
             correo: "",
             direccion: "",
             status: "ACTIVO",
-            imagen_cedula_identidad: undefined,
-            imagen_certificado: undefined,
+            imagenes: {},
         },
     })
 
-    const getVal = (obj: any, keys: string[]): string | null => {
-        if (!obj) return null
-        for (const key of keys) {
-            if (obj[key]) return obj[key]
+    const fetchConvenioData = async (convenioId: number) => {
+        setLoadingConvenio(true)
+        try {
+            const convenio = await ConveniosService.getConvenioById(convenioId)
+            setSelectedConvenio(convenio)
+        } catch (error) {
+            console.error("Error fetching convenio:", error)
+        } finally {
+            setLoadingConvenio(false)
         }
-        return null
     }
 
     useEffect(() => {
-        if (usuarioFrecuente) {
-            const imgCedula = getVal(usuarioFrecuente?.imagenes, ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]) || usuarioFrecuente.imagen_cedula_identidad || undefined
-            const imgCertificado = getVal(usuarioFrecuente?.imagenes, ["Certificado de Estudios", "Certificado"]) || usuarioFrecuente.imagen_certificado || undefined
-
+        if (usuarioFrecuente && open) {
             form.reset({
                 nombre: usuarioFrecuente.nombre || "",
                 rut: usuarioFrecuente.rut || "",
@@ -97,117 +98,74 @@ export default function UpdateUsuarioFrecuenteModal({
                 correo: usuarioFrecuente.correo || "",
                 direccion: usuarioFrecuente.direccion || "",
                 status: usuarioFrecuente.status,
-                imagen_cedula_identidad: imgCedula,
-                imagen_certificado: imgCertificado,
+                imagenes: usuarioFrecuente.imagenes || {},
             })
-            setOriginalCedula(imgCedula)
-            setOriginalCertificado(imgCertificado)
 
-            if (imgCedula) {
-                setPreviewCedula({
-                    src: imgCedula,
-                    isPDF: isPDF(imgCedula)
+            const initialPreviews: Record<string, { src: string; isPDF: boolean }> = {}
+            if (usuarioFrecuente.imagenes) {
+                Object.entries(usuarioFrecuente.imagenes).forEach(([key, value]) => {
+                    if (value) {
+                        initialPreviews[key] = {
+                            src: value as string,
+                            isPDF: isPDF(value as string)
+                        }
+                    }
                 })
-            } else {
-                setPreviewCedula(null)
             }
+            setPreviews(initialPreviews)
 
-            if (imgCertificado) {
-                setPreviewCertificado({
-                    src: imgCertificado,
-                    isPDF: isPDF(imgCertificado)
-                })
-            } else {
-                setPreviewCertificado(null)
+            if (usuarioFrecuente.convenio_id) {
+                fetchConvenioData(usuarioFrecuente.convenio_id)
             }
         }
     }, [usuarioFrecuente, open, form])
 
-    useEffect(() => {
-        if (!open) {
-            form.reset({
-                nombre: "",
-                rut: "",
-                telefono: "",
-                correo: "",
-                direccion: "",
-                status: "ACTIVO",
-                imagen_cedula_identidad: undefined,
-                imagen_certificado: undefined,
-            })
-            setPreviewCedula(null)
-            setPreviewCertificado(null)
-        }
-    }, [open, form])
-
-    const handleCancel = () => {
-        onOpenChange(false)
-    }
-
-    const handleFileChange = async (
-        file: File,
-        fieldName: "imagen_cedula_identidad" | "imagen_certificado",
-        setPreview: (value: { src: string; isPDF: boolean } | null) => void
-    ) => {
+    const handleFileChange = async (file: File, label: string) => {
         if (!file) return
-
-        const fileSizeInMB = file.size / (1024 * 1024)
-
-        if (fileSizeInMB > 5) {
-            toast.error(`El archivo no puede superar 5MB. Este archivo pesa ${fileSizeInMB.toFixed(2)}MB`)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error(`El archivo "${label}" supera los 5MB.`)
             return
         }
 
         try {
             const base64 = await fileToBase64(file)
-            const base64SizeInMB = (base64.length * 3 / 4) / (1024 * 1024)
-
-            if (base64SizeInMB > 5) {
-                toast.error(`El archivo en base64 excede el límite de 5MB (${base64SizeInMB.toFixed(2)}MB)`)
-                return
-            }
-
-            form.setValue(fieldName, base64)
-
-            const fileIsPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-            setPreview({ src: base64, isPDF: fileIsPDF })
-
-            toast.info(`Archivo cargado: ${fileSizeInMB.toFixed(2)}MB`)
+            const current = form.getValues("imagenes") || {}
+            form.setValue("imagenes", { ...current, [label]: base64 })
+            
+            const isPDFFile = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+            setPreviews(p => ({ ...p, [label]: { src: base64, isPDF: isPDFFile } }))
+            toast.info(`Cargado: ${label}`)
         } catch {
-            toast.error("Error al procesar el archivo")
+            toast.error("Error al cargar el archivo.")
         }
     }
 
-    const handleRemoveFile = (
-        fieldName: "imagen_cedula_identidad" | "imagen_certificado",
-        setPreview: (value: { src: string; isPDF: boolean } | null) => void
-    ) => {
-        form.setValue(fieldName, undefined)
-        setPreview(null)
+    const handleRemove = (label: string) => {
+        const cur = { ...form.getValues("imagenes") || {} }
+        delete cur[label]
+        form.setValue("imagenes", cur)
+        const p = { ...previews }
+        delete p[label]
+        setPreviews(p)
     }
 
-    const handleRotateFile = async (
-        fieldName: "imagen_cedula_identidad" | "imagen_certificado",
-        preview: { src: string; isPDF: boolean },
-        setPreview: (value: { src: string; isPDF: boolean } | null) => void
-    ) => {
-        if (preview.isPDF) return;
+    const handleRotate = async (label: string) => {
+        const preview = previews[label]
+        if (!preview || preview.isPDF) return;
 
         try {
             const rotatedBase64 = await rotateImage(preview.src, 90);
-            form.setValue(fieldName, rotatedBase64);
-            setPreview({ ...preview, src: rotatedBase64 });
+            const current = form.getValues("imagenes") || {}
+            form.setValue("imagenes", { ...current, [label]: rotatedBase64 })
+            setPreviews(p => ({ ...p, [label]: { ...preview, src: rotatedBase64 } }));
             toast.success("Imagen rotada");
         } catch {
             toast.error("Error al rotar la imagen");
         }
     }
 
-    const renderFilePreview = (
-        preview: { src: string; isPDF: boolean } | null,
-        fieldName: "imagen_cedula_identidad" | "imagen_certificado",
-        setPreview: (value: { src: string; isPDF: boolean } | null) => void
-    ) => {
+    const renderFilePreview = (label: string) => {
+        const preview = previews[label]
         if (!preview) return null
 
         return (
@@ -215,14 +173,14 @@ export default function UpdateUsuarioFrecuenteModal({
                 <div className="relative border rounded-lg bg-background p-2 w-full flex justify-center">
                     {preview.isPDF ? (
                         <div className="flex items-center justify-center p-4">
-                            <FileTextIcon className="h-12 w-12 text-primary" />
-                            <span className="ml-2 text-sm text-muted-foreground">Documento PDF</span>
+                            <FileTextIcon className="h-10 w-10 text-primary" />
+                            <span className="ml-2 text-sm text-muted-foreground truncate max-w-[150px]">PDF</span>
                         </div>
                     ) : (
                         <img
                             src={getFileSrc(preview.src) || ""}
                             alt="Preview"
-                            className="max-h-40 rounded-md object-contain"
+                            className="max-h-32 rounded-md object-contain"
                         />
                     )}
                 </div>
@@ -233,28 +191,26 @@ export default function UpdateUsuarioFrecuenteModal({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-8 gap-1"
+                            className="h-7 px-2"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleRotateFile(fieldName, preview, setPreview);
+                                handleRotate(label);
                             }}
                         >
                             <RotateCwIcon className="h-3 w-3" />
-                            <span>Rotar</span>
                         </Button>
                     )}
                     <Button
                         type="button"
                         variant="destructive"
                         size="sm"
-                        className="h-8 gap-1"
+                        className="h-7 px-2"
                         onClick={(e) => {
                             e.stopPropagation();
-                            handleRemoveFile(fieldName, setPreview);
+                            handleRemove(label);
                         }}
                     >
                         <XIcon className="h-3 w-3" />
-                        <span>Eliminar</span>
                     </Button>
                 </div>
             </div>
@@ -263,180 +219,119 @@ export default function UpdateUsuarioFrecuenteModal({
 
     const onSubmit = async (data: UsuarioFrecuenteFormValues) => {
         if (!usuarioFrecuente) return
-
-        if (data.imagen_cedula_identidad &&
-            data.imagen_cedula_identidad !== usuarioFrecuente.imagen_cedula_identidad) {
-            const base64SizeInMB = (data.imagen_cedula_identidad.length * 3 / 4) / (1024 * 1024)
-            if (base64SizeInMB > 5) {
-                toast.error(`El archivo de cédula excede el límite de 5MB`)
-                return
-            }
-        }
-
-        if (data.imagen_certificado &&
-            data.imagen_certificado !== usuarioFrecuente.imagen_certificado) {
-            const base64SizeInMB = (data.imagen_certificado.length * 3 / 4) / (1024 * 1024)
-            if (base64SizeInMB > 5) {
-                toast.error(`El archivo de certificado excede el límite de 5MB`)
-                return
-            }
-        }
-
         setIsLoading(true)
 
         try {
-            const cedulaKeys = ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]
-            const certificadoKeys = ["Certificado de Estudios", "Certificado"]
-
-            // "debe subirlo todo" - El usuario quiere que se envíe todo el payload
-            let updatedImagenes = { ...usuarioFrecuente.imagenes }
-
-            // Auxiliar para actualizar todas las posibles llaves de un mismo concepto
-            const updateCategoryKeys = (currentImages: any, categoryKeys: string[], newValue: string | undefined) => {
-                const result = { ...currentImages }
-                let foundMatch = false
-                
-                // Actualizar todas las llaves que ya están presentes en el objeto
-                categoryKeys.forEach(key => {
-                    if (result[key] !== undefined) {
-                        result[key] = newValue
-                        foundMatch = true
-                    }
-                })
-
-                // Si ninguna llave de la categoría estaba presente, agregar la principal
-                if (!foundMatch && newValue) {
-                    result[categoryKeys[0]] = newValue
-                }
-                
-                return result
-            }
-
-            // Actualizar categorías
-            updatedImagenes = updateCategoryKeys(updatedImagenes, cedulaKeys, data.imagen_cedula_identidad)
-            updatedImagenes = updateCategoryKeys(updatedImagenes, certificadoKeys, data.imagen_certificado)
-
-            const payload: any = { 
-                ...data,
-                imagenes: updatedImagenes
-            }
-
-            // Eliminamos los campos directos que el backend no permite (not allowed)
-            delete payload.imagen_cedula_identidad
-            delete payload.imagen_certificado
-
-            await UsuariosFrecuentesService.updateUsuarioFrecuente(usuarioFrecuente.id, payload)
-
-            toast.success("Usuario Frecuente actualizado correctamente")
-
+            await UsuariosFrecuentesService.updateUsuarioFrecuente(usuarioFrecuente.id, data)
+            toast.success("Pasajero Frecuente actualizado correctamente")
             onSuccess?.()
             onOpenChange(false)
         } catch (error) {
             console.error("Error updating usuario frecuente:", error)
-            toast.error("No se pudo actualizar el usuario frecuente")
+            toast.error("No se pudo actualizar el pasajero frecuente")
         } finally {
             setIsLoading(false)
         }
     }
 
     return (
-        <Dialog.Dialog open={open} onOpenChange={onOpenChange}>
-            <Dialog.DialogContent className="max-w-2xl">
-                <Dialog.DialogHeader>
-                    <Dialog.DialogTitle>Editar Usuario Frecuente</Dialog.DialogTitle>
-                    <Dialog.DialogDescription>
-                        Modifique los datos del usuario frecuente.
-                    </Dialog.DialogDescription>
-                </Dialog.DialogHeader>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>Editar Pasajero Frecuente</DialogTitle>
+                    <DialogDescription>
+                        Modifique los datos del pasajero frecuente.
+                    </DialogDescription>
+                </DialogHeader>
 
-                <Form.Form {...form}>
+                <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
-                            <Form.FormField
+                            <FormField
                                 control={form.control}
                                 name="nombre"
                                 render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Nombre</Form.FormLabel>
-                                        <Form.FormControl>
+                                    <FormItem>
+                                        <FormLabel>Nombre</FormLabel>
+                                        <FormControl>
                                             <Input placeholder="Nombre completo" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
 
-                            <Form.FormField
+                            <FormField
                                 control={form.control}
                                 name="rut"
                                 render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>RUT</Form.FormLabel>
-                                        <Form.FormControl>
+                                    <FormItem>
+                                        <FormLabel>RUT</FormLabel>
+                                        <FormControl>
                                             <Input placeholder="12.345.678-9" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
 
-                            <Form.FormField
+                            <FormField
                                 control={form.control}
                                 name="telefono"
                                 render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Teléfono</Form.FormLabel>
-                                        <Form.FormControl>
+                                    <FormItem>
+                                        <FormLabel>Teléfono</FormLabel>
+                                        <FormControl>
                                             <Input placeholder="+569..." {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
 
-                            <Form.FormField
+                            <FormField
                                 control={form.control}
                                 name="correo"
                                 render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Correo</Form.FormLabel>
-                                        <Form.FormControl>
+                                    <FormItem>
+                                        <FormLabel>Correo</FormLabel>
+                                        <FormControl>
                                             <Input placeholder="usuario@ejemplo.com" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
 
-                            <Form.FormField
+                            <FormField
                                 control={form.control}
                                 name="direccion"
                                 render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Dirección</Form.FormLabel>
-                                        <Form.FormControl>
+                                    <FormItem>
+                                        <FormLabel>Dirección</FormLabel>
+                                        <FormControl>
                                             <Input placeholder="Dirección completa" {...field} />
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
 
-                            <Form.FormField
+                            <FormField
                                 control={form.control}
                                 name="status"
                                 render={({ field }) => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Estado</Form.FormLabel>
+                                    <FormItem>
+                                        <FormLabel>Estado</FormLabel>
                                         <Select
                                             onValueChange={field.onChange}
                                             value={field.value}
                                         >
-                                            <Form.FormControl>
+                                            <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Seleccione estado" />
                                                 </SelectTrigger>
-                                            </Form.FormControl>
+                                            </FormControl>
 
                                             <SelectContent>
                                                 <SelectItem value="ACTIVO">Activo</SelectItem>
@@ -444,99 +339,55 @@ export default function UpdateUsuarioFrecuenteModal({
                                                 <SelectItem value="RECHAZADO">Rechazado</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <Form.FormField
-                                control={form.control}
-                                name="imagen_cedula_identidad"
-                                render={() => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Foto frontal de Carnet de Identidad</Form.FormLabel>
-                                        <Form.FormControl>
+                        {selectedConvenio && (
+                            <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                                {(() => {
+                                    const labels = [...(selectedConvenio.imagenes || [])];
+                                    if (labels.length === 0) {
+                                        labels.push("Foto frontal de Carnet de Identidad", "Certificado");
+                                    } else {
+                                        if (!labels.some(l => l.toLowerCase().includes("carnet"))) labels.push("Foto frontal de Carnet de Identidad");
+                                        if (!labels.some(l => l.toLowerCase().includes("certificado"))) labels.push("Certificado");
+                                    }
+                                    
+                                    return labels.map((label: string) => (
+                                        <div key={label} className="space-y-2">
+                                            <FormLabel className="text-xs font-semibold">{label}</FormLabel>
                                             <div
-                                                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition min-h-[200px] flex items-center justify-center"
-                                                onClick={() => document.getElementById("updateFileInputCedula")?.click()}
+                                                className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition min-h-[140px] flex items-center justify-center relative"
+                                                onClick={() => document.getElementById(`update-file-uf-${label}`)?.click()}
                                             >
                                                 <input
-                                                    id="updateFileInputCedula"
+                                                    id={`update-file-uf-${label}`}
                                                     type="file"
                                                     accept="image/*,application/pdf"
                                                     className="hidden"
                                                     onChange={(e) => {
                                                         const file = e.target.files?.[0]
-                                                        if (file)
-                                                            handleFileChange(
-                                                                file,
-                                                                "imagen_cedula_identidad",
-                                                                setPreviewCedula
-                                                            )
+                                                        if (file) handleFileChange(file, label)
                                                     }}
                                                 />
 
-                                                {previewCedula ? (
-                                                    renderFilePreview(previewCedula, "imagen_cedula_identidad", setPreviewCedula)
+                                                {previews[label] ? (
+                                                    renderFilePreview(label)
                                                 ) : (
                                                     <div className="flex flex-col items-center text-muted-foreground">
-                                                        <UploadIcon className="h-8 w-8 mb-2" />
-                                                        <p>Haz click para subir el carnet</p>
-                                                        <p className="text-xs mt-1">Imagen o PDF (Máximo 5MB)</p>
+                                                        <UploadIcon className="h-6 w-6 mb-1" />
+                                                        <p className="text-[10px]">Subir {label}</p>
                                                     </div>
                                                 )}
                                             </div>
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
-                                )}
-                            />
-
-                            <Form.FormField
-                                control={form.control}
-                                name="imagen_certificado"
-                                render={() => (
-                                    <Form.FormItem>
-                                        <Form.FormLabel>Certificado</Form.FormLabel>
-                                        <Form.FormControl>
-                                            <div
-                                                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition min-h-[200px] flex items-center justify-center"
-                                                onClick={() => document.getElementById("updateFileInputCertificado")?.click()}
-                                            >
-                                                <input
-                                                    id="updateFileInputCertificado"
-                                                    type="file"
-                                                    accept="image/*,application/pdf"
-                                                    className="hidden"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0]
-                                                        if (file)
-                                                            handleFileChange(
-                                                                file,
-                                                                "imagen_certificado",
-                                                                setPreviewCertificado
-                                                            )
-                                                    }}
-                                                />
-
-                                                {previewCertificado ? (
-                                                    renderFilePreview(previewCertificado, "imagen_certificado", setPreviewCertificado)
-                                                ) : (
-                                                    <div className="flex flex-col items-center text-muted-foreground">
-                                                        <UploadIcon className="h-8 w-8 mb-2" />
-                                                        <p>Haz click para subir el certificado</p>
-                                                        <p className="text-xs mt-1">Imagen o PDF (Máximo 5MB)</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </Form.FormControl>
-                                        <Form.FormMessage />
-                                    </Form.FormItem>
-                                )}
-                            />
-                        </div>
+                                        </div>
+                                    ));
+                                })()}
+                            </div>
+                        )}
 
                         <div className="flex justify-end space-x-2 pt-4">
                             <Button
@@ -548,19 +399,18 @@ export default function UpdateUsuarioFrecuenteModal({
                                 Cancelar
                             </Button>
 
-                            <Button type="submit" disabled={isLoading}>
+                            <Button type="submit" disabled={isLoading || loadingConvenio}>
                                 {isLoading ? (
-                                    <Icon.Loader2Icon className="h-4 w-4 animate-spin mr-2" />
+                                    <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
                                 ) : (
-                                    <Icon.PencilIcon className="h-4 w-4 mr-2" />
+                                    <PencilIcon className="h-4 w-4 mr-2" />
                                 )}
                                 Guardar Cambios
                             </Button>
                         </div>
-
                     </form>
-                </Form.Form>
-            </Dialog.DialogContent>
-        </Dialog.Dialog>
+                </Form>
+            </DialogContent>
+        </Dialog>
     )
 }

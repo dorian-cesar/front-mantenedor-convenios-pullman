@@ -32,6 +32,7 @@ export interface GetUsuariosFrecuentesParams {
     rut?: string;
     search?: string;
     convenio_id?: number;
+    empresa_id?: number;
 }
 
 export interface UsuariosFrecuentesResponse {
@@ -73,9 +74,12 @@ export interface RechazarUsuarioFrecuenteData {
 }
 
 export class UsuariosFrecuentesService {
-    static async getUsuariosFrecuentes(params?: GetUsuariosFrecuentesParams): Promise<UsuariosFrecuentesResponse> {
-        const queryParams = { empresa_id: 80, ...params };
-        const response = await api.get<UsuariosFrecuentesResponse>('/beneficiarios', { params: queryParams });
+    static async getUsuariosFrecuentes(params: GetUsuariosFrecuentesParams = {}): Promise<UsuariosFrecuentesResponse> {
+        // En esta tabla compartida, Usuarios Frecuentes corresponde a empresa_id 80
+        if (!params.empresa_id) {
+            params.empresa_id = 80;
+        }
+        const response = await api.get<UsuariosFrecuentesResponse>('/beneficiarios', { params });
         return response.data;
     }
 

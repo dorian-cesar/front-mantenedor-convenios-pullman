@@ -32,6 +32,7 @@ export interface GetEstudiantesParams {
     rut?: string;
     search?: string;
     convenio_id?: number;
+    empresa_id?: number;
 }
 
 export interface EstudiantesResponse {
@@ -74,9 +75,12 @@ export interface RechazarEstudianteData {
 }
 
 export class EstudiantesService {
-    static async getEstudiantes(params?: GetEstudiantesParams): Promise<EstudiantesResponse> {
-        const queryParams = { empresa_id: 71, ...params };
-        const response = await api.get<EstudiantesResponse>('/beneficiarios', { params: queryParams });
+    static async getEstudiantes(params: GetEstudiantesParams = {}): Promise<EstudiantesResponse> {
+        // En esta tabla compartida, Estudiantes corresponde a empresa_id 71
+        if (!params.empresa_id) {
+            params.empresa_id = 71;
+        }
+        const response = await api.get<EstudiantesResponse>('/beneficiarios', { params });
         return response.data;
     }
 

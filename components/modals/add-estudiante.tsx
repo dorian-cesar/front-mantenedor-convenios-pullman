@@ -33,16 +33,22 @@ import { ConveniosService, type Convenio } from "@/services/convenio.service"
 import { toast } from "sonner"
 import { fileToBase64 } from "@/utils/helpers"
 import { FileTextIcon, UploadIcon, XIcon, PlusIcon, Loader2Icon } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
 
-// MOVIDO PARA ASEGURAR DISPONIBILIDAD
+interface AddEstudianteModalProps {
+    open: boolean
+    onOpenChange: (open: boolean) => void
+    onSuccess?: () => void
+}
+
 const createSchema = () => z.object({
-    nombre: z.string().min(1, "Requerido"),
-    rut: z.string().min(1, "Requerido"),
-    telefono: z.string().min(1, "Requerido"),
-    correo: z.string().email("Inválido"),
-    direccion: z.string().min(1, "Requerido"),
-    convenio_id: z.number().int().positive("Requerido"),
-    imagenes: z.any().optional(), // SIMPLIFICADO A ANY PARA DEBUG
+    nombre: z.string().min(1, "El nombre es requerido"),
+    rut: z.string().min(1, "El RUT es requerido"),
+    telefono: z.string().min(1, "El teléfono es requerido"),
+    correo: z.string().email("Correo electrónico inválido"),
+    direccion: z.string().min(1, "La dirección es requerida"),
+    convenio_id: z.number().int().positive("Debe seleccionar un convenio"),
+    imagenes: z.any().optional(),
 })
 
 type EstudianteFormValues = z.infer<ReturnType<typeof createSchema>>
@@ -52,12 +58,12 @@ export default function AddEstudianteModal({
     onOpenChange,
     onSuccess,
 }: AddEstudianteModalProps) {
+    const { user } = useAuth()
     const [isLoading, setIsLoading] = useState(false)
     const [convenios, setConvenios] = useState<Convenio[]>([])
     const [previews, setPreviews] = useState<Record<string, { src: string; isPDF: boolean }>>({})
     const [loadingConvenios, setLoadingConvenios] = useState(false)
 
-    // USAR SCHEMA SIMPLIFICADO
     const form = useForm<EstudianteFormValues>({
         resolver: zodResolver(createSchema()),
         defaultValues: {
@@ -77,7 +83,13 @@ export default function AddEstudianteModal({
     const fetchConvenios = async () => {
         setLoadingConvenios(true)
         try {
-            const res = await ConveniosService.getConvenios({ empresa_id: 71, status: 'ACTIVO' })
+            const params: any = { status: 'ACTIVO' }
+            
+            if (user?.rol?.toUpperCase() === "USUARIO" && user?.empresa_id) {
+                params.empresa_id = user.empresa_id
+            }
+
+            const res = await ConveniosService.getConvenios(params)
             setConvenios(res.rows || [])
         } catch (error) {
             console.error("Error fetching convenios:", error)
@@ -204,28 +216,43 @@ export default function AddEstudianteModal({
                             )} />
                         </div>
 
-                        {selectedConvenio?.imagenes?.length && (
+                        {selectedConvenio && (
                             <div className="grid grid-cols-2 gap-4 border-t pt-4">
-                                {selectedConvenio.imagenes.map((l, i) => (
-                                    <FormField key={i} control={form.control} name={`imagenes.${l}` as any} render={() => (
-                                        <FormItem>
-                                            <FormLabel>{l}</FormLabel>
-                                            <FormControl>
-                                                <div className="border border-dashed p-4 rounded text-center cursor-pointer" onClick={() => document.getElementById(`f-${l}`)?.click()}>
-                                                    <input id={`f-${l}`} type="file" className="hidden" onChange={e => handleFileChange(e.target.files?.[0] as any, l)} />
-                                                    {previews[l] ? (
-                                                        <div className="relative">
-                                                            {previews[l].isPDF ? <FileTextIcon className="mx-auto" /> : <img src={previews[l].src} className="max-h-20 mx-auto" />}
-                                                            <Button type="button" size="icon" variant="destructive" className="absolute -top-2 -right-2 h-5 w-5" onClick={(e) => { e.stopPropagation(); handleRemove(l); }}>
-                                                                <XIcon className="h-3 w-3" />
-                                                            </Button>
-                                                        </div>
-                                                    ) : <UploadIcon className="mx-auto" />}
-                                                </div>
-                                            </FormControl>
-                                        </FormItem>
-                                    )} />
-                                ))}
+                                {(() => {
+                                    const labels = [...(selectedConvenio.imagenes || [])];
+                                    if (labels.length === 0) {
+                                        labels.push("Foto frontal de Carnet de Identidad", "Certificado Alumno Regular");
+                                    } else {
+                                        if (!labels.some(l => l.toLowerCase().includes("carnet"))) labels.push("Foto frontal de Carnet de Identidad");
+                                        if (!labels.some(l => l.toLowerCase().includes("certificado"))) labels.push("Certificado Alumno Regular");
+                                    }
+
+                                    return labels.map((l, i) => (
+                                        <FormField key={i} control={form.control} name={`imagenes.${l}` as any} render={() => (
+                                            <FormItem>
+                                                <FormLabel>{l}</FormLabel>
+                                                <FormControl>
+                                                    <div className="border border-dashed p-4 rounded text-center cursor-pointer min-h-[100px] flex items-center justify-center transition hover:bg-muted/50" onClick={() => document.getElementById(`f-${l}`)?.click()}>
+                                                        <input id={`f-${l}`} type="file" className="hidden" onChange={e => handleFileChange(e.target.files?.[0] as any, l)} />
+                                                        {previews[l] ? (
+                                                            <div className="relative w-full">
+                                                                {previews[l].isPDF ? <FileTextIcon className="mx-auto h-8 w-8 text-primary" /> : <img src={previews[l].src} className="max-h-20 mx-auto rounded object-contain" />}
+                                                                <Button type="button" size="icon" variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 rounded-full" onClick={(e) => { e.stopPropagation(); handleRemove(l); }}>
+                                                                    <XIcon className="h-3 w-3" />
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex flex-col items-center text-muted-foreground">
+                                                                <UploadIcon className="h-5 w-5 mb-1" />
+                                                                <span className="text-[10px]">Subir {l}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </FormControl>
+                                            </FormItem>
+                                        )} />
+                                    ));
+                                })()}
                             </div>
                         )}
 
@@ -238,10 +265,4 @@ export default function AddEstudianteModal({
             </DialogContent>
         </Dialog>
     )
-}
-
-interface AddEstudianteModalProps {
-    open: boolean
-    onOpenChange: (open: boolean) => void
-    onSuccess?: () => void
 }

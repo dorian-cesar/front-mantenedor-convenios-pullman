@@ -75,7 +75,7 @@ export default function EventosPage() {
     const { user, initialized: authInitialized } = useAuth()
     
     // Lógica de Rol y Empresa robusta
-    const isUserRole = user?.rol === "USUARIO";
+    const isUserRole = user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user";
     const effectiveEmpresaId = user?.empresa_id || user?.empresaId || user?.id_empresa || user?.empresa?.id;
 
 
@@ -492,7 +492,7 @@ export default function EventosPage() {
                     </Dropdown.DropdownMenu>
                 </div>
 
-                {user?.rol === "SUPER_USUARIO" && (
+                {(user?.rol?.toUpperCase() === "SUPER_USUARIO" || user?.rol?.toUpperCase() === "SISTEMA") && (
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Empresa:</span>
                     <Dropdown.DropdownMenu>

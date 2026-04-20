@@ -35,7 +35,8 @@ export default function EmpresasPage() {
     const { user, initialized: authInitialized } = useAuth()
     
     // Lógica de Rol y Empresa robusta
-    const isUserRole = user?.rol === "USUARIO";
+    const isReadOnlyRole = user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user" || user?.rol?.toUpperCase() === "SISTEMA";
+    const isScopedRole = user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user";
     const effectiveEmpresaId = user?.empresa_id || user?.empresaId || user?.id_empresa || user?.empresa?.id;
 
     useEffect(() => {
@@ -92,7 +93,7 @@ export default function EmpresasPage() {
 
                 const finalId = reactEmpresaId || manualEmpresaId;
                 
-                if (isUserRole && finalId) {
+                if (isScopedRole && finalId) {
                     params.id = finalId;
                 }
             }
@@ -194,7 +195,7 @@ export default function EmpresasPage() {
             }
 
             // Restricción por Rol para exportación
-            if (isUserRole && effectiveEmpresaId) {
+            if (isScopedRole && effectiveEmpresaId) {
                 params.id = effectiveEmpresaId;
             }
 
@@ -230,7 +231,7 @@ export default function EmpresasPage() {
         }
     }
 
-    const actionButtons = isUserRole ? [] : [
+    const actionButtons = isReadOnlyRole ? [] : [
         {
             label: "Nueva Empresa",
             onClick: () => setOpenAdd(true),
@@ -394,7 +395,7 @@ export default function EmpresasPage() {
                                                     Ver detalles
                                                 </Dropdown.DropdownMenuItem>
                                                 
-                                                {!isUserRole && (
+                                                {!isReadOnlyRole && (
                                                     <>
                                                         <Dropdown.DropdownMenuItem
                                                             onClick={() => handleEditEmpresa(empresa)}

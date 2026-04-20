@@ -136,10 +136,28 @@ export default function DetailsEstudianteModal({
                         <div>
                             <p className="text-sm font-medium mb-2">Foto frontal de Carnet de Identidad</p>
                             {renderFilePreview(
-                                getVal(estudiante?.imagenes, ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]) || estudiante?.imagen_cedula_identidad,
+                                getVal(estudiante?.imagenes, [
+                                    "Foto frontal de Carnet de Identidad", 
+                                    "Foto frontal de Carnet de Identidad.", 
+                                    "Foto frontal del Carnet de Identidad", 
+                                    "Foto frontal del Carnet de Identidad.",
+                                    "Cédula de Identidad", 
+                                    "Cédula", 
+                                    "RUT", 
+                                    "Documento Identity"
+                                ]) || estudiante?.imagen_cedula_identidad,
                                 `Carnet de ${estudiante?.nombre}`,
                                 () => {
-                                    const src = getVal(estudiante?.imagenes, ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]) || estudiante?.imagen_cedula_identidad;
+                                    const src = getVal(estudiante?.imagenes, [
+                                        "Foto frontal de Carnet de Identidad", 
+                                        "Foto frontal de Carnet de Identidad.", 
+                                        "Foto frontal del Carnet de Identidad", 
+                                        "Foto frontal del Carnet de Identidad.",
+                                        "Cédula de Identidad", 
+                                        "Cédula", 
+                                        "RUT", 
+                                        "Documento Identity"
+                                    ]) || estudiante?.imagen_cedula_identidad;
                                     if (src) handleFileClick(src, `Carnet de ${estudiante?.nombre}`);
                                 }
                             )}
@@ -147,17 +165,39 @@ export default function DetailsEstudianteModal({
                         <div>
                             <p className="text-sm font-medium mb-2">Certificado Alumno Regular</p>
                             {renderFilePreview(
-                                getVal(estudiante?.imagenes, ["Certificado de Estudios", "Certificado", "Certificado Alumno Regular"]) || estudiante?.imagen_certificado_alumno_regular,
+                                getVal(estudiante?.imagenes, [
+                                    "Certificado de Estudios", 
+                                    "Certificado", 
+                                    "Certificado Alumno Regular",
+                                    "Certificado Alumno Regular."
+                                ]) || estudiante?.imagen_certificado_alumno_regular,
                                 `Certificado de ${estudiante?.nombre}`,
                                 () => {
-                                    const src = getVal(estudiante?.imagenes, ["Certificado de Estudios", "Certificado", "Certificado Alumno Regular"]) || estudiante?.imagen_certificado_alumno_regular;
+                                    const src = getVal(estudiante?.imagenes, [
+                                        "Certificado de Estudios", 
+                                        "Certificado", 
+                                        "Certificado Alumno Regular",
+                                        "Certificado Alumno Regular."
+                                    ]) || estudiante?.imagen_certificado_alumno_regular;
                                     if (src) handleFileClick(src, `Certificado de ${estudiante?.nombre}`);
                                 }
                             )}
                         </div>
                         {/* Render any additional images found in the 'imagenes' object */}
                         {estudiante?.imagenes && Object.entries(estudiante.imagenes).map(([key, src]) => {
-                            const handledKeys = ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity", "Certificado de Estudios", "Certificado", "Certificado Alumno Regular"];
+                            const handledKeys = [
+                                "Foto frontal de Carnet de Identidad", 
+                                "Foto frontal de Carnet de Identidad.",
+                                "Foto frontal del Carnet de Identidad", 
+                                "Foto frontal del Carnet de Identidad.",
+                                "Cédula de Identidad", 
+                                "Cédula", 
+                                "RUT", 
+                                "Documento Identity", 
+                                "Certificado de Estudios", 
+                                "Certificado", 
+                                "Certificado Alumno Regular"
+                            ];
                             if (handledKeys.includes(key)) return null;
                             if (!src) return null;
                             return (

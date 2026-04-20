@@ -33,6 +33,7 @@ import { ConveniosService, type Convenio } from "@/services/convenio.service"
 import { toast } from "sonner"
 import { fileToBase64, formatRut } from "@/utils/helpers"
 import { FileTextIcon, UploadIcon, XIcon, PlusIcon, Loader2Icon } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
 
 interface AddAdultoMayorModalProps {
     open: boolean
@@ -57,6 +58,7 @@ export default function AddAdultoMayorModal({
     onOpenChange,
     onSuccess,
 }: AddAdultoMayorModalProps) {
+    const { user } = useAuth()
     const [isLoading, setIsLoading] = useState(false)
     const [convenios, setConvenios] = useState<Convenio[]>([])
     const [previews, setPreviews] = useState<Record<string, { src: string; isPDF: boolean }>>({})
@@ -81,7 +83,13 @@ export default function AddAdultoMayorModal({
     const fetchConvenios = async () => {
         setLoadingConvenios(true)
         try {
-            const res = await ConveniosService.getConvenios({ empresa_id: 72, status: 'ACTIVO' })
+            const params: any = { status: 'ACTIVO' }
+            
+            if (user?.rol?.toUpperCase() === "USUARIO" && user?.empresa_id) {
+                params.empresa_id = user.empresa_id
+            }
+
+            const res = await ConveniosService.getConvenios(params)
             setConvenios(res.rows || [])
         } catch (error) {
             console.error("Error fetching convenios:", error)
@@ -124,8 +132,8 @@ export default function AddAdultoMayorModal({
             const current = form.getValues("imagenes") || {}
             form.setValue("imagenes", { ...current, [label]: base64 })
             
-            const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-            setPreviews(p => ({ ...p, [label]: { src: base64, isPDF } }))
+            const isPDFFile = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+            setPreviews(p => ({ ...p, [label]: { src: base64, isPDF: isPDFFile } }))
             toast.info(`Cargado: ${label}`)
         } catch {
             toast.error("Error al cargar el archivo.")
@@ -277,75 +285,84 @@ export default function AddAdultoMayorModal({
                             />
                         </div>
 
-                        {selectedConvenio?.imagenes && selectedConvenio.imagenes.length > 0 && (
+                        {selectedConvenio && (
                             <div className="grid grid-cols-2 gap-4 border-t pt-4">
                                 <div className="col-span-2">
-                                    <label className="text-sm font-semibold">Archivos requeridos por el convenio</label>
+                                    <label className="text-sm font-semibold">Archivos requeridos</label>
                                 </div>
-                                {selectedConvenio.imagenes.map((label, index) => (
-                                    <FormField
-                                        key={index}
-                                        control={form.control}
-                                        name={`imagenes.${label}` as any}
-                                        render={() => (
-                                            <FormItem>
-                                                <FormLabel>{label}</FormLabel>
-                                                <FormControl>
-                                                    <div
-                                                        className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition flex items-center justify-center min-h-[120px]"
-                                                        onClick={() => document.getElementById(`file-${label}`)?.click()}
-                                                    >
-                                                        <input
-                                                            id={`file-${label}`}
-                                                            type="file"
-                                                            accept="image/*,application/pdf"
-                                                            className="hidden"
-                                                            onChange={(e) => {
-                                                                const file = e.target.files?.[0]
-                                                                if (file) handleFileChange(file, label)
-                                                            }}
-                                                        />
+                                {(() => {
+                                    const labels = [...(selectedConvenio.imagenes || [])];
+                                    if (labels.length === 0) {
+                                        labels.push("Foto frontal de Carnet de Identidad");
+                                    } else {
+                                        if (!labels.some(l => l.toLowerCase().includes("carnet"))) labels.push("Foto frontal de Carnet de Identidad");
+                                    }
 
-                                                        {previews[label] ? (
-                                                            <div className="relative w-full">
-                                                                {previews[label].isPDF ? (
-                                                                    <div className="flex flex-col items-center">
-                                                                        <FileTextIcon className="h-10 w-10 text-primary" />
-                                                                        <span className="text-xs mt-1 truncate max-w-full italic text-muted-foreground">Documento PDF</span>
-                                                                    </div>
-                                                                ) : (
-                                                                    <img
-                                                                        src={previews[label].src}
-                                                                        alt={label}
-                                                                        className="mx-auto max-h-24 rounded object-contain"
-                                                                    />
-                                                                )}
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="destructive"
-                                                                    size="icon"
-                                                                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation()
-                                                                        handleRemove(label)
-                                                                    }}
-                                                                >
-                                                                    <XIcon className="h-4 w-4" />
-                                                                </Button>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex flex-col items-center text-muted-foreground">
-                                                                <UploadIcon className="h-6 w-6 mb-1" />
-                                                                <p className="text-xs">Subir {label}</p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                ))}
+                                    return labels.map((label, index) => (
+                                        <FormField
+                                            key={index}
+                                            control={form.control}
+                                            name={`imagenes.${label}` as any}
+                                            render={() => (
+                                                <FormItem>
+                                                    <FormLabel>{label}</FormLabel>
+                                                    <FormControl>
+                                                        <div
+                                                            className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition flex items-center justify-center min-h-[120px]"
+                                                            onClick={() => document.getElementById(`file-${label}`)?.click()}
+                                                        >
+                                                            <input
+                                                                id={`file-${label}`}
+                                                                type="file"
+                                                                accept="image/*,application/pdf"
+                                                                className="hidden"
+                                                                onChange={(e) => {
+                                                                    const file = e.target.files?.[0]
+                                                                    if (file) handleFileChange(file, label)
+                                                                }}
+                                                            />
+
+                                                            {previews[label] ? (
+                                                                <div className="relative w-full">
+                                                                    {previews[label].isPDF ? (
+                                                                        <div className="flex flex-col items-center">
+                                                                            <FileTextIcon className="h-10 w-10 text-primary" />
+                                                                            <span className="text-xs mt-1 truncate max-w-full italic text-muted-foreground">Documento PDF</span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <img
+                                                                            src={previews[label].src}
+                                                                            alt={label}
+                                                                            className="mx-auto max-h-24 rounded object-contain"
+                                                                        />
+                                                                    )}
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="destructive"
+                                                                        size="icon"
+                                                                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation()
+                                                                            handleRemove(label)
+                                                                        }}
+                                                                    >
+                                                                        <XIcon className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col items-center text-muted-foreground">
+                                                                    <UploadIcon className="h-6 w-6 mb-1" />
+                                                                    <p className="text-xs">Subir {label}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    ));
+                                })()}
                             </div>
                         )}
 

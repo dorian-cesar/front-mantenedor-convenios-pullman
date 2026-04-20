@@ -57,7 +57,8 @@ function ConveniosPage() {
     const { user, initialized: authInitialized } = useAuth()
     const [summary, setSummary] = useState({ activo: 0, inactivo: 0 })
 
-    const isUserRole = user?.rol === "USUARIO";
+    const isReadOnlyRole = user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user" || user?.rol?.toUpperCase() === "SISTEMA";
+    const isScopedRole = user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user";
     const effectiveEmpresaId = user?.empresa_id || user?.empresaId || user?.id_empresa || user?.empresa?.id;
 
     useEffect(() => {
@@ -83,7 +84,7 @@ function ConveniosPage() {
             const baseParams: GetConveniosParams = {}
             if (selectedEmpresa) baseParams.empresa_id = selectedEmpresa
             // Si es USUARIO (o user), forzar su empresa_id
-            if (isUserRole && effectiveEmpresaId) {
+            if (isScopedRole && effectiveEmpresaId) {
                 baseParams.empresa_id = effectiveEmpresaId;
             }
 
@@ -142,7 +143,7 @@ function ConveniosPage() {
 
                 const finalId = reactEmpresaId || manualEmpresaId;
                 
-                if (isUserRole && finalId) {
+                if (isScopedRole && finalId) {
                     params.empresa_id = finalId;
                 }
             }
@@ -297,7 +298,7 @@ function ConveniosPage() {
                 params.empresa_id = selectedEmpresa
             }
 
-            if (isUserRole && effectiveEmpresaId) {
+            if (isScopedRole && effectiveEmpresaId) {
                 params.empresa_id = effectiveEmpresaId;
             }
 
@@ -449,7 +450,7 @@ function ConveniosPage() {
             <PageHeader
                 title="Convenios"
                 description="Gestione los convenios de las empresas aquí."
-                actionButtons={isUserRole ? [] : [
+                actionButtons={isReadOnlyRole ? [] : [
                     {
                         label: "Nuevo Convenio",
                         onClick: () => setOpenAdd(true),
@@ -617,7 +618,7 @@ function ConveniosPage() {
                                                     Ver detalles
                                                 </Dropdown.DropdownMenuItem>
 
-                                                {!isUserRole && (
+                                                {!isReadOnlyRole && (
                                                     <>
                                                         <Dropdown.DropdownMenuItem
                                                             onClick={() => handleEditConvenio(convenio)}

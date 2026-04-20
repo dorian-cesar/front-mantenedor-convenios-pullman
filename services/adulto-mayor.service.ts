@@ -32,6 +32,7 @@ export interface GetAdultosMayoresParams {
     nombre?: string;
     search?: string;
     convenio_id?: number;
+    empresa_id?: number;
 }
 
 export interface AdultosMayoresResponse {
@@ -73,9 +74,12 @@ export interface RechazarAdultoMayorData {
 }
 
 export class AdultosMayoresService {
-    static async getAdultosMayores(params?: GetAdultosMayoresParams): Promise<AdultosMayoresResponse> {
-        const queryParams = { empresa_id: 72, ...params };
-        const response = await api.get<AdultosMayoresResponse>('/beneficiarios', { params: queryParams });
+    static async getAdultosMayores(params: GetAdultosMayoresParams = {}): Promise<AdultosMayoresResponse> {
+        // En esta tabla compartida, Adultos Mayores corresponde a empresa_id 72
+        if (!params.empresa_id) {
+            params.empresa_id = 72;
+        }
+        const response = await api.get<AdultosMayoresResponse>('/beneficiarios', { params });
         return response.data;
     }
 

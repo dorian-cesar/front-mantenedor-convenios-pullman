@@ -139,17 +139,44 @@ export default function DetailsAdultoMayorModal({
                         <div>
                             <p className="text-sm font-medium mb-2">Foto frontal de Carnet de Identidad</p>
                             {renderFilePreview(
-                                getVal(adultoMayor?.imagenes, ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]) || adultoMayor?.imagen_cedula_identidad,
+                                getVal(adultoMayor?.imagenes, [
+                                    "Foto frontal de Carnet de Identidad", 
+                                    "Foto frontal de Carnet de Identidad.", 
+                                    "Foto frontal del Carnet de Identidad", 
+                                    "Foto frontal del Carnet de Identidad.",
+                                    "Cédula de Identidad", 
+                                    "Cédula", 
+                                    "RUT", 
+                                    "Documento Identity"
+                                ]) || adultoMayor?.imagen_cedula_identidad,
                                 `Carnet de ${adultoMayor?.nombre}`,
                                 () => {
-                                    const src = getVal(adultoMayor?.imagenes, ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]) || adultoMayor?.imagen_cedula_identidad;
+                                    const src = getVal(adultoMayor?.imagenes, [
+                                        "Foto frontal de Carnet de Identidad", 
+                                        "Foto frontal de Carnet de Identidad.", 
+                                        "Foto frontal del Carnet de Identidad", 
+                                        "Foto frontal del Carnet de Identidad.",
+                                        "Cédula de Identidad", 
+                                        "Cédula", 
+                                        "RUT", 
+                                        "Documento Identity"
+                                    ]) || adultoMayor?.imagen_cedula_identidad;
                                     if (src) handleFileClick(src, `Carnet de ${adultoMayor?.nombre}`);
                                 }
                             )}
                         </div>
                         {/* Render any additional images found in the 'imagenes' object */}
                         {adultoMayor?.imagenes && Object.entries(adultoMayor.imagenes).map(([key, src]) => {
-                            const handledKeys = ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"];
+                            const handledKeys = [
+                                "Foto frontal de Carnet de Identidad", 
+                                "Foto frontal de Carnet de Identidad.", 
+                                "Foto frontal del Carnet de Identidad", 
+                                "Foto frontal del Carnet de Identidad.",
+                                "Cédula de Identidad", 
+                                "Cédula", 
+                                "RUT", 
+                                "Documento Identity"
+                            ];
                             if (handledKeys.includes(key)) return null;
                             if (!src) return null;
                             return (

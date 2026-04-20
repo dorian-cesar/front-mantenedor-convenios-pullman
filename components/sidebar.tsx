@@ -9,6 +9,8 @@ import {
     ChevronRight,
     ChevronDown,
     LogOut,
+    Building2,
+    FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +27,7 @@ import {
 import { NAVIGATION, NavItem } from "@/constants/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useBeneficioMenu } from "@/hooks/use-beneficio-menu";
 
 interface SidebarProps {
     collapsed: boolean;
@@ -38,6 +41,7 @@ export function Sidebar({ collapsed, onToggle, onLogout }: SidebarProps) {
     const [mounted, setMounted] = useState(false);
     const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
     const { user } = useAuth()
+    const { empresas: beneficioEmpresas, isLoading: loadingBeneficios } = useBeneficioMenu()
 
     useEffect(() => {
         setMounted(true);
@@ -300,6 +304,87 @@ export function Sidebar({ collapsed, onToggle, onLogout }: SidebarProps) {
                             <div className="my-4 border-t border-sidebar-border" />
                             <div className="flex flex-col gap-1 px-3">
                                 {renderNavItems(secondaryItems)}
+                            </div>
+                        </>
+                    )}
+
+                    {/* Dynamic beneficio menu: Empresa → Convenio → Beneficiarios */}
+                    {!loadingBeneficios && beneficioEmpresas.length > 0 && (
+                        <>
+                            <div className="my-4 border-t border-sidebar-border" />
+                            {!collapsed && (
+                                <p className="px-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
+                                    Empresas
+                                </p>
+                            )}
+                            <div className="flex flex-col gap-1 px-3">
+                                {beneficioEmpresas.map((empresa) => {
+                                    const isOpen = openMenus[`empresa-${empresa.id}`]
+                                    const hasActiveChild = empresa.convenios.some(
+                                        (c) => pathname === `/dashboard/beneficios/convenio/${c.id}`
+                                    )
+
+                                    return (
+                                        <Collapsible
+                                            key={empresa.id}
+                                            open={isOpen}
+                                            onOpenChange={() =>
+                                                setOpenMenus((prev) => ({
+                                                    ...prev,
+                                                    [`empresa-${empresa.id}`]: !prev[`empresa-${empresa.id}`],
+                                                }))
+                                            }
+                                        >
+                                            <CollapsibleTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    className={cn(
+                                                        "flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition-colors w-full px-3",
+                                                        hasActiveChild
+                                                            ? "bg-sidebar-accent text-sidebar-primary"
+                                                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                                                    )}
+                                                >
+                                                    <Building2 className="h-5 w-5 shrink-0" />
+                                                    {!collapsed && (
+                                                        <>
+                                                            <span className="flex-1 text-left truncate">{empresa.nombre}</span>
+                                                            <ChevronDown
+                                                                className={cn(
+                                                                    "h-4 w-4 shrink-0 transition-transform mr-2",
+                                                                    isOpen ? "rotate-180" : ""
+                                                                )}
+                                                            />
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </CollapsibleTrigger>
+                                            <CollapsibleContent className="mt-1 space-y-1">
+                                                {empresa.convenios.map((convenio) => {
+                                                    const href = `/dashboard/beneficios/convenio/${convenio.id}`
+                                                    const isActive = pathname === href
+                                                    return (
+                                                        <Link
+                                                            key={convenio.id}
+                                                            href={href}
+                                                            className={cn(
+                                                                "flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-colors pl-11 pr-3",
+                                                                isActive
+                                                                    ? "bg-sidebar-accent text-sidebar-primary"
+                                                                    : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                                                            )}
+                                                        >
+                                                            <FileText className="h-4 w-4 shrink-0" />
+                                                            {!collapsed && (
+                                                                <span className="truncate">{convenio.nombre}</span>
+                                                            )}
+                                                        </Link>
+                                                    )
+                                                })}
+                                            </CollapsibleContent>
+                                        </Collapsible>
+                                    )
+                                })}
                             </div>
                         </>
                     )}

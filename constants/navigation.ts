@@ -60,7 +60,7 @@ export const NAVIGATION: NavItem[] = [
         description: "empresas · compañias · organizaciones · clientes",
         group: "Empresas",
         section: "main",
-        roles: ["SUPER_USUARIO", "USUARIO"]
+        roles: ["SUPER_USUARIO", "USUARIO", "SISTEMA"]
     },
     {
         id: "convenios",

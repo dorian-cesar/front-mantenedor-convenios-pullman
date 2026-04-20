@@ -138,10 +138,28 @@ export default function DetailsUsuarioFrecuenteModal({
                         <div>
                             <p className="text-sm font-medium mb-2">Foto frontal de Carnet de Identidad</p>
                             {renderFilePreview(
-                                getVal(usuarioFrecuente?.imagenes, ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]) || usuarioFrecuente?.imagen_cedula_identidad,
+                                getVal(usuarioFrecuente?.imagenes, [
+                                    "Foto frontal de Carnet de Identidad", 
+                                    "Foto frontal de Carnet de Identidad.", 
+                                    "Foto frontal del Carnet de Identidad", 
+                                    "Foto frontal del Carnet de Identidad.",
+                                    "Cédula de Identidad", 
+                                    "Cédula", 
+                                    "RUT", 
+                                    "Documento Identity"
+                                ]) || usuarioFrecuente?.imagen_cedula_identidad,
                                 `Carnet de ${usuarioFrecuente?.nombre}`,
                                 () => {
-                                    const src = getVal(usuarioFrecuente?.imagenes, ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity"]) || usuarioFrecuente?.imagen_cedula_identidad;
+                                    const src = getVal(usuarioFrecuente?.imagenes, [
+                                        "Foto frontal de Carnet de Identidad", 
+                                        "Foto frontal de Carnet de Identidad.", 
+                                        "Foto frontal del Carnet de Identidad", 
+                                        "Foto frontal del Carnet de Identidad.",
+                                        "Cédula de Identidad", 
+                                        "Cédula", 
+                                        "RUT", 
+                                        "Documento Identity"
+                                    ]) || usuarioFrecuente?.imagen_cedula_identidad;
                                     if (src) handleFileClick(src, `Carnet de ${usuarioFrecuente?.nombre}`);
                                 }
                             )}
@@ -159,7 +177,18 @@ export default function DetailsUsuarioFrecuenteModal({
                         </div>
                         {/* Render any additional images found in the 'imagenes' object */}
                         {usuarioFrecuente?.imagenes && Object.entries(usuarioFrecuente.imagenes).map(([key, src]) => {
-                            const handledKeys = ["Foto frontal de Carnet de Identidad", "Foto frontal del Carnet de Identidad", "Cédula de Identidad", "Cédula", "RUT", "Documento Identity", "Certificado de Estudios", "Certificado"];
+                            const handledKeys = [
+                                "Foto frontal de Carnet de Identidad", 
+                                "Foto frontal de Carnet de Identidad.", 
+                                "Foto frontal del Carnet de Identidad", 
+                                "Foto frontal del Carnet de Identidad.",
+                                "Cédula de Identidad", 
+                                "Cédula", 
+                                "RUT", 
+                                "Documento Identity", 
+                                "Certificado de Estudios", 
+                                "Certificado"
+                            ];
                             if (handledKeys.includes(key)) return null;
                             if (!src) return null;
                             return (
