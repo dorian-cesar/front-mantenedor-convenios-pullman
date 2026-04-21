@@ -33,15 +33,51 @@ interface SidebarProps {
     collapsed: boolean;
     onToggle: () => void;
     onLogout: () => void;
+    width: number;
+    onWidthChange: (width: number) => void;
 }
 
-export function Sidebar({ collapsed, onToggle, onLogout }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, onLogout, width, onWidthChange }: SidebarProps) {
     const pathname = usePathname();
     const { theme, systemTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
     const { user } = useAuth()
     const { empresas: beneficioEmpresas, isLoading: loadingBeneficios } = useBeneficioMenu()
+    const [isResizing, setIsResizing] = useState(false);
+
+    const startResizing = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isResizing) return;
+            
+            let newWidth = e.clientX;
+            if (newWidth < 160) newWidth = 160;
+            if (newWidth > 480) newWidth = 480;
+            
+            onWidthChange(newWidth);
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+        };
+
+        if (isResizing) {
+            document.addEventListener("mousemove", handleMouseMove);
+            document.addEventListener("mouseup", handleMouseUp);
+            document.body.style.cursor = "col-resize";
+        }
+
+        return () => {
+            document.removeEventListener("mousemove", handleMouseMove);
+            document.removeEventListener("mouseup", handleMouseUp);
+            document.body.style.cursor = "default";
+        };
+    }, [isResizing, onWidthChange]);
 
     useEffect(() => {
         setMounted(true);
@@ -267,9 +303,10 @@ export function Sidebar({ collapsed, onToggle, onLogout }: SidebarProps) {
         <TooltipProvider delayDuration={0}>
             <aside
                 className={cn(
-                    "fixed left-0 top-0 z-40 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 flex flex-col",
-                    collapsed ? "w-[72px]" : "w-64"
+                    "fixed left-0 top-0 z-40 h-screen bg-sidebar border-r border-sidebar-border flex flex-col",
+                    !isResizing && "transition-all duration-300"
                 )}
+                style={{ width: collapsed ? "72px" : `${width}px` }}
             >
                 <div className="flex h-16 items-center justify-center px-4 border-b border-sidebar-border">
                     <Link href="/dashboard" className="flex items-center gap-3">
@@ -438,6 +475,16 @@ export function Sidebar({ collapsed, onToggle, onLogout }: SidebarProps) {
                         <ChevronLeft className="h-3 w-3" />
                     )}
                 </Button>
+
+                {!collapsed && (
+                    <div
+                        onMouseDown={startResizing}
+                        className={cn(
+                            "absolute top-0 right-0 h-full w-1.5 cursor-col-resize transition-colors hover:bg-primary/20",
+                            isResizing && "bg-primary/30"
+                        )}
+                    />
+                )}
             </aside>
         </TooltipProvider>
     );

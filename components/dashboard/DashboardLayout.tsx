@@ -28,9 +28,25 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
     const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+    const [sidebarWidth, setSidebarWidth] = React.useState(256);
+
+    React.useEffect(() => {
+        const savedWidth = localStorage.getItem("sidebarWidth");
+        if (savedWidth) {
+            const width = parseInt(savedWidth, 10);
+            if (width >= 160 && width <= 480) {
+                setSidebarWidth(width);
+            }
+        }
+    }, []);
 
     const handleLogout = () => {
         onLogout();
+    };
+
+    const handleWidthChange = (newWidth: number) => {
+        setSidebarWidth(newWidth);
+        localStorage.setItem("sidebarWidth", newWidth.toString());
     };
 
     return (
@@ -40,6 +56,8 @@ export function DashboardLayout({
                     collapsed={sidebarCollapsed}
                     onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
                     onLogout={handleLogout}
+                    width={sidebarWidth}
+                    onWidthChange={handleWidthChange}
                 />
             </div>
 
@@ -51,6 +69,7 @@ export function DashboardLayout({
 
             <Navbar
                 sidebarCollapsed={sidebarCollapsed}
+                sidebarWidth={sidebarWidth}
                 onMobileMenuToggle={() => setMobileMenuOpen(true)}
                 user={user}
                 onLogout={handleLogout}
@@ -59,8 +78,13 @@ export function DashboardLayout({
             <div
                 className={cn(
                     "pt-16 min-h-screen transition-all duration-300",
-                    sidebarCollapsed ? "lg:pl-[72px]" : "lg:pl-64"
+                    "max-lg:pl-0"
                 )}
+                style={{ 
+                    paddingLeft: typeof window !== 'undefined' && window.innerWidth >= 1024 
+                        ? (sidebarCollapsed ? "72px" : `${sidebarWidth}px`) 
+                        : "0px" 
+                }}
             >
                 <div className="p-4 lg:p-6">{children}</div>
             </div>

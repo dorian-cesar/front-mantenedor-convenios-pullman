@@ -20,6 +20,7 @@ import { ThemeToggle } from "./ThemeToggle";
 
 interface NavbarProps {
   sidebarCollapsed: boolean;
+  sidebarWidth: number;
   onMobileMenuToggle: () => void;
   user?: {
     id: number;
@@ -36,6 +37,7 @@ interface NavbarProps {
 
 export function Navbar({
   sidebarCollapsed,
+  sidebarWidth,
   onMobileMenuToggle,
   user,
   onLogout
@@ -85,9 +87,13 @@ export function Navbar({
     <header
       className={cn(
         "fixed top-0 right-0 z-30 h-16 border-b border-border bg-background/80 backdrop-blur-sm transition-all duration-300",
-        sidebarCollapsed ? "left-[72px]" : "left-64",
         "max-lg:left-0"
       )}
+      style={{ 
+        left: typeof window !== 'undefined' && window.innerWidth >= 1024 
+          ? (sidebarCollapsed ? "72px" : `${sidebarWidth}px`) 
+          : "0px" 
+      }}
     >
       <div className="flex h-full items-center justify-between px-4 lg:px-6">
         <Button
