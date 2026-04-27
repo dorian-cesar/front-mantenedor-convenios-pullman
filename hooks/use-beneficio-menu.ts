@@ -29,8 +29,8 @@ export function useBeneficioMenu() {
                 })
                 console.log('[useBeneficioMenu] API Response:', res)
 
-                const rows: Convenio[] = res.rows || []
-                console.log('[useBeneficioMenu] Convenios array:', rows)
+                const rows: Convenio[] = (res.rows || []).filter(c => c.beneficio === true)
+                console.log('[useBeneficioMenu] Filtered convenios array:', rows)
 
                 // Group convenios by empresa
                 const map = new Map<number, EmpresaBeneficioMenu>()

@@ -114,12 +114,18 @@ export const getFileSrc = (base64?: string | null) => {
   }
 
   try {
+    // Solo intentamos atob si no tiene prefijo data:
     const decoded = atob(base64.substring(0, 100));
     if (decoded.includes('%PDF')) {
       return `data:application/pdf;base64,${base64}`;
     }
   } catch {
-    // Si falla la decodificación, asumimos imagen
+    // Si falla la decodificación, ignoramos y seguimos
+  }
+
+  // Detección simple de PNG por su firma en base64
+  if (base64.startsWith('iVBORw0KGgo')) {
+    return `data:image/png;base64,${base64}`;
   }
 
   return `data:image/jpeg;base64,${base64}`
@@ -130,6 +136,11 @@ export const isPDF = (base64?: string | null): boolean => {
 
   if (base64.startsWith("data:application/pdf")) {
     return true
+  }
+  
+  // Si tiene otro prefijo data:, no es PDF
+  if (base64.startsWith("data:")) {
+    return false
   }
 
   try {

@@ -122,6 +122,13 @@ export default function UpdateEstudianteModal({
 
     const handleFileChange = async (file: File, label: string) => {
         if (!file) return
+
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf']
+        if (!allowedTypes.includes(file.type)) {
+            toast.error("Formato no permitido. Use JPG, PNG o PDF.")
+            return
+        }
+
         if (file.size > 5 * 1024 * 1024) {
             toast.error(`El archivo "${label}" supera los 5MB.`)
             return
