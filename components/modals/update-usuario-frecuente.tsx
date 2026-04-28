@@ -233,9 +233,10 @@ export default function UpdateUsuarioFrecuenteModal({
             toast.success("Pasajero Frecuente actualizado correctamente")
             onSuccess?.()
             onOpenChange(false)
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error updating usuario frecuente:", error)
-            toast.error("No se pudo actualizar el pasajero frecuente")
+            const errorMsg = error.response?.data?.message || "No se pudo actualizar el pasajero frecuente"
+            toast.error(errorMsg)
         } finally {
             setIsLoading(false)
         }

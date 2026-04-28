@@ -233,9 +233,10 @@ export default function UpdateAdultoMayorModal({
             toast.success("Adulto Mayor actualizado correctamente")
             onSuccess?.()
             onOpenChange(false)
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error updating adulto mayor:", error)
-            toast.error("No se pudo actualizar el adulto mayor")
+            const errorMsg = error.response?.data?.message || "No se pudo actualizar el adulto mayor"
+            toast.error(errorMsg)
         } finally {
             setIsLoading(false)
         }

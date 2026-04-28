@@ -233,9 +233,10 @@ export default function UpdateEstudianteModal({
             toast.success("Estudiante actualizado correctamente")
             onSuccess?.()
             onOpenChange(false)
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error updating estudiante:", error)
-            toast.error("No se pudo actualizar el estudiante")
+            const errorMsg = error.response?.data?.message || "No se pudo actualizar el estudiante"
+            toast.error(errorMsg)
         } finally {
             setIsLoading(false)
         }

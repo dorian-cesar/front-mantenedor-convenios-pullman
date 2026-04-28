@@ -173,9 +173,10 @@ export default function AddAdultoMayorModal({
             setPreviews({})
             onSuccess?.()
             onOpenChange(false)
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error creating adulto mayor:", error)
-            toast.error("Error al crear el adulto mayor")
+            const errorMsg = error.response?.data?.message || "Error al crear el adulto mayor"
+            toast.error(errorMsg)
         } finally {
             setIsLoading(false)
         }

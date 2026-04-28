@@ -174,9 +174,10 @@ export default function AddUsuarioFrecuenteModal({
             setPreviews({})
             onSuccess?.()
             onOpenChange(false)
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error creating usuario frecuente:", error)
-            toast.error("Error al crear el pasajero frecuente")
+            const errorMsg = error.response?.data?.message || "Error al crear el pasajero frecuente"
+            toast.error(errorMsg)
         } finally {
             setIsLoading(false)
         }

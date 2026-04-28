@@ -173,8 +173,10 @@ export default function AddEstudianteModal({
             setPreviews({})
             onSuccess?.()
             onOpenChange(false)
-        } catch {
-            toast.error("Error al crear")
+        } catch (error: any) {
+            console.error("Error creating estudiante:", error)
+            const errorMsg = error.response?.data?.message || "Error al crear el estudiante"
+            toast.error(errorMsg)
         } finally {
             setIsLoading(false)
         }
