@@ -53,6 +53,16 @@ export const NAVIGATION: NavItem[] = [
         section: "main",
     },
     {
+        id: "consulta-tickets",
+        title: "Consulta Tickets Kupos",
+        href: "/dashboard/consulta-tickets",
+        icon: QrCode,
+        description: "consulta · tickets · boletos · kupos · pnr",
+        group: "Operación",
+        section: "main",
+        roles: ["SUPER_USUARIO", "USUARIO", "SISTEMA"]
+    },
+    {
         id: "empresas",
         title: "Empresas",
         href: "/dashboard/empresas",
