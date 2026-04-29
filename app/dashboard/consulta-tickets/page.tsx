@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Ticket, MapPin, Calendar, Clock, User, Armchair, Bus, FileWarning } from "lucide-react";
+import { Search, Ticket, MapPin, Calendar, Clock, User, Armchair, Bus, FileWarning, Copy, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -12,6 +12,13 @@ export default function ConsultaTicketsPage() {
     const [loading, setLoading] = useState(false);
     const [ticketData, setTicketData] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
+    const [copiedText, setCopiedText] = useState<string | null>(null);
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        setCopiedText(text);
+        setTimeout(() => setCopiedText(null), 2000);
+    };
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -98,7 +105,13 @@ export default function ConsultaTicketsPage() {
                         <CardHeader className="pb-2">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <Badge variant={ticketData.ticket_status === "Confirmed" ? "default" : "secondary"} className="mb-2">
+                                    <Badge 
+                                        className={`mb-2 text-white ${
+                                            ticketData.ticket_status === "Confirmed" ? "bg-emerald-500 hover:bg-emerald-600" :
+                                            ticketData.ticket_status === "Cancelled" ? "bg-red-500 hover:bg-red-600" :
+                                            "bg-gray-500 hover:bg-gray-600"
+                                        }`}
+                                    >
                                         {ticketData.ticket_status}
                                     </Badge>
                                     <CardTitle className="text-2xl">Detalle del Viaje</CardTitle>
@@ -106,9 +119,37 @@ export default function ConsultaTicketsPage() {
                                         <Bus className="w-4 h-4" /> {ticketData.travels} ({ticketData.service_number})
                                     </CardDescription>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-sm text-muted-foreground">PNR</p>
-                                    <p className="font-mono font-bold text-lg">{ticketData.pnr_number}</p>
+                                <div className="text-right space-y-2">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">PNR Kupos</p>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <p className="font-mono font-bold text-lg">{ticketData.pnr_number}</p>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-6 w-6" 
+                                                onClick={() => copyToClipboard(ticketData.pnr_number)}
+                                            >
+                                                {copiedText === ticketData.pnr_number ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4 text-muted-foreground hover:text-foreground" />}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    {ticketData.operator_pnr && (
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">PNR Operador</p>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <p className="font-mono font-bold text-md text-primary">{ticketData.operator_pnr}</p>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-6 w-6" 
+                                                    onClick={() => copyToClipboard(ticketData.operator_pnr)}
+                                                >
+                                                    {copiedText === ticketData.operator_pnr ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4 text-muted-foreground hover:text-foreground" />}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </CardHeader>
