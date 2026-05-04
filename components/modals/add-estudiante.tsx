@@ -31,7 +31,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { EstudiantesService } from "@/services/estudiante.service"
 import { ConveniosService, type Convenio } from "@/services/convenio.service"
 import { toast } from "sonner"
-import { fileToBase64 } from "@/utils/helpers"
+import { fileToBase64, cleanRut } from "@/utils/helpers"
 import { FileTextIcon, UploadIcon, XIcon, PlusIcon, Loader2Icon } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 
@@ -167,7 +167,10 @@ export default function AddEstudianteModal({
 
         setIsLoading(true)
         try {
-            await EstudiantesService.createEstudiante(data as any)
+            await EstudiantesService.createEstudiante({
+                ...data,
+                rut: cleanRut(data.rut)
+            } as any)
             toast.success("Creado")
             form.reset()
             setPreviews({})

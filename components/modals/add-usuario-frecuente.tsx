@@ -31,7 +31,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { UsuariosFrecuentesService } from "@/services/usuario-frecuente.service"
 import { ConveniosService, type Convenio } from "@/services/convenio.service"
 import { toast } from "sonner"
-import { fileToBase64, formatRut } from "@/utils/helpers"
+import { fileToBase64, formatRut, cleanRut } from "@/utils/helpers"
 import { FileTextIcon, UploadIcon, XIcon, PlusIcon, Loader2Icon } from "lucide-react"
 
 import { useAuth } from "@/hooks/useAuth"
@@ -168,7 +168,10 @@ export default function AddUsuarioFrecuenteModal({
 
         setIsLoading(true)
         try {
-            await UsuariosFrecuentesService.createUsuarioFrecuente(data as any)
+            await UsuariosFrecuentesService.createUsuarioFrecuente({
+                ...data,
+                rut: cleanRut(data.rut)
+            } as any)
             toast.success("Pasajero Frecuente creado correctamente")
             form.reset()
             setPreviews({})

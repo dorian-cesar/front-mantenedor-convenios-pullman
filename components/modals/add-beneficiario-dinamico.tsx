@@ -24,7 +24,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { api } from "@/lib/api"
 import { type Convenio } from "@/services/convenio.service"
 import { toast } from "sonner"
-import { fileToBase64, formatRut } from "@/utils/helpers"
+import { fileToBase64, formatRut, cleanRut } from "@/utils/helpers"
 import { FileTextIcon, UploadIcon, XIcon, Loader2Icon } from "lucide-react"
 
 interface AddBeneficiarioDinamicoModalProps {
@@ -123,6 +123,7 @@ export default function AddBeneficiarioDinamicoModal({
         try {
             const payload = {
                 ...data,
+                rut: cleanRut(data.rut),
                 convenio_id: convenio.id,
             }
             // Use the same endpoint used by logic in adultomayor.service.ts

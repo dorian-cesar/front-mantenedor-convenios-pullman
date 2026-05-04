@@ -19,6 +19,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Empresa } from "@/services/empresa.service"
+import { cleanRut } from "@/utils/helpers"
 
 interface AddFachModalProps {
     open: boolean;
@@ -69,7 +70,10 @@ export default function AddFachModal({
     const onSubmit = async (data: FachFormValues) => {
         setLoading(true)
         try {
-            await FachService.createFach(data)
+            await FachService.createFach({
+                ...data,
+                rut: cleanRut(data.rut)
+            })
             toast.success("Registro Fach creado correctamente")
             onSuccess?.()
             onOpenChange(false)

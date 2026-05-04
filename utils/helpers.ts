@@ -15,6 +15,11 @@ export const formatRut = (rut: string | null | undefined) => {
   return `${rutBody.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${dv}`
 }
 
+export const cleanRut = (rut: string | null | undefined) => {
+  if (!rut) return ""
+  return rut.replace(/\./g, "").replace(/-/g, "").toUpperCase()
+}
+
 export const validateRut = (rut: string | null | undefined): boolean => {
   if (!rut) return false
   

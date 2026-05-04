@@ -31,7 +31,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { AdultosMayoresService } from "@/services/adulto-mayor.service"
 import { ConveniosService, type Convenio } from "@/services/convenio.service"
 import { toast } from "sonner"
-import { fileToBase64, formatRut } from "@/utils/helpers"
+import { fileToBase64, formatRut, cleanRut } from "@/utils/helpers"
 import { FileTextIcon, UploadIcon, XIcon, PlusIcon, Loader2Icon } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 
@@ -167,7 +167,10 @@ export default function AddAdultoMayorModal({
 
         setIsLoading(true)
         try {
-            await AdultosMayoresService.createAdultoMayor(data as any)
+            await AdultosMayoresService.createAdultoMayor({
+                ...data,
+                rut: cleanRut(data.rut)
+            } as any)
             toast.success("Adulto Mayor creado correctamente")
             form.reset()
             setPreviews({})
