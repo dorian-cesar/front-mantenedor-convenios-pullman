@@ -217,7 +217,8 @@ export default function AddConvenioModal({
     onOpenChange,
     onSuccess,
     empresas,
-    apis
+    apis,
+    categorias = []
 }: AddConvenioModalProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [openEmpresaPopover, setOpenEmpresaPopover] = useState(false)
