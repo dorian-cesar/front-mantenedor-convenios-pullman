@@ -41,7 +41,6 @@ export default function CategoriasPage() {
     }
 
     const fetchEmpresas = async () => {
-        if (!isAdmin) return;
         try {
             const { EmpresasService } = await import("@/services/empresa.service")
             const res = await EmpresasService.getEmpresas({ limit: 1000, status: 'ACTIVO' })
@@ -98,6 +97,7 @@ export default function CategoriasPage() {
                         <Table.TableRow>
                             <Table.TableHead>ID</Table.TableHead>
                             <Table.TableHead>Nombre</Table.TableHead>
+                            <Table.TableHead>Empresa</Table.TableHead>
                             <Table.TableHead>Descripción</Table.TableHead>
                             <Table.TableHead>Fecha Creación</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
@@ -121,6 +121,14 @@ export default function CategoriasPage() {
                                 <Table.TableRow key={cat.id}>
                                     <Table.TableCell>{cat.id}</Table.TableCell>
                                     <Table.TableCell className="font-medium">{cat.nombre}</Table.TableCell>
+                                    <Table.TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <Icon.Building2 className="h-3 w-3 text-muted-foreground" />
+                                            <span className="text-sm">
+                                                {empresas.find(e => e.id === cat.empresa_id)?.nombre || `Empresa #${cat.empresa_id}`}
+                                            </span>
+                                        </div>
+                                    </Table.TableCell>
                                     <Table.TableCell className="text-muted-foreground">
                                         {cat.descripcion || "-"}
                                     </Table.TableCell>
