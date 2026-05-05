@@ -36,7 +36,7 @@ export default function AddCategoriaModal({
         empresa_id: "" as string | number
     })
 
-    const isAdmin = user?.rol?.toUpperCase() === "ADMINISTRADOR" || user?.rol?.toUpperCase() === "SOPORTE";
+    const isAdmin = user?.rol?.toUpperCase() === "SUPER_USUARIO" || user?.rol?.toUpperCase() === "SOPORTE";
 
     // Set default empresa_id from user if not admin
     useEffect(() => {
