@@ -19,9 +19,15 @@ export interface UpdateCategoriaData {
 }
 
 export class CategoriasService {
-    static async getCategorias(): Promise<Categoria[]> {
-        const response = await api.get<Categoria[]>('/categorias');
-        return response.data;
+    static async getCategorias(empresa_id?: number): Promise<Categoria[]> {
+        try {
+            const params = empresa_id ? { empresa_id } : {};
+            const response = await api.get<Categoria[]>('/categorias', { params });
+            return response.data;
+        } catch (error) {
+            console.error("Error fetching categorias:", error);
+            return [];
+        }
     }
 
     static async getCategoriaById(id: number): Promise<Categoria> {
