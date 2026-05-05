@@ -5,14 +5,14 @@ export const formatDateOnly = (isoDate: string) => {
 
 export const formatRut = (rut: string | null | undefined) => {
   if (!rut) return ""
-  if (rut.includes('-')) return rut
+  
+  const clean = rut.replace(/\./g, "").replace(/-/g, "")
+  if (clean.length < 2) return clean
 
-  const cleanRut = rut.replace(/\./g, '').replace(/-/g, '')
-  if (cleanRut.length < 2) return rut
-
-  const rutBody = cleanRut.slice(0, -1)
-  const dv = cleanRut.slice(-1)
-  return `${rutBody.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${dv}`
+  const body = clean.slice(0, -1)
+  const dv = clean.slice(-1)
+  
+  return `${body.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}-${dv}`
 }
 
 export const cleanRut = (rut: string | null | undefined) => {
@@ -25,7 +25,7 @@ export const validateRut = (rut: string | null | undefined): boolean => {
   
   // Limpiar puntos y guión
   const cleanRut = rut.replace(/\./g, "").replace(/-/g, "").toUpperCase()
-  if (cleanRut.length < 8) return false
+  if (cleanRut.length < 2) return false
 
   const cuerpo = cleanRut.slice(0, -1)
   const dv = cleanRut.slice(-1)

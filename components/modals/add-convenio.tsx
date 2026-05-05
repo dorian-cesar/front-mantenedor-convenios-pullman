@@ -57,6 +57,7 @@ interface AddConvenioModalProps {
     onSuccess?: () => void
     empresas: Empresa[]
     apis: Api[]
+    categorias?: { id: number, nombre: string }[]
 }
 
 const rutaConfiguracionSchema = z.object({
@@ -91,6 +92,7 @@ export const convenioSchema = z.object({
 
     codigo: z.string().optional(),
     api_consulta_id: z.number().optional().nullable(),
+    categoria_id: z.number().optional().nullable(),
 
     tipo_descuento: z.enum(["Porcentaje", "Monto Fijo", "Tarifa Plana"]).optional(),
     valor_descuento: z.number().min(0, "Debe ser un valor positivo").optional(),
@@ -401,6 +403,7 @@ export default function AddConvenioModal({
                 tipo_consulta: data.tipo_consulta,
                 codigo: data.codigo || undefined,
                 api_consulta_id: data.api_consulta_id || undefined,
+                categoria_id: data.categoria_id || undefined,
                 endpoint: selectedApi?.endpoint || undefined,
                 tipo_descuento: data.tipo_descuento,
                 valor_descuento: data.valor_descuento !== undefined ? Number(data.valor_descuento) : undefined,
@@ -507,6 +510,27 @@ export default function AddConvenioModal({
                                         </Command>
                                     </PopoverContent>
                                 </Popover>
+                                <Form.FormMessage />
+                            </Form.FormItem>
+                        )} />
+
+                        {/* Categoría */}
+                        <Form.FormField control={form.control} name="categoria_id" render={({ field }) => (
+                            <Form.FormItem>
+                                <Form.FormLabel>Categoría (Opcional)</Form.FormLabel>
+                                <Select onValueChange={(v) => field.onChange(v === "none" ? null : Number(v))} value={field.value?.toString() || "none"}>
+                                    <Form.FormControl>
+                                        <SelectTrigger><SelectValue placeholder="Seleccionar categoría" /></SelectTrigger>
+                                    </Form.FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="none">Sin categoría</SelectItem>
+                                        {categorias?.map((cat) => (
+                                            <SelectItem key={cat.id} value={cat.id.toString()}>
+                                                {cat.nombre}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 <Form.FormMessage />
                             </Form.FormItem>
                         )} />

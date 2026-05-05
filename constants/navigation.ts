@@ -15,7 +15,8 @@ import {
     ShieldUser,
     Swords,
     BookUser,
-    FileDown
+    FileDown,
+    Tags
 } from "lucide-react"
 
 export type UserRole = "SUPER_USUARIO" | "USUARIO" | "SISTEMA"
@@ -80,6 +81,16 @@ export const NAVIGATION: NavItem[] = [
         description: "convenios · beneficios · alianzas",
         group: "Convenios y Beneficios",
         section: "main",
+    },
+    {
+        id: "categorias",
+        title: "Categorías",
+        href: "/dashboard/categorias",
+        icon: Tags,
+        description: "categorías · clasificación · organización",
+        group: "Convenios y Beneficios",
+        section: "main",
+        roles: ["SUPER_USUARIO"]
     },
     {
         id: "tablas-clientes-corporativos",

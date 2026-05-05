@@ -88,7 +88,7 @@ export default function DetailsBeneficiarioDinamicoModal({
                     </Dialog.DialogHeader>
 
                     <div className="grid gap-6 py-4">
-                        <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+                        <div className="grid gap-4 grid-cols-2">
                             <div className="space-y-1">
                                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nombre</p>
                                 <p className="text-sm font-medium">{beneficiario?.nombre || "-"}</p>
@@ -96,6 +96,18 @@ export default function DetailsBeneficiarioDinamicoModal({
                             <div className="space-y-1">
                                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">RUT</p>
                                 <p className="text-sm font-medium">{beneficiario?.rut || "-"}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Teléfono</p>
+                                <p className="text-sm font-medium">{beneficiario?.telefono || "-"}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Correo</p>
+                                <p className="text-sm font-medium">{beneficiario?.correo || "-"}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Dirección</p>
+                                <p className="text-sm font-medium">{beneficiario?.direccion || "-"}</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Estado</p>
@@ -109,24 +121,12 @@ export default function DetailsBeneficiarioDinamicoModal({
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Teléfono</p>
-                                <p className="text-sm font-medium">{beneficiario?.telefono || "-"}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Correo</p>
-                                <p className="text-sm font-medium">{beneficiario?.correo || "-"}</p>
+                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Fecha Creación</p>
+                                <p className="text-sm font-medium">{beneficiario?.createdAt ? formatDateOnly(beneficiario.createdAt) : "-"}</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Convenio</p>
                                 <p className="text-sm font-medium">{beneficiario?.convenio?.nombre || "-"}</p>
-                            </div>
-                            <div className="space-y-1 col-span-2">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Dirección</p>
-                                <p className="text-sm font-medium">{beneficiario?.direccion || "-"}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Fecha Creación</p>
-                                <p className="text-sm font-medium">{beneficiario?.createdAt ? formatDateOnly(beneficiario.createdAt) : "-"}</p>
                             </div>
                         </div>
 
@@ -139,25 +139,49 @@ export default function DetailsBeneficiarioDinamicoModal({
 
                         <div className="space-y-4 pt-4 border-t">
                             <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Documentos y Archivos</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {beneficiario?.imagenes && Object.entries(beneficiario.imagenes).map(([key, src]) => {
-                                    if (!src) return null;
-                                    return (
-                                        <div key={key} className="space-y-2">
-                                            <p className="text-xs font-semibold text-muted-foreground">{key}</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {(() => {
+                                    const docs: { label: string; src: string }[] = [];
+                                    
+                                    // Check for specific fields
+                                    if ((beneficiario as any)?.imagen_cedula_identidad) {
+                                        docs.push({ label: "Foto frontal de Carnet de Identidad", src: (beneficiario as any).imagen_cedula_identidad });
+                                    }
+                                    if ((beneficiario as any)?.imagen_certificado_residencia) {
+                                        docs.push({ label: "Certificado de Residencia", src: (beneficiario as any).imagen_certificado_residencia });
+                                    }
+                                    if ((beneficiario as any)?.imagen_certificado_alumno_regular) {
+                                        docs.push({ label: "Certificado Alumno Regular", src: (beneficiario as any).imagen_certificado_alumno_regular });
+                                    }
+
+                                    // Add dynamic images
+                                    if (beneficiario?.imagenes) {
+                                        Object.entries(beneficiario.imagenes).forEach(([key, src]) => {
+                                            if (src && !docs.some(d => d.src === src)) {
+                                                docs.push({ label: key, src });
+                                            }
+                                        });
+                                    }
+
+                                    if (docs.length === 0) {
+                                        return (
+                                            <div className="col-span-2 py-8 text-center border-2 border-dashed rounded-lg bg-slate-50">
+                                                <p className="text-sm text-muted-foreground">No hay documentos adjuntos para este beneficiario.</p>
+                                            </div>
+                                        );
+                                    }
+
+                                    return docs.map((doc, idx) => (
+                                        <div key={idx} className="space-y-2">
+                                            <p className="text-xs font-semibold text-muted-foreground">{doc.label}</p>
                                             {renderFilePreview(
-                                                src,
-                                                `${key} de ${beneficiario?.nombre}`,
-                                                () => handleFileClick(src, `${key} de ${beneficiario?.nombre}`)
+                                                doc.src,
+                                                `${doc.label} de ${beneficiario?.nombre}`,
+                                                () => handleFileClick(doc.src, `${doc.label} de ${beneficiario?.nombre}`)
                                             )}
                                         </div>
-                                    );
-                                })}
-                                {(!beneficiario?.imagenes || Object.keys(beneficiario.imagenes).length === 0) && (
-                                    <div className="col-span-2 py-8 text-center border-2 border-dashed rounded-lg bg-slate-50">
-                                        <p className="text-sm text-muted-foreground">No hay documentos adjuntos para este beneficiario.</p>
-                                    </div>
-                                )}
+                                    ));
+                                })()}
                             </div>
                         </div>
                     </div>

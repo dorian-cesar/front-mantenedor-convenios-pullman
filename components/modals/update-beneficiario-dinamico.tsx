@@ -276,76 +276,107 @@ export default function UpdateBeneficiarioDinamicoModal({
                         </div>
 
                         {/* Documentos Dinámicos */}
-                        {convenio?.imagenes && convenio.imagenes.length > 0 && (
-                            <div className="pt-4 border-t space-y-4">
-                                <h4 className="font-medium text-sm">Archivos Adjuntos</h4>
-                                <div className="grid grid-cols-1 gap-4">
-                                    {convenio.imagenes.map((label: string) => {
+                        <div className="pt-4 border-t space-y-4">
+                            <h4 className="font-medium text-sm">Archivos Adjuntos</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                {(() => {
+                                    // Combine labels from convenio and existing images
+                                    const labels = [...(convenio?.imagenes || [])];
+                                    
+                                    // Add specific labels if they exist in previews but not in convenio.imagenes
+                                    const specificLabels = [
+                                        "Foto frontal de Carnet de Identidad",
+                                        "Certificado de Residencia",
+                                        "Certificado Alumno Regular"
+                                    ];
+                                    
+                                    specificLabels.forEach(sl => {
+                                        if (previews[sl] && !labels.includes(sl)) {
+                                            labels.push(sl);
+                                        }
+                                    });
+
+                                    // If no labels, at least show identity card option
+                                    if (labels.length === 0) {
+                                        labels.push("Foto frontal de Carnet de Identidad");
+                                    }
+
+                                    return labels.map((label: string) => {
                                         const p = previews[label]
                                         return (
-                                            <div key={label} className="border p-4 rounded-md flex flex-col gap-2 relative bg-slate-50/50">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-sm font-medium">{label}</span>
-                                                    <div className="flex gap-2">
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*,application/pdf"
-                                                            className="hidden"
-                                                            id={`update-file-${label}`}
-                                                            onChange={(e) => {
-                                                                const file = e.target.files?.[0]
-                                                                if (file) handleFileChange(file, label)
-                                                            }}
-                                                        />
-                                                        <label htmlFor={`update-file-${label}`}>
-                                                            <div className="h-8 px-3 text-xs bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center rounded-md cursor-pointer shadow-sm transition-colors">
-                                                                <Icon.UploadIcon className="h-3 w-3 mr-2" />
-                                                                {p ? "Cambiar" : "Subir"}
-                                                            </div>
-                                                        </label>
-                                                    </div>
-                                                </div>
+                                            <div key={label} className="space-y-2">
+                                                <Form.FormLabel className="text-xs font-semibold">{label}</Form.FormLabel>
+                                                <div
+                                                    className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition min-h-[140px] flex items-center justify-center relative bg-slate-50/30"
+                                                    onClick={() => document.getElementById(`update-file-${label}`)?.click()}
+                                                >
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*,application/pdf"
+                                                        className="hidden"
+                                                        id={`update-file-${label}`}
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0]
+                                                            if (file) handleFileChange(file, label)
+                                                        }}
+                                                    />
 
-                                                {p && (
-                                                    <div className="mt-2 relative rounded-md border bg-white p-2 flex items-center justify-center h-48 group">
-                                                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                                            {!p.isPDF && (
+                                                    {p ? (
+                                                        <div className="w-full flex flex-col items-center gap-2">
+                                                            <div className="relative border rounded-lg bg-background p-2 w-full flex justify-center h-32 overflow-hidden">
+                                                                {p.isPDF ? (
+                                                                    <div className="flex flex-col items-center justify-center p-2">
+                                                                        <Icon.FileTextIcon className="h-10 w-10 text-primary" />
+                                                                        <span className="text-[10px] text-muted-foreground mt-1">PDF</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <img
+                                                                        src={getFileSrc(p.src) || ""}
+                                                                        alt={label}
+                                                                        className="h-full w-full object-contain"
+                                                                    />
+                                                                )}
+                                                                
+                                                                <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                                    {/* This absolute div might be hidden if group class is not on parent. Adding it to the clickable div. */}
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex gap-2 w-full justify-center">
+                                                                {!p.isPDF && (
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="h-7 px-2"
+                                                                        onClick={(e) => { e.stopPropagation(); handleRotate(label); }}
+                                                                    >
+                                                                        <Icon.RotateCw className="h-3 w-3" />
+                                                                    </Button>
+                                                                )}
                                                                 <Button
                                                                     type="button"
-                                                                    variant="secondary"
-                                                                    size="icon"
-                                                                    className="h-7 w-7 rounded-full shadow-md"
-                                                                    onClick={(e) => { e.preventDefault(); handleRotate(label); }}
+                                                                    variant="destructive"
+                                                                    size="sm"
+                                                                    className="h-7 px-2"
+                                                                    onClick={(e) => { e.stopPropagation(); handleRemove(label); }}
                                                                 >
-                                                                    <Icon.RotateCw className="h-3 w-3" />
+                                                                    <Icon.XIcon className="h-3 w-3" />
                                                                 </Button>
-                                                            )}
-                                                            <Button
-                                                                type="button"
-                                                                variant="destructive"
-                                                                size="icon"
-                                                                className="h-7 w-7 rounded-full shadow-md"
-                                                                onClick={(e) => { e.preventDefault(); handleRemove(label); }}
-                                                            >
-                                                                <Icon.XIcon className="h-3 w-3" />
-                                                            </Button>
-                                                        </div>
-                                                        {p.isPDF ? (
-                                                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                                                <Icon.FileTextIcon className="h-10 w-10" />
-                                                                <span className="text-xs font-medium uppercase">PDF Subido</span>
                                                             </div>
-                                                        ) : (
-                                                            <img src={getFileSrc(p.src) || ""} alt={label} className="max-h-full object-contain rounded" />
-                                                        )}
-                                                    </div>
-                                                )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center text-muted-foreground">
+                                                            <Icon.UploadIcon className="h-6 w-6 mb-1" />
+                                                            <p className="text-[10px]">Subir {label}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         )
-                                    })}
-                                </div>
+                                    })
+                                })()}
                             </div>
-                        )}
+                        </div>
 
                         <div className="flex justify-end gap-3 pt-6 border-t">
                             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>

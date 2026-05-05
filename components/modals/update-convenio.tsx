@@ -44,6 +44,7 @@ interface UpdateConvenioModalProps {
     convenio: Convenio | null
     empresas: Empresa[]
     apis: Array<{ id: number; nombre: string; endpoint?: string }>
+    categorias?: { id: number, nombre: string }[]
     onSuccess?: () => void
 }
 
@@ -76,6 +77,7 @@ const convenioSchema = z.object({
     tipo_consulta: z.enum(["CODIGO_DESCUENTO", "API_EXTERNA"], { message: "Seleccione un tipo" }),
     codigo: z.string().nullable().optional(),
     api_consulta_id: z.number().optional().nullable(),
+    categoria_id: z.number().optional().nullable(),
     tipo_descuento: z.enum(["Porcentaje", "Monto Fijo", "Tarifa Plana"]).nullable().optional(),
     valor_descuento: z.number().min(0).nullable().optional(),
     porcentaje_descuento: z.number().min(0).nullable().optional(),
@@ -448,6 +450,27 @@ export default function UpdateConvenioModal({
                                         </Command>
                                     </PopoverContent>
                                 </Popover>
+                                <Form.FormMessage />
+                            </Form.FormItem>
+                        )} />
+
+                        {/* Categoría */}
+                        <Form.FormField control={form.control} name="categoria_id" render={({ field }) => (
+                            <Form.FormItem>
+                                <Form.FormLabel>Categoría (Opcional)</Form.FormLabel>
+                                <Select onValueChange={(v) => field.onChange(v === "none" ? null : Number(v))} value={field.value?.toString() || "none"}>
+                                    <Form.FormControl>
+                                        <SelectTrigger><SelectValue placeholder="Seleccionar categoría" /></SelectTrigger>
+                                    </Form.FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="none">Sin categoría</SelectItem>
+                                        {categorias?.map((cat) => (
+                                            <SelectItem key={cat.id} value={cat.id.toString()}>
+                                                {cat.nombre}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 <Form.FormMessage />
                             </Form.FormItem>
                         )} />

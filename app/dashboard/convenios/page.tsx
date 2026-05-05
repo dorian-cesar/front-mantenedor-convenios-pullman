@@ -18,6 +18,7 @@ import PreciosModal from "@/components/modals/precios-modal"
 import { ConveniosService, type Convenio, type GetConveniosParams } from "@/services/convenio.service"
 import { EmpresasService, type Empresa } from "@/services/empresa.service"
 import { ApisService, type Api } from "@/services/api.service"
+import { CategoriasService, type Categoria } from "@/services/categoria.service"
 import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
 import { useAuth } from "@/hooks/useAuth"
@@ -44,6 +45,7 @@ function ConveniosPage() {
     const [convenios, setConvenios] = useState<Convenio[]>([])
     const [empresas, setEmpresas] = useState<Empresa[]>([])
     const [apis, setApis] = useState<Api[]>([])
+    const [categorias, setCategorias] = useState<Categoria[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [openExport, setOpenExport] = useState(false)
     const [openAdd, setOpenAdd] = useState(false)
@@ -190,11 +192,21 @@ function ConveniosPage() {
         }
     }
 
+    const fetchCategorias = async () => {
+        try {
+            const data = await CategoriasService.getCategorias()
+            setCategorias(data)
+        } catch (error) {
+            console.error('Error fetching categorias:', error)
+        }
+    }
+
     useEffect(() => {
         if (!authInitialized) return;
         fetchConvenios()
         fetchEmpresas()
         fetchApis()
+        fetchCategorias()
     }, [pagination.page, pagination.limit, debouncedSearch, selectedEmpresa, statusFilter, user, authInitialized])
 
 
@@ -496,6 +508,7 @@ function ConveniosPage() {
                             <Table.TableHead>ID</Table.TableHead>
                             <Table.TableHead>Nombre</Table.TableHead>
                             <Table.TableHead>Empresa</Table.TableHead>
+                            <Table.TableHead>Categoría</Table.TableHead>
                             <Table.TableHead>Estado</Table.TableHead>
                             <Table.TableHead>Tipo Consulta</Table.TableHead>
                             <Table.TableHead>Descuento</Table.TableHead>
@@ -532,6 +545,9 @@ function ConveniosPage() {
                                     <Table.TableCell className="font-medium">{convenio.nombre}</Table.TableCell>
                                     <Table.TableCell>
                                         {convenio.empresa_nombre || convenio.empresa?.nombre || "Sin empresa"}
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        {convenio.categoria?.nombre || "-"}
                                     </Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={convenio.status === "ACTIVO" ? "active" : "inactive"}>
@@ -678,6 +694,7 @@ function ConveniosPage() {
                 onSuccess={handleConvenioAdded}
                 empresas={empresas}
                 apis={apis}
+                categorias={categorias}
             />
 
             <UpdateConvenioModal
@@ -687,6 +704,7 @@ function ConveniosPage() {
                 onSuccess={handleConvenioUpdated}
                 empresas={empresas}
                 apis={apis}
+                categorias={categorias}
             />
 
             <DetailsConvenioModal

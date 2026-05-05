@@ -72,6 +72,11 @@ export interface Convenio {
     limitar_por_stock?: boolean;
     limitar_por_monto?: boolean;
     beneficio?: boolean;
+    categoria_id?: number | null;
+    categoria?: {
+        id: number;
+        nombre: string;
+    };
     imagenes?: string[];
     consumo_tickets?: number;
     consumo_monto_descuento?: number;
@@ -130,6 +135,7 @@ export interface CreateConvenioData {
     limitar_por_stock?: boolean;
     limitar_por_monto?: boolean;
     beneficio?: boolean;
+    categoria_id?: number | null;
     imagenes?: string[];
     fecha_inicio?: string;
     fecha_termino?: string;
@@ -154,6 +160,7 @@ export interface UpdateConvenioData {
     limitar_por_stock?: boolean | null;
     limitar_por_monto?: boolean | null;
     beneficio?: boolean;
+    categoria_id?: number | null;
     imagenes?: string[];
     fecha_inicio?: string | null;
     fecha_termino?: string | null;
@@ -209,6 +216,7 @@ export class ConveniosService {
             limitar_por_stock: convenio.limitar_por_stock ?? null,
             limitar_por_monto: convenio.limitar_por_monto ?? null,
             beneficio: !!convenio.beneficio,
+            categoria_id: convenio.categoria_id || (typeof convenio.categoria === 'object' ? convenio.categoria?.id : null),
             imagenes: convenio.imagenes || [],
             fecha_inicio: convenio.fecha_inicio || null,
             fecha_termino: convenio.fecha_termino || null,

@@ -228,63 +228,77 @@ export default function AddBeneficiarioDinamicoModal({
                         </div>
 
                         {/* Documentos Dinámicos */}
-                        {convenio.imagenes && convenio.imagenes.length > 0 && (
-                            <div className="pt-4 border-t space-y-4">
-                                <h4 className="font-medium text-sm">Archivos Requeridos</h4>
-                                <div className="grid grid-cols-1 gap-4">
-                                    {convenio.imagenes.map((label: string) => {
+                        <div className="pt-4 border-t space-y-4">
+                            <h4 className="font-medium text-sm">Archivos Requeridos</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                {(() => {
+                                    const labels = [...(convenio.imagenes || [])];
+                                    if (labels.length === 0) {
+                                        labels.push("Foto frontal de Carnet de Identidad");
+                                    }
+
+                                    return labels.map((label: string) => {
                                         const p = previews[label]
                                         return (
-                                            <div key={label} className="border p-4 rounded-md flex flex-col gap-2 relative bg-slate-50/50">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-sm font-medium">{label}</span>
-                                                    <div>
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*,application/pdf"
-                                                            className="hidden"
-                                                            id={`file-${label}`}
-                                                            onChange={(e) => {
-                                                                const file = e.target.files?.[0]
-                                                                if (file) handleFileChange(file, label)
-                                                            }}
-                                                        />
-                                                        <label htmlFor={`file-${label}`}>
-                                                            <div className="h-9 px-3 text-xs bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center rounded-md cursor-pointer shadow-sm transition-colors">
-                                                                <UploadIcon className="h-4 w-4 mr-2" />
-                                                                {p ? "Cambiar Archivo" : "Subir Archivo"}
-                                                            </div>
-                                                        </label>
-                                                    </div>
-                                                </div>
+                                            <div key={label} className="space-y-2">
+                                                <FormLabel className="text-xs font-semibold">{label}</FormLabel>
+                                                <div
+                                                    className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition min-h-[140px] flex items-center justify-center relative bg-slate-50/30"
+                                                    onClick={() => document.getElementById(`file-${label}`)?.click()}
+                                                >
+                                                    <input
+                                                        id={`file-${label}`}
+                                                        type="file"
+                                                        accept="image/*,application/pdf"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0]
+                                                            if (file) handleFileChange(file, label)
+                                                        }}
+                                                    />
 
-                                                {p && (
-                                                    <div className="mt-2 relative rounded-md border bg-white p-2 flex items-center justify-center h-24">
-                                                        <Button
-                                                            type="button"
-                                                            variant="destructive"
-                                                            size="icon"
-                                                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                                                            onClick={(e) => { e.preventDefault(); handleRemove(label); }}
-                                                        >
-                                                            <XIcon className="h-3 w-3" />
-                                                        </Button>
-                                                        {p.isPDF ? (
-                                                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                                                                <FileTextIcon className="h-6 w-6" />
-                                                                <span className="text-xs font-medium uppercase tracking-wider">PDF Subido</span>
+                                                    {p ? (
+                                                        <div className="w-full flex flex-col items-center gap-2">
+                                                            <div className="relative border rounded-lg bg-background p-2 w-full flex justify-center h-24 overflow-hidden">
+                                                                {p.isPDF ? (
+                                                                    <div className="flex flex-col items-center justify-center">
+                                                                        <FileTextIcon className="h-8 w-8 text-primary" />
+                                                                        <span className="text-[10px] text-muted-foreground mt-1 italic">PDF</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <img
+                                                                        src={p.src}
+                                                                        alt={label}
+                                                                        className="h-full w-full object-contain rounded"
+                                                                    />
+                                                                )}
                                                             </div>
-                                                        ) : (
-                                                            <img src={p.src} alt={label} className="max-h-full object-contain rounded" />
-                                                        )}
-                                                    </div>
-                                                )}
+                                                            <Button
+                                                                type="button"
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                className="h-7 px-2"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    handleRemove(label)
+                                                                }}
+                                                            >
+                                                                <XIcon className="h-3 w-3" />
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center text-muted-foreground">
+                                                            <UploadIcon className="h-6 w-6 mb-1" />
+                                                            <p className="text-[10px]">Subir {label}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         )
-                                    })}
-                                </div>
+                                    })
+                                })()}
                             </div>
-                        )}
+                        </div>
 
                         <div className="flex justify-end gap-3 pt-4 border-t">
                             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
