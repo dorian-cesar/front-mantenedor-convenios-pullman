@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/dashboard/page-header"
 import { Pagination } from "@/components/dashboard/Pagination"
 import ExportModal from "@/components/modals/export"
 import AddPasajeroModal from "@/components/modals/add-pasajero"
-// import UpdatePasajeroModal from "@/components/modals/update-pasajero"
+import UpdatePasajeroModal from "@/components/modals/update-pasajero"
 import DetailsPasajeroModal from "@/components/modals/details-pasajero"
 // import AsociarPasajeroModal from "@/components/modals/asociar-pasajero"
 import { PasajerosService, type Pasajero, type GetPasajerosParams } from "@/services/pasajero.service"
@@ -583,9 +583,6 @@ export default function PasajerosPage() {
                 open={openAdd}
                 onOpenChange={setOpenAdd}
                 onSuccess={handlePasajeroAdded}
-                empresas={empresas}
-                convenios={convenios}
-                tiposPasajero={tiposPasajero}
             />
 
             {/* <AsociarPasajeroModal
@@ -601,9 +598,6 @@ export default function PasajerosPage() {
                 onOpenChange={setOpenUpdate}
                 pasajero={selectedPasajero}
                 onSuccess={handlePasajeroUpdated}
-                empresas={empresas}
-                convenios={convenios}
-                tiposPasajero={tiposPasajero}
             />
 
             <DetailsPasajeroModal

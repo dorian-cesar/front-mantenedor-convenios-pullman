@@ -28,21 +28,22 @@ import {
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { PasajerosService } from "@/services/pasajero.service"
+import { PasajerosService, type Pasajero } from "@/services/pasajero.service"
 import { EmpresasService, type Empresa } from "@/services/empresa.service"
 import { ConveniosService, type Convenio } from "@/services/convenio.service"
 import { toast } from "sonner"
-import { fileToBase64, formatRut, cleanRut } from "@/utils/helpers"
-import { FileTextIcon, UploadIcon, XIcon, PlusIcon, Loader2Icon } from "lucide-react"
+import { fileToBase64, formatRut, cleanRut, getFileSrc, isPDF } from "@/utils/helpers"
+import { FileTextIcon, UploadIcon, XIcon, Loader2Icon, SaveIcon } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 
-interface AddPasajeroModalProps {
+interface UpdatePasajeroModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
+    pasajero: Pasajero | null
     onSuccess?: () => void
 }
 
-const createSchema = () => z.object({
+const updateSchema = () => z.object({
     nombres: z.string().min(1, "El nombre es requerido"),
     apellidos: z.string().min(1, "El apellido es requerido"),
     rut: z.string().min(1, "El RUT es requerido"),
@@ -55,13 +56,14 @@ const createSchema = () => z.object({
     status: z.enum(["ACTIVO", "INACTIVO"]),
 })
 
-type PasajeroFormValues = z.infer<ReturnType<typeof createSchema>>
+type PasajeroFormValues = z.infer<ReturnType<typeof updateSchema>>
 
-export default function AddPasajeroModal({
+export default function UpdatePasajeroModal({
     open,
     onOpenChange,
+    pasajero,
     onSuccess,
-}: AddPasajeroModalProps) {
+}: UpdatePasajeroModalProps) {
     const { user } = useAuth()
     const [isLoading, setIsLoading] = useState(false)
     const [empresas, setEmpresas] = useState<Empresa[]>([])
@@ -70,44 +72,56 @@ export default function AddPasajeroModal({
     const [loadingData, setLoadingData] = useState(false)
 
     const form = useForm<PasajeroFormValues>({
-        resolver: zodResolver(createSchema()),
-        defaultValues: {
-            nombres: "",
-            apellidos: "",
-            rut: "",
-            telefono: "",
-            correo: "",
-            direccion: "",
-            empresa_id: undefined,
-            convenio_id: undefined,
-            imagenes: {},
-            status: "ACTIVO",
-        },
+        resolver: zodResolver(updateSchema()),
     })
 
     const selectedEmpresaId = form.watch("empresa_id")
     const selectedConvenioId = form.watch("convenio_id")
     const selectedConvenio = convenios.find(c => c.id === selectedConvenioId)
 
+    useEffect(() => {
+        if (pasajero && open) {
+            form.reset({
+                nombres: pasajero.nombres || "",
+                apellidos: pasajero.apellidos || "",
+                rut: formatRut(pasajero.rut),
+                telefono: pasajero.telefono || "",
+                correo: pasajero.correo || "",
+                direccion: pasajero.direccion || "",
+                empresa_id: pasajero.empresa_id || undefined,
+                convenio_id: pasajero.convenio_id || undefined,
+                imagenes: pasajero.imagenes || {},
+                status: pasajero.status,
+            })
+
+            // Load existing previews
+            if (pasajero.imagenes) {
+                const existingPreviews: Record<string, { src: string; isPDF: boolean }> = {}
+                Object.entries(pasajero.imagenes).forEach(([key, src]) => {
+                    existingPreviews[key] = {
+                        src: getFileSrc(src),
+                        isPDF: isPDF(src)
+                    }
+                })
+                setPreviews(existingPreviews)
+            }
+        }
+    }, [pasajero, open, form])
+
     const fetchData = async () => {
         setLoadingData(true)
         try {
             const isSuperUser = user?.rol?.toUpperCase() === "SUPER_USUARIO"
-            const effectiveEmpresaId = user?.empresa_id || user?.empresaId || user?.id_empresa || user?.empresa?.id
-
-            // Load Empresas
+            
             if (isSuperUser) {
                 const resEmp = await EmpresasService.getEmpresas({ status: 'ACTIVO', limit: 1000 })
                 setEmpresas(resEmp.rows || [])
-            } else if (effectiveEmpresaId) {
-                form.setValue("empresa_id", effectiveEmpresaId)
             }
 
-            // Load Convenios if empresa is selected or auto-set
-            if (selectedEmpresaId || (!isSuperUser && effectiveEmpresaId)) {
+            if (selectedEmpresaId) {
                 const resConv = await ConveniosService.getConvenios({ 
                     status: 'ACTIVO', 
-                    empresa_id: selectedEmpresaId || effectiveEmpresaId 
+                    empresa_id: selectedEmpresaId 
                 })
                 setConvenios(resConv.rows || [])
             }
@@ -124,13 +138,6 @@ export default function AddPasajeroModal({
         }
     }, [open, selectedEmpresaId])
 
-    useEffect(() => {
-        if (selectedConvenioId) {
-            form.setValue("imagenes", {})
-            setPreviews({})
-        }
-    }, [selectedConvenioId, form])
-
     const handleOpenChange = (on: boolean) => {
         if (!on) {
             form.reset()
@@ -141,13 +148,11 @@ export default function AddPasajeroModal({
 
     const handleFileChange = async (file: File, label: string) => {
         if (!file) return
-
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf']
         if (!allowedTypes.includes(file.type)) {
             toast.error("Formato no permitido. Use JPG, PNG o PDF.")
             return
         }
-
         if (file.size > 5 * 1024 * 1024) {
             toast.error(`El archivo "${label}" supera los 5MB.`)
             return
@@ -175,18 +180,19 @@ export default function AddPasajeroModal({
     }
 
     const onSubmit = async (data: PasajeroFormValues) => {
+        if (!pasajero) return
         setIsLoading(true)
         try {
-            await PasajerosService.createPasajero({
+            await PasajerosService.updatePasajero(pasajero.id, {
                 ...data,
                 rut: cleanRut(data.rut)
             } as any)
-            toast.success("Pasajero creado correctamente")
+            toast.success("Pasajero actualizado correctamente")
             handleOpenChange(false)
             onSuccess?.()
         } catch (error: any) {
-            console.error("Error creating pasajero:", error)
-            const msg = error.response?.data?.message || "No se pudo crear el pasajero"
+            console.error("Error updating pasajero:", error)
+            const msg = error.response?.data?.message || "No se pudo actualizar el pasajero"
             toast.error(msg)
         } finally {
             setIsLoading(false)
@@ -199,9 +205,9 @@ export default function AddPasajeroModal({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Agregar Nuevo Beneficiario</DialogTitle>
+                    <DialogTitle>Editar Beneficiario</DialogTitle>
                     <DialogDescription>
-                        Complete los datos del beneficiario y cargue los documentos requeridos.
+                        Modifique los datos del beneficiario y sus documentos.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -291,35 +297,38 @@ export default function AddPasajeroModal({
                                 )}
                             />
                             
-                            {isSuperUser && (
-                                <FormField
-                                    control={form.control}
-                                    name="empresa_id"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Empresa</FormLabel>
-                                            <Select 
-                                                onValueChange={(v) => field.onChange(Number(v))} 
-                                                value={field.value?.toString() || ""}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Seleccionar empresa" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    {empresas.map((e) => (
-                                                        <SelectItem key={e.id} value={e.id.toString()}>
-                                                            {e.nombre}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            )}
+                            <FormField
+                                control={form.control}
+                                name="empresa_id"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Empresa</FormLabel>
+                                        <Select 
+                                            onValueChange={(v) => field.onChange(Number(v))} 
+                                            value={field.value?.toString() || ""}
+                                            disabled={!isSuperUser}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Empresa" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {isSuperUser ? empresas.map((e) => (
+                                                    <SelectItem key={e.id} value={e.id.toString()}>
+                                                        {e.nombre}
+                                                    </SelectItem>
+                                                )) : (
+                                                    <SelectItem value={pasajero?.empresa_id?.toString() || ""}>
+                                                        Cargando...
+                                                    </SelectItem>
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
                             <FormField
                                 control={form.control}
@@ -330,7 +339,6 @@ export default function AddPasajeroModal({
                                         <Select 
                                             onValueChange={(v) => field.onChange(Number(v))} 
                                             value={field.value?.toString() || ""}
-                                            disabled={!selectedEmpresaId && isSuperUser}
                                         >
                                             <FormControl>
                                                 <SelectTrigger>
@@ -368,10 +376,10 @@ export default function AddPasajeroModal({
                                             <FormControl>
                                                 <div
                                                     className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition flex items-center justify-center min-h-[120px]"
-                                                    onClick={() => document.getElementById(`file-${label}`)?.click()}
+                                                    onClick={() => document.getElementById(`file-update-${label}`)?.click()}
                                                 >
                                                     <input
-                                                        id={`file-${label}`}
+                                                        id={`file-update-${label}`}
                                                         type="file"
                                                         accept="image/*,application/pdf"
                                                         className="hidden"
@@ -399,7 +407,7 @@ export default function AddPasajeroModal({
                                                                 type="button"
                                                                 variant="destructive"
                                                                 size="icon"
-                                                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                                                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow-md"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation()
                                                                     handleRemove(label)
@@ -432,13 +440,13 @@ export default function AddPasajeroModal({
                                 Cancelar
                             </Button>
 
-                            <Button type="submit" disabled={isLoading || !selectedConvenioId}>
+                            <Button type="submit" disabled={isLoading}>
                                 {isLoading ? (
                                     <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
                                 ) : (
-                                    <PlusIcon className="h-4 w-4 mr-2" />
+                                    <SaveIcon className="h-4 w-4 mr-2" />
                                 )}
-                                Crear Beneficiario
+                                Guardar Cambios
                             </Button>
                         </div>
                     </form>

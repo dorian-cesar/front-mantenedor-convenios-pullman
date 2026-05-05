@@ -51,6 +51,8 @@ export interface CreatePasajeroData {
     empresa_id?: number;
     convenio_id?: number;
     status?: "ACTIVO" | "INACTIVO";
+    direccion?: string;
+    imagenes?: Record<string, string>;
 }
 
 export interface AsociarPasajeroData {
@@ -76,6 +78,8 @@ export interface UpdatePasajeroData {
     empresa_id?: number;
     convenio_id?: number;
     status?: "ACTIVO" | "INACTIVO";
+    direccion?: string;
+    imagenes?: Record<string, string>;
 }
 
 export class PasajerosService {
