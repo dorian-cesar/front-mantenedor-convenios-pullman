@@ -21,8 +21,9 @@ export default function CategoriasPage() {
     const [empresas, setEmpresas] = useState<any[]>([])
     const { user } = useAuth()
 
-    const isAdmin = user?.rol?.toUpperCase() === "SUPER_USUARIO" || user?.rol?.toUpperCase() === "SOPORTE";
-    const isReadOnlyRole = user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user" || user?.rol?.toUpperCase() === "SISTEMA";
+    const isSuperUser = user?.rol?.toUpperCase() === "SUPER_USUARIO";
+    const isAdmin = isSuperUser || user?.rol?.toUpperCase() === "SOPORTE";
+    const isReadOnlyRole = !isSuperUser;
 
     const fetchCategorias = async () => {
         setIsLoading(true)
