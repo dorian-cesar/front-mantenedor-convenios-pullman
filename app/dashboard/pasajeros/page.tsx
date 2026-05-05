@@ -12,7 +12,7 @@ import { Pagination } from "@/components/dashboard/Pagination"
 import ExportModal from "@/components/modals/export"
 import AddPasajeroModal from "@/components/modals/add-pasajero"
 // import UpdatePasajeroModal from "@/components/modals/update-pasajero"
-// import DetailsPasajeroModal from "@/components/modals/details-pasajero"
+import DetailsPasajeroModal from "@/components/modals/details-pasajero"
 // import AsociarPasajeroModal from "@/components/modals/asociar-pasajero"
 import { PasajerosService, type Pasajero, type GetPasajerosParams } from "@/services/pasajero.service"
 import { EmpresasService, type Empresa } from "@/services/empresa.service"
@@ -610,7 +610,8 @@ export default function PasajerosPage() {
                 open={openDetails}
                 onOpenChange={setOpenDetails}
                 pasajero={selectedPasajero}
-            /> */}
+                onToggleStatus={handleToggleStatus}
+            />
         </div>
     )
 }

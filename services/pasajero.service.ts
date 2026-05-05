@@ -8,10 +8,14 @@ export interface Pasajero {
     fecha_nacimiento: string | null;
     correo: string | null;
     telefono: string | null;
+    direccion?: string | null;
     tipo_pasajero_id: number | null;
     empresa_id: number | null;
     convenio_id: number | null;
     status: "ACTIVO" | "INACTIVO";
+    imagenes?: Record<string, string>;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface GetPasajerosParams {
