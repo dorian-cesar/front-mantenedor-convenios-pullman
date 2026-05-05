@@ -18,14 +18,18 @@ export default function CategoriasPage() {
     const [openAdd, setOpenAdd] = useState(false)
     const [openUpdate, setOpenUpdate] = useState(false)
     const [selectedCategoria, setSelectedCategoria] = useState<Categoria | null>(null)
+    const [empresas, setEmpresas] = useState<any[]>([])
     const { user } = useAuth()
 
+    const isAdmin = user?.rol?.toUpperCase() === "ADMINISTRADOR" || user?.rol?.toUpperCase() === "SOPORTE";
     const isReadOnlyRole = user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user" || user?.rol?.toUpperCase() === "SISTEMA";
 
     const fetchCategorias = async () => {
         setIsLoading(true)
         try {
-            const data = await CategoriasService.getCategorias()
+            // Use user.empresa_id if available (for regular users)
+            const empresaId = user?.empresa_id || user?.id_empresa;
+            const data = await CategoriasService.getCategorias(empresaId)
             setCategorias(data)
         } catch (error) {
             console.error('Error fetching categorias:', error)
@@ -35,9 +39,21 @@ export default function CategoriasPage() {
         }
     }
 
+    const fetchEmpresas = async () => {
+        if (!isAdmin) return;
+        try {
+            const { EmpresasService } = await import("@/services/empresa.service")
+            const res = await EmpresasService.getEmpresas({ limit: 1000, status: 'ACTIVO' })
+            setEmpresas(res.rows || [])
+        } catch (error) {
+            console.error("Error fetching empresas:", error)
+        }
+    }
+
     useEffect(() => {
         fetchCategorias()
-    }, [])
+        fetchEmpresas()
+    }, [user?.id])
 
     const handleEdit = (categoria: Categoria) => {
         setSelectedCategoria(categoria)
@@ -141,6 +157,7 @@ export default function CategoriasPage() {
             <AddCategoriaModal
                 open={openAdd}
                 onOpenChange={setOpenAdd}
+                empresas={empresas}
                 onSuccess={() => {
                     setOpenAdd(false)
                     fetchCategorias()

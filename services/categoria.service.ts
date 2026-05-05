@@ -4,6 +4,7 @@ export interface Categoria {
     id: number;
     nombre: string;
     descripcion?: string;
+    empresa_id: number;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -11,6 +12,7 @@ export interface Categoria {
 export interface CreateCategoriaData {
     nombre: string;
     descripcion?: string;
+    empresa_id: number;
 }
 
 export interface UpdateCategoriaData {
