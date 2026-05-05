@@ -11,6 +11,7 @@ import {
     LogOut,
     Building2,
     FileText,
+    Folder,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -425,7 +426,7 @@ export function Sidebar({ collapsed, onToggle, onLogout, width, onWidthChange }:
                                                                             : "text-sidebar-foreground/60 hover:text-sidebar-foreground"
                                                                     )}
                                                                 >
-                                                                    <Icon.Folder className="h-4 w-4 shrink-0 opacity-50" />
+                                                                    <Folder className="h-4 w-4 shrink-0 opacity-50" />
                                                                     {!collapsed && (
                                                                         <>
                                                                             <span className="flex-1 text-left truncate">{categoria.nombre}</span>
