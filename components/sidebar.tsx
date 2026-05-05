@@ -357,8 +357,8 @@ export function Sidebar({ collapsed, onToggle, onLogout, width, onWidthChange }:
                             <div className="flex flex-col gap-1 px-3">
                                 {beneficioEmpresas.map((empresa) => {
                                     const isOpen = openMenus[`empresa-${empresa.id}`]
-                                    const hasActiveChild = empresa.convenios.some(
-                                        (c) => pathname === `/dashboard/beneficios/convenio/${c.id}`
+                                    const hasActiveChild = empresa.categorias.some(cat => 
+                                        cat.convenios.some(c => pathname === `/dashboard/beneficios/convenio/${c.id}`)
                                     )
 
                                     return (
@@ -397,25 +397,72 @@ export function Sidebar({ collapsed, onToggle, onLogout, width, onWidthChange }:
                                                 </button>
                                             </CollapsibleTrigger>
                                             <CollapsibleContent className="mt-1 space-y-1">
-                                                {empresa.convenios.map((convenio) => {
-                                                    const href = `/dashboard/beneficios/convenio/${convenio.id}`
-                                                    const isActive = pathname === href
+                                                {empresa.categorias.map((categoria) => {
+                                                    const catKey = `empresa-${empresa.id}-cat-${categoria.id}`
+                                                    const isCatOpen = openMenus[catKey]
+                                                    const isCatActive = categoria.convenios.some(
+                                                        (c) => pathname === `/dashboard/beneficios/convenio/${c.id}`
+                                                    )
+
                                                     return (
-                                                        <Link
-                                                            key={convenio.id}
-                                                            href={href}
-                                                            className={cn(
-                                                                "flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-colors pl-11 pr-3",
-                                                                isActive
-                                                                    ? "bg-sidebar-accent text-sidebar-primary"
-                                                                    : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                                                            )}
+                                                        <Collapsible
+                                                            key={catKey}
+                                                            open={isCatOpen}
+                                                            onOpenChange={() =>
+                                                                setOpenMenus((prev) => ({
+                                                                    ...prev,
+                                                                    [catKey]: !prev[catKey],
+                                                                }))
+                                                            }
                                                         >
-                                                            <FileText className="h-4 w-4 shrink-0" />
-                                                            {!collapsed && (
-                                                                <span className="truncate">{convenio.nombre}</span>
-                                                            )}
-                                                        </Link>
+                                                            <CollapsibleTrigger asChild>
+                                                                <button
+                                                                    type="button"
+                                                                    className={cn(
+                                                                        "flex items-center gap-2 rounded-lg py-1.5 text-[13px] font-medium transition-colors w-full pl-9 pr-3",
+                                                                        isCatActive
+                                                                            ? "text-sidebar-primary"
+                                                                            : "text-sidebar-foreground/60 hover:text-sidebar-foreground"
+                                                                    )}
+                                                                >
+                                                                    <Icon.Folder className="h-4 w-4 shrink-0 opacity-50" />
+                                                                    {!collapsed && (
+                                                                        <>
+                                                                            <span className="flex-1 text-left truncate">{categoria.nombre}</span>
+                                                                            <ChevronDown
+                                                                                className={cn(
+                                                                                    "h-3 w-3 shrink-0 transition-transform",
+                                                                                    isCatOpen ? "rotate-180" : ""
+                                                                                )}
+                                                                            />
+                                                                        </>
+                                                                    )}
+                                                                </button>
+                                                            </CollapsibleTrigger>
+                                                            <CollapsibleContent className="mt-1 space-y-1">
+                                                                {categoria.convenios.map((convenio) => {
+                                                                    const href = `/dashboard/beneficios/convenio/${convenio.id}`
+                                                                    const isActive = pathname === href
+                                                                    return (
+                                                                        <Link
+                                                                            key={convenio.id}
+                                                                            href={href}
+                                                                            className={cn(
+                                                                                "flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-colors pl-14 pr-3",
+                                                                                isActive
+                                                                                    ? "bg-sidebar-accent text-sidebar-primary"
+                                                                                    : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                                                                            )}
+                                                                        >
+                                                                            <FileText className="h-4 w-4 shrink-0" />
+                                                                            {!collapsed && (
+                                                                                <span className="truncate">{convenio.nombre}</span>
+                                                                            )}
+                                                                        </Link>
+                                                                    )
+                                                                })}
+                                                            </CollapsibleContent>
+                                                        </Collapsible>
                                                     )
                                                 })}
                                             </CollapsibleContent>

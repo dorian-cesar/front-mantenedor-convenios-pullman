@@ -180,6 +180,7 @@ export default function UpdateConvenioModal({
     convenio,
     empresas,
     apis,
+    categorias,
     onSuccess,
 }: UpdateConvenioModalProps) {
     const [openEmpresaPopover, setOpenEmpresaPopover] = useState(false)
