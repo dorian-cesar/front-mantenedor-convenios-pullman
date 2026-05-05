@@ -74,6 +74,14 @@ export default function PasajerosPage() {
 
             if (selectedEmpresa) {
                 params.empresa_id = selectedEmpresa
+            } else {
+                // Restricción por Rol: Si es USUARIO (o user), forzar su empresa_id
+                const isUserRole = user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user";
+                const effectiveEmpresaId = user?.empresa_id || user?.empresaId || user?.id_empresa || user?.empresa?.id;
+                
+                if (isUserRole && effectiveEmpresaId) {
+                    params.empresa_id = effectiveEmpresaId;
+                }
             }
 
             if (selectedConvenio) {
@@ -329,29 +337,31 @@ export default function PasajerosPage() {
 
     const filters = (
         <div className="flex flex-wrap gap-2 items-center">
-            <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Empresa:</span>
-                <Dropdown.DropdownMenu>
-                    <Dropdown.DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
-                            <span className="truncate">
-                                {selectedEmpresa ? empresas.find(e => e.id === selectedEmpresa)?.nombre || "Seleccionar..." : "Todas"}
-                            </span>
-                            <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
-                        </Button>
-                    </Dropdown.DropdownMenuTrigger>
-                    <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
-                        <Dropdown.DropdownMenuItem onClick={() => setSelectedEmpresa(null)}>
-                            Todas
-                        </Dropdown.DropdownMenuItem>
-                        {empresas.map((empresa) => (
-                            <Dropdown.DropdownMenuItem key={empresa.id} onClick={() => setSelectedEmpresa(empresa.id)}>
-                                {empresa.nombre}
-                            </Dropdown.DropdownMenuItem>
-                        ))}
-                    </Dropdown.DropdownMenuContent>
-                </Dropdown.DropdownMenu>
-            </div>
+                {(user?.rol?.toUpperCase() === "SUPER_USUARIO" || user?.rol?.toUpperCase() === "SISTEMA") && (
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Empresa:</span>
+                        <Dropdown.DropdownMenu>
+                            <Dropdown.DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left shadow-sm">
+                                    <span className="truncate">
+                                        {selectedEmpresa ? empresas.find(e => e.id === selectedEmpresa)?.nombre || "Seleccionar..." : "Todas"}
+                                    </span>
+                                    <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </Dropdown.DropdownMenuTrigger>
+                            <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                                <Dropdown.DropdownMenuItem onClick={() => setSelectedEmpresa(null)}>
+                                    Todas
+                                </Dropdown.DropdownMenuItem>
+                                {empresas.map((empresa) => (
+                                    <Dropdown.DropdownMenuItem key={empresa.id} onClick={() => setSelectedEmpresa(empresa.id)}>
+                                        {empresa.nombre}
+                                    </Dropdown.DropdownMenuItem>
+                                ))}
+                            </Dropdown.DropdownMenuContent>
+                        </Dropdown.DropdownMenu>
+                    </div>
+                )}
 
             <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Convenio:</span>

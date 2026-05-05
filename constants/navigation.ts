@@ -42,7 +42,7 @@ export const NAVIGATION: NavItem[] = [
         description: "Resumen del sistema",
         group: "General",
         section: "main",
-        roles: ["SUPER_USUARIO"]
+        roles: ["SUPER_USUARIO", "USUARIO"]
     },
     {
         id: "boletos",
@@ -90,7 +90,7 @@ export const NAVIGATION: NavItem[] = [
         description: "categorías · clasificación · organización",
         group: "Convenios y Beneficios",
         section: "main",
-        roles: ["SUPER_USUARIO"]
+        roles: ["SUPER_USUARIO", "USUARIO"]
     },
     {
         id: "tablas-clientes-corporativos",
@@ -196,7 +196,7 @@ export const NAVIGATION: NavItem[] = [
         description: "pasajeros · clientes · personas · tipos de usuarios",
         group: "Operación",
         section: "tertiary",
-        roles: ["SUPER_USUARIO", "SISTEMA"]
+        roles: ["SUPER_USUARIO", "SISTEMA", "USUARIO"]
     },
     {
         id: "exportaciones",
