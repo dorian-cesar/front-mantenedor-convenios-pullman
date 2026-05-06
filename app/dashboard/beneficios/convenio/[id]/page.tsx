@@ -69,6 +69,9 @@ export default function BeneficiariosConvenioPage() {
         str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
     const debouncedSearch = useDebounce(searchValue, 300)
+    const debouncedId = useDebounce(idFilter, 400)
+    const debouncedRut = useDebounce(rutFilter, 400)
+    const debouncedEmail = useDebounce(emailFilter, 400)
 
     // Fetch convenio details
     useEffect(() => {
@@ -90,11 +93,18 @@ export default function BeneficiariosConvenioPage() {
                 sortBy: "id",
                 order: "DESC",
             }
+            
+            if (convenio?.empresa_id) {
+                params.empresa_id = convenio.empresa_id;
+            } else if (convenio?.empresa?.id) {
+                params.empresa_id = convenio.empresa.id;
+            }
+
             if (statusFilter) params.status = statusFilter
             if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
-            if (idFilter.trim()) params.id = idFilter.trim()
-            if (rutFilter.trim()) params.rut = rutFilter.trim()
-            if (emailFilter.trim()) params.email = emailFilter.trim()
+            if (debouncedId.trim()) params.id = debouncedId.trim()
+            if (debouncedRut.trim()) params.rut = debouncedRut.trim()
+            if (debouncedEmail.trim()) params.email = debouncedEmail.trim()
 
             const response = await api.get<any>("/beneficiarios", { params })
             const data = response.data
@@ -128,7 +138,7 @@ export default function BeneficiariosConvenioPage() {
 
     useEffect(() => {
         fetchBeneficiarios()
-    }, [convenioId, pagination.page, pagination.limit, debouncedSearch, statusFilter, idFilter, rutFilter, emailFilter])
+    }, [convenioId, pagination.page, pagination.limit, debouncedSearch, statusFilter, debouncedId, debouncedRut, debouncedEmail, convenio?.empresa_id])
 
     const handleCopy = (text: string, label: string) => {
         navigator.clipboard.writeText(text)
