@@ -229,7 +229,8 @@ export default function UpdateConvenioModal({
             fecha_inicio: "",
             fecha_termino: "",
             rutas: [],
-            configuraciones: []
+            configuraciones: [],
+            categoria_id: null,
         },
     })
 

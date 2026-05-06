@@ -111,45 +111,51 @@ export const fileToBase64 = (file: File): Promise<string> => {
   })
 }
 
-export const getFileSrc = (base64?: string | null) => {
-  if (!base64) return null
+export const getFileSrc = (fileData?: string | null) => {
+  if (!fileData) return null
 
-  if (base64.startsWith("data:")) {
-    return base64
+  // Si ya es un data URL o una URL externa (http/https)
+  if (fileData.startsWith("data:") || fileData.startsWith("http://") || fileData.startsWith("https://")) {
+    return fileData
   }
 
+  // Detección simple de PDF
   try {
-    // Solo intentamos atob si no tiene prefijo data:
-    const decoded = atob(base64.substring(0, 100));
+    const decoded = atob(fileData.substring(0, 100));
     if (decoded.includes('%PDF')) {
-      return `data:application/pdf;base64,${base64}`;
+      return `data:application/pdf;base64,${fileData}`;
     }
   } catch {
-    // Si falla la decodificación, ignoramos y seguimos
+    // Ignorar error si no es base64 válido
   }
 
   // Detección simple de PNG por su firma en base64
-  if (base64.startsWith('iVBORw0KGgo')) {
-    return `data:image/png;base64,${base64}`;
+  if (fileData.startsWith('iVBORw0KGgo')) {
+    return `data:image/png;base64,${fileData}`;
   }
 
-  return `data:image/jpeg;base64,${base64}`
+  // Por defecto asumir JPEG si parece ser base64
+  return `data:image/jpeg;base64,${fileData}`
 }
 
-export const isPDF = (base64?: string | null): boolean => {
-  if (!base64) return false
+export const isPDF = (fileData?: string | null): boolean => {
+  if (!fileData) return false
 
-  if (base64.startsWith("data:application/pdf")) {
+  if (fileData.startsWith("data:application/pdf")) {
     return true
   }
   
+  if (fileData.startsWith("http://") || fileData.startsWith("https://")) {
+    return fileData.toLowerCase().endsWith(".pdf") || fileData.toLowerCase().includes(".pdf?");
+  }
+
   // Si tiene otro prefijo data:, no es PDF
-  if (base64.startsWith("data:")) {
+  if (fileData.startsWith("data:")) {
     return false
   }
 
   try {
-    const decoded = atob(base64.substring(0, 100));
+    const decoded = atob(fileData.substring(0, 100));
     return decoded.includes('%PDF');
   } catch {
     return false;

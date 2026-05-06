@@ -189,6 +189,11 @@ export class ConveniosService {
         return response.data;
     }
 
+    static async patchConvenio(id: number, data: Partial<UpdateConvenioData>): Promise<Convenio> {
+        const response = await api.patch<Convenio>(`/convenios/${id}`, data);
+        return response.data;
+    }
+
     static async deleteConvenio(id: number): Promise<void> {
         await api.delete(`/convenios/${id}`);
     }

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import * as Dropdown from "@/components/ui/dropdown-menu"
 import * as Table from "@/components/ui/table"
 import * as Icon from "lucide-react"
+import * as Select from "@/components/ui/select"
 import { BadgeStatus } from "@/components/ui/badge-status"
 import * as Card from "@/components/ui/card"
 import { useState, useEffect } from "react"
@@ -194,7 +195,9 @@ function ConveniosPage() {
 
     const fetchCategorias = async () => {
         try {
-            const data = await CategoriasService.getCategorias()
+            // Filtrar por empresa si el usuario tiene el rol restringido
+            const empresaId = isScopedRole ? effectiveEmpresaId : undefined;
+            const data = await CategoriasService.getCategorias(empresaId)
             setCategorias(data)
         } catch (error) {
             console.error('Error fetching categorias:', error)
@@ -291,6 +294,17 @@ function ConveniosPage() {
 
     const handleRefresh = () => {
         fetchConvenios()
+    }
+
+    const handleUpdateCategory = async (convenioId: number, categoryId: number | null) => {
+        try {
+            await ConveniosService.patchConvenio(convenioId, { categoria_id: categoryId })
+            toast.success("Categoría actualizada")
+            fetchConvenios()
+        } catch (error) {
+            console.error('Error updating category:', error)
+            toast.error("No se pudo actualizar la categoría")
+        }
     }
 
     const handleExport = async (type: "csv" | "excel") => {
@@ -547,7 +561,30 @@ function ConveniosPage() {
                                         {convenio.empresa_nombre || convenio.empresa?.nombre || "Sin empresa"}
                                     </Table.TableCell>
                                     <Table.TableCell>
-                                        {convenio.categoria?.nombre || "-"}
+                                        {categorias.filter(cat => cat.empresa_id === convenio.empresa_id).length > 0 ? (
+                                            <Select.Select
+                                                value={convenio.categoria_id?.toString() || convenio.categoria?.id?.toString() || "none"}
+                                                onValueChange={(value) => handleUpdateCategory(convenio.id, value === "none" ? null : Number(value))}
+                                            >
+                                                <Select.SelectTrigger className="w-[180px] h-8 text-xs">
+                                                    <Select.SelectValue placeholder="Sin categoría" />
+                                                </Select.SelectTrigger>
+                                                <Select.SelectContent>
+                                                    <Select.SelectItem value="none">Sin categoría</Select.SelectItem>
+                                                    {categorias
+                                                        .filter(cat => cat.empresa_id === convenio.empresa_id)
+                                                        .map((cat) => (
+                                                            <Select.SelectItem key={cat.id} value={cat.id.toString()}>
+                                                                {cat.nombre}
+                                                            </Select.SelectItem>
+                                                        ))}
+                                                </Select.SelectContent>
+                                            </Select.Select>
+                                        ) : (
+                                            <span className="text-muted-foreground italic">
+                                                {convenio.categoria?.nombre || "-"}
+                                            </span>
+                                        )}
                                     </Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={convenio.status === "ACTIVO" ? "active" : "inactive"}>

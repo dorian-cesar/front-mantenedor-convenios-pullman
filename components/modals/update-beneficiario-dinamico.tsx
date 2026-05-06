@@ -52,22 +52,13 @@ export default function UpdateBeneficiarioDinamicoModal({
 
     const form = useForm<FormValues>({
         resolver: zodResolver(updateSchema),
-        defaultValues: {
-            nombre: "",
-            rut: "",
-            telefono: "",
-            correo: "",
-            direccion: "",
-            status: "ACTIVO",
-            imagenes: {},
-        },
     })
 
     useEffect(() => {
         if (beneficiario && open) {
             form.reset({
                 nombre: beneficiario.nombre || "",
-                rut: beneficiario.rut || "",
+                rut: formatRut(beneficiario.rut),
                 telefono: beneficiario.telefono || "",
                 correo: beneficiario.correo || "",
                 direccion: beneficiario.direccion || "",
@@ -77,11 +68,29 @@ export default function UpdateBeneficiarioDinamicoModal({
 
             // Set initial previews
             const initialPreviews: Record<string, { src: string; isPDF: boolean }> = {}
+            
+            // Legacy fields support
+            const legacyFields: Record<string, string | undefined> = {
+                "Foto frontal de Carnet de Identidad": (beneficiario as any).imagen_cedula_identidad,
+                "Certificado de Residencia": (beneficiario as any).imagen_certificado_residencia,
+                "Certificado Alumno Regular": (beneficiario as any).imagen_certificado_alumno_regular,
+            }
+
+            Object.entries(legacyFields).forEach(([label, value]) => {
+                if (value) {
+                    initialPreviews[label] = {
+                        src: getFileSrc(value) || value,
+                        isPDF: isPDF(value)
+                    }
+                }
+            })
+
+            // Dynamic images
             if (beneficiario.imagenes) {
                 Object.entries(beneficiario.imagenes).forEach(([key, value]) => {
                     if (value) {
                         initialPreviews[key] = {
-                            src: value,
+                            src: getFileSrc(value) || value,
                             isPDF: isPDF(value)
                         }
                     }
@@ -277,13 +286,10 @@ export default function UpdateBeneficiarioDinamicoModal({
 
                         {/* Documentos Dinámicos */}
                         <div className="pt-4 border-t space-y-4">
-                            <h4 className="font-medium text-sm">Archivos Adjuntos</h4>
+                            <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Archivos Adjuntos</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 {(() => {
-                                    // Combine labels from convenio and existing images
                                     const labels = [...(convenio?.imagenes || [])];
-                                    
-                                    // Add specific labels if they exist in previews but not in convenio.imagenes
                                     const specificLabels = [
                                         "Foto frontal de Carnet de Identidad",
                                         "Certificado de Residencia",
@@ -296,7 +302,6 @@ export default function UpdateBeneficiarioDinamicoModal({
                                         }
                                     });
 
-                                    // If no labels, at least show identity card option
                                     if (labels.length === 0) {
                                         labels.push("Foto frontal de Carnet de Identidad");
                                     }
@@ -323,23 +328,19 @@ export default function UpdateBeneficiarioDinamicoModal({
 
                                                     {p ? (
                                                         <div className="w-full flex flex-col items-center gap-2">
-                                                            <div className="relative border rounded-lg bg-background p-2 w-full flex justify-center h-32 overflow-hidden">
+                                                            <div className="relative border rounded-lg bg-background p-2 w-full flex justify-center h-32 overflow-hidden shadow-sm">
                                                                 {p.isPDF ? (
                                                                     <div className="flex flex-col items-center justify-center p-2">
                                                                         <Icon.FileTextIcon className="h-10 w-10 text-primary" />
-                                                                        <span className="text-[10px] text-muted-foreground mt-1">PDF</span>
+                                                                        <span className="text-[10px] text-muted-foreground mt-1 font-medium">PDF</span>
                                                                     </div>
                                                                 ) : (
                                                                     <img
                                                                         src={getFileSrc(p.src) || ""}
                                                                         alt={label}
-                                                                        className="h-full w-full object-contain"
+                                                                        className="h-full w-full object-contain rounded"
                                                                     />
                                                                 )}
-                                                                
-                                                                <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                                                    {/* This absolute div might be hidden if group class is not on parent. Adding it to the clickable div. */}
-                                                                </div>
                                                             </div>
                                                             <div className="flex gap-2 w-full justify-center">
                                                                 {!p.isPDF && (
@@ -365,9 +366,9 @@ export default function UpdateBeneficiarioDinamicoModal({
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <div className="flex flex-col items-center text-muted-foreground">
+                                                        <div className="flex flex-col items-center text-muted-foreground opacity-60">
                                                             <Icon.UploadIcon className="h-6 w-6 mb-1" />
-                                                            <p className="text-[10px]">Subir {label}</p>
+                                                            <p className="text-[10px] font-medium">Subir {label}</p>
                                                         </div>
                                                     )}
                                                 </div>
@@ -378,12 +379,16 @@ export default function UpdateBeneficiarioDinamicoModal({
                             </div>
                         </div>
 
-                        <div className="flex justify-end gap-3 pt-6 border-t">
+                        <div className="flex justify-end gap-3 pt-6 border-t mt-4">
                             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
                                 Cancelar
                             </Button>
                             <Button type="submit" disabled={isLoading}>
-                                {isLoading ? <Icon.Loader2Icon className="h-4 w-4 mr-2 animate-spin" /> : <Icon.SaveIcon className="h-4 w-4 mr-2" />}
+                                {isLoading ? (
+                                    <Icon.Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Icon.SaveIcon className="h-4 w-4 mr-2" />
+                                )}
                                 Guardar Cambios
                             </Button>
                         </div>

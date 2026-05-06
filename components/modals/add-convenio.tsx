@@ -251,6 +251,7 @@ export default function AddConvenioModal({
             fecha_inicio: "",
             fecha_termino: "",
             rutas: [],
+            categoria_id: null,
         },
     })
 
@@ -404,7 +405,7 @@ export default function AddConvenioModal({
                 tipo_consulta: data.tipo_consulta,
                 codigo: data.codigo || undefined,
                 api_consulta_id: data.api_consulta_id || undefined,
-                categoria_id: data.categoria_id || undefined,
+                categoria_id: data.categoria_id,
                 endpoint: selectedApi?.endpoint || undefined,
                 tipo_descuento: data.tipo_descuento,
                 valor_descuento: data.valor_descuento !== undefined ? Number(data.valor_descuento) : undefined,
@@ -429,8 +430,9 @@ export default function AddConvenioModal({
             if (data.fecha_inicio) cleanPayload.fecha_inicio = ensureUTC(data.fecha_inicio);
             if (data.fecha_termino) cleanPayload.fecha_termino = ensureUTC(data.fecha_termino, true);
 
-            // Final pruning of falsy values
+            // Final pruning of falsy values (except categoria_id)
             Object.keys(cleanPayload).forEach(key => {
+                if (key === 'categoria_id') return;
                 if (cleanPayload[key] === null || cleanPayload[key] === "") {
                     delete cleanPayload[key];
                 }

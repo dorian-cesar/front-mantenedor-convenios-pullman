@@ -252,6 +252,7 @@ export function useConvenioForm() {
                 empresa_id: data?.empresa_id !== undefined ? data.empresa_id : basePayload.empresa_id,
                 porcentaje_descuento: data?.porcentaje_descuento !== undefined ? Number(data.porcentaje_descuento) : (basePayload.porcentaje_descuento || 0),
                 api_consulta_id: data?.api_consulta_id || basePayload.api_consulta_id || (basePayload as any).api_url_id,
+                categoria_id: data?.categoria_id !== undefined ? data.categoria_id : basePayload.categoria_id,
                 rutas: isRutasEspecificas ? cleanRutas : [],
                 configuraciones: isRutasEspecificas ? [] : finalConfigs,
             }
@@ -308,7 +309,7 @@ export function useConvenioForm() {
             Object.keys(finalPayload).forEach(key => {
                 const value = (finalPayload as any)[key];
                 // EXEMPT configuration arrays from being deleted when empty, so the back can clear them
-                if (key === 'rutas' || key === 'configuraciones') return;
+                if (key === 'rutas' || key === 'configuraciones' || key === 'categoria_id') return;
 
                 if (value === null || value === "" || (Array.isArray(value) && value.length === 0)) {
                     delete (finalPayload as any)[key];

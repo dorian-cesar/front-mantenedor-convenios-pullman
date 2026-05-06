@@ -63,6 +63,13 @@ export default function DetailsConvenioModal({
                     </div>
 
                     <div>
+                        <p className="text-sm font-medium leading-none">Categoría</p>
+                        <p className="text-sm text-muted-foreground">
+                            {convenio.categoria?.nombre || "Sin categoría"}
+                        </p>
+                    </div>
+
+                    <div>
                         <p className="text-sm font-medium leading-none">Fecha de inicio</p>
                         <p className="text-sm text-muted-foreground">
                             {convenio.fecha_inicio ? formatDateOnly(convenio.fecha_inicio) : "N/A"}

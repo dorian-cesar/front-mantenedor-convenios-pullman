@@ -25,7 +25,7 @@ import { api } from "@/lib/api"
 import { type Convenio } from "@/services/convenio.service"
 import { toast } from "sonner"
 import { fileToBase64, formatRut, cleanRut } from "@/utils/helpers"
-import { FileTextIcon, UploadIcon, XIcon, Loader2Icon } from "lucide-react"
+import { FileTextIcon, UploadIcon, XIcon, Loader2Icon, PlusIcon } from "lucide-react"
 
 interface AddBeneficiarioDinamicoModalProps {
     open: boolean
@@ -126,7 +126,6 @@ export default function AddBeneficiarioDinamicoModal({
                 rut: cleanRut(data.rut),
                 convenio_id: convenio.id,
             }
-            // Use the same endpoint used by logic in adultomayor.service.ts
             await api.post('/beneficiarios', payload)
             
             toast.success("Beneficiario creado correctamente")
@@ -229,7 +228,7 @@ export default function AddBeneficiarioDinamicoModal({
 
                         {/* Documentos Dinámicos */}
                         <div className="pt-4 border-t space-y-4">
-                            <h4 className="font-medium text-sm">Archivos Requeridos</h4>
+                            <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Archivos Requeridos</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 {(() => {
                                     const labels = [...(convenio.imagenes || [])];
@@ -259,7 +258,7 @@ export default function AddBeneficiarioDinamicoModal({
 
                                                     {p ? (
                                                         <div className="w-full flex flex-col items-center gap-2">
-                                                            <div className="relative border rounded-lg bg-background p-2 w-full flex justify-center h-24 overflow-hidden">
+                                                            <div className="relative border rounded-lg bg-background p-2 w-full flex justify-center h-24 overflow-hidden shadow-sm">
                                                                 {p.isPDF ? (
                                                                     <div className="flex flex-col items-center justify-center">
                                                                         <FileTextIcon className="h-8 w-8 text-primary" />
@@ -276,20 +275,20 @@ export default function AddBeneficiarioDinamicoModal({
                                                             <Button
                                                                 type="button"
                                                                 variant="destructive"
-                                                                size="sm"
-                                                                className="h-7 px-2"
+                                                                size="icon"
+                                                                className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow-md"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation()
                                                                     handleRemove(label)
                                                                 }}
                                                             >
-                                                                <XIcon className="h-3 w-3" />
+                                                                <XIcon className="h-4 w-4" />
                                                             </Button>
                                                         </div>
                                                     ) : (
-                                                        <div className="flex flex-col items-center text-muted-foreground">
+                                                        <div className="flex flex-col items-center text-muted-foreground opacity-60">
                                                             <UploadIcon className="h-6 w-6 mb-1" />
-                                                            <p className="text-[10px]">Subir {label}</p>
+                                                            <p className="text-[10px] font-medium">Subir {label}</p>
                                                         </div>
                                                     )}
                                                 </div>
@@ -300,12 +299,16 @@ export default function AddBeneficiarioDinamicoModal({
                             </div>
                         </div>
 
-                        <div className="flex justify-end gap-3 pt-4 border-t">
-                            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+                        <div className="flex justify-end gap-3 pt-6 border-t mt-4">
+                            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isLoading}>
                                 Cancelar
                             </Button>
                             <Button type="submit" disabled={isLoading}>
-                                {isLoading ? <Loader2Icon className="h-4 w-4 mr-2 animate-spin" /> : null}
+                                {isLoading ? (
+                                    <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                    <PlusIcon className="h-4 w-4 mr-2" />
+                                )}
                                 Crear Beneficiario
                             </Button>
                         </div>
