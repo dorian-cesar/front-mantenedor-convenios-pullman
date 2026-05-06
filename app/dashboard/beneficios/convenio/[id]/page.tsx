@@ -48,6 +48,8 @@ export default function BeneficiariosConvenioPage() {
     const [showAddModal, setShowAddModal] = useState(false)
     const [searchValue, setSearchValue] = useState("")
     const [statusFilter, setStatusFilter] = useState("")
+    const [idFilter, setIdFilter] = useState("")
+    const [rutFilter, setRutFilter] = useState("")
     const [summary, setSummary] = useState({ activo: 0, inactivo: 0, rechazado: 0 })
     const [selectedBeneficiario, setSelectedBeneficiario] = useState<Beneficiario | null>(null)
     const [showUpdateModal, setShowUpdateModal] = useState(false)
@@ -86,6 +88,8 @@ export default function BeneficiariosConvenioPage() {
             }
             if (statusFilter) params.status = statusFilter
             if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
+            if (idFilter.trim()) params.id = idFilter.trim()
+            if (rutFilter.trim()) params.rut = rutFilter.trim()
 
             const response = await api.get<any>("/beneficiarios", { params })
             const data = response.data
@@ -119,7 +123,7 @@ export default function BeneficiariosConvenioPage() {
 
     useEffect(() => {
         fetchBeneficiarios()
-    }, [convenioId, pagination.page, pagination.limit, debouncedSearch, statusFilter])
+    }, [convenioId, pagination.page, pagination.limit, debouncedSearch, statusFilter, idFilter, rutFilter])
 
     const handleCopy = (text: string, label: string) => {
         navigator.clipboard.writeText(text)
@@ -202,15 +206,39 @@ export default function BeneficiariosConvenioPage() {
                     </Dropdown.DropdownMenu>
                 </div>
 
-                {statusFilter && (
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground border-r pr-2">ID:</span>
+                    <Input
+                        placeholder="Buscar por ID..."
+                        value={idFilter}
+                        onChange={(e) => setIdFilter(e.target.value)}
+                        className="h-9 w-[140px] shadow-sm"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground border-r pr-2">RUT:</span>
+                    <Input
+                        placeholder="12.345.678-9"
+                        value={rutFilter}
+                        onChange={(e) => setRutFilter(formatRut(e.target.value))}
+                        className="h-9 w-[160px] shadow-sm"
+                    />
+                </div>
+
+                {(statusFilter || idFilter || rutFilter) && (
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setStatusFilter("")}
+                        onClick={() => {
+                            setStatusFilter("")
+                            setIdFilter("")
+                            setRutFilter("")
+                        }}
                         className="h-9 text-muted-foreground hover:text-foreground"
                     >
                         <Icon.X className="mr-2 h-4 w-4" />
-                        Limpiar
+                        Limpiar Filtros
                     </Button>
                 )}
             </div>
