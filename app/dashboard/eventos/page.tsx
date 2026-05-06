@@ -983,7 +983,14 @@ export default function EventosPage() {
                                             ) : (
                                                 <span className="font-medium text-muted-foreground">N/A</span>
                                             )}
-                                            <span className="text-[10px] text-muted-foreground uppercase mt-0.5">{evento.empresa?.nombre || "N/A"}</span>
+                                            <span className="text-[10px] text-muted-foreground uppercase mt-0.5" title="Empresa">
+                                                {evento.empresa?.nombre || "N/A"}
+                                            </span>
+                                            {evento.convenio?.nombre && (
+                                                <span className="text-[9px] text-primary/70 font-medium italic truncate max-w-[150px]" title={`Convenio: ${evento.convenio.nombre}`}>
+                                                    {evento.convenio.nombre}
+                                                </span>
+                                            )}
                                         </div>
                                     </Table.TableCell>
                                     <Table.TableCell className="text-xs text-muted-foreground">${formatNumber(evento.tarifa_base || 0)}</Table.TableCell>
