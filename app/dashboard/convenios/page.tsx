@@ -561,30 +561,37 @@ function ConveniosPage() {
                                         {convenio.empresa_nombre || convenio.empresa?.nombre || "Sin empresa"}
                                     </Table.TableCell>
                                     <Table.TableCell>
-                                        {categorias.filter(cat => cat.empresa_id === convenio.empresa_id).length > 0 ? (
-                                            <Select.Select
-                                                value={convenio.categoria_id?.toString() || convenio.categoria?.id?.toString() || "none"}
-                                                onValueChange={(value) => handleUpdateCategory(convenio.id, value === "none" ? null : Number(value))}
-                                            >
-                                                <Select.SelectTrigger className="w-[180px] h-8 text-xs">
-                                                    <Select.SelectValue placeholder="Sin categoría" />
-                                                </Select.SelectTrigger>
-                                                <Select.SelectContent>
-                                                    <Select.SelectItem value="none">Sin categoría</Select.SelectItem>
-                                                    {categorias
-                                                        .filter(cat => cat.empresa_id === convenio.empresa_id)
-                                                        .map((cat) => (
+                                        {(() => {
+                                            const empId = convenio.empresa_id || convenio.empresa?.id;
+                                            const relevantCats = categorias.filter(cat => cat.empresa_id === empId);
+                                            
+                                            if (relevantCats.length === 0) {
+                                                return (
+                                                    <span className="text-muted-foreground italic">
+                                                        {convenio.categoria?.nombre || "-"}
+                                                    </span>
+                                                );
+                                            }
+
+                                            return (
+                                                <Select.Select
+                                                    value={convenio.categoria_id?.toString() || convenio.categoria?.id?.toString() || "none"}
+                                                    onValueChange={(value) => handleUpdateCategory(convenio.id, value === "none" ? null : Number(value))}
+                                                >
+                                                    <Select.SelectTrigger className="w-[180px] h-8 text-xs">
+                                                        <Select.SelectValue placeholder="Sin categoría" />
+                                                    </Select.SelectTrigger>
+                                                    <Select.SelectContent>
+                                                        <Select.SelectItem value="none">Sin categoría</Select.SelectItem>
+                                                        {relevantCats.map((cat) => (
                                                             <Select.SelectItem key={cat.id} value={cat.id.toString()}>
                                                                 {cat.nombre}
                                                             </Select.SelectItem>
                                                         ))}
-                                                </Select.SelectContent>
-                                            </Select.Select>
-                                        ) : (
-                                            <span className="text-muted-foreground italic">
-                                                {convenio.categoria?.nombre || "-"}
-                                            </span>
-                                        )}
+                                                    </Select.SelectContent>
+                                                </Select.Select>
+                                            );
+                                        })()}
                                     </Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={convenio.status === "ACTIVO" ? "active" : "inactive"}>

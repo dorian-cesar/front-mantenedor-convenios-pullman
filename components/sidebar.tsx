@@ -420,7 +420,7 @@ export function Sidebar({ collapsed, onToggle, onLogout, width, onWidthChange }:
                                                                 <button
                                                                     type="button"
                                                                     className={cn(
-                                                                        "flex items-center gap-2 rounded-lg py-1.5 text-[13px] font-medium transition-colors w-full pl-9 pr-3",
+                                                                        "flex items-center gap-2 rounded-lg py-1.5 text-xs font-medium transition-colors w-full pl-9 pr-3",
                                                                         isCatActive
                                                                             ? "text-sidebar-primary"
                                                                             : "text-sidebar-foreground/60 hover:text-sidebar-foreground"
@@ -449,7 +449,7 @@ export function Sidebar({ collapsed, onToggle, onLogout, width, onWidthChange }:
                                                                             key={convenio.id}
                                                                             href={href}
                                                                             className={cn(
-                                                                                "flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-colors pl-14 pr-3",
+                                                                                "flex items-center gap-3 rounded-lg py-1.5 text-xs font-medium transition-colors pl-14 pr-3",
                                                                                 isActive
                                                                                     ? "bg-sidebar-accent text-sidebar-primary"
                                                                                     : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"

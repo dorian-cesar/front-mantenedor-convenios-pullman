@@ -49,31 +49,48 @@ export default function UpdateBeneficiarioDinamicoModal({
     const [isLoading, setIsLoading] = useState(false)
     const [convenio, setConvenio] = useState<Convenio | null>(null)
     const [previews, setPreviews] = useState<Record<string, { src: string; isPDF: boolean }>>({})
+    const [fullBeneficiario, setFullBeneficiario] = useState<Beneficiario | null>(null)
+    const [isFetching, setIsFetching] = useState(false)
 
     const form = useForm<FormValues>({
         resolver: zodResolver(updateSchema),
     })
 
     useEffect(() => {
-        if (beneficiario && open) {
+        if (open && beneficiario?.id) {
+            fetchFullData(beneficiario.id)
+        } else if (!open) {
+            setFullBeneficiario(null)
+            form.reset()
+            setPreviews({})
+        }
+    }, [open, beneficiario?.id])
+
+    const fetchFullData = async (id: number) => {
+        setIsFetching(true)
+        try {
+            const data = await BeneficiariosService.getBeneficiarioById(id)
+            setFullBeneficiario(data)
+            
+            // Reset form with full data
             form.reset({
-                nombre: beneficiario.nombre || "",
-                rut: formatRut(beneficiario.rut),
-                telefono: beneficiario.telefono || "",
-                correo: beneficiario.correo || "",
-                direccion: beneficiario.direccion || "",
-                status: beneficiario.status,
-                imagenes: beneficiario.imagenes || {},
+                nombre: data.nombre || "",
+                rut: formatRut(data.rut),
+                telefono: data.telefono || "",
+                correo: data.correo || "",
+                direccion: data.direccion || "",
+                status: data.status,
+                imagenes: data.imagenes || {},
             })
 
-            // Set initial previews
+            // Set previews
             const initialPreviews: Record<string, { src: string; isPDF: boolean }> = {}
             
             // Legacy fields support
             const legacyFields: Record<string, string | undefined> = {
-                "Foto frontal de Carnet de Identidad": (beneficiario as any).imagen_cedula_identidad,
-                "Certificado de Residencia": (beneficiario as any).imagen_certificado_residencia,
-                "Certificado Alumno Regular": (beneficiario as any).imagen_certificado_alumno_regular,
+                "Foto frontal de Carnet de Identidad": (data as any).imagen_cedula_identidad,
+                "Certificado de Residencia": (data as any).imagen_certificado_residencia,
+                "Certificado Alumno Regular": (data as any).imagen_certificado_alumno_regular,
             }
 
             Object.entries(legacyFields).forEach(([label, value]) => {
@@ -86,8 +103,8 @@ export default function UpdateBeneficiarioDinamicoModal({
             })
 
             // Dynamic images
-            if (beneficiario.imagenes) {
-                Object.entries(beneficiario.imagenes).forEach(([key, value]) => {
+            if (data.imagenes) {
+                Object.entries(data.imagenes).forEach(([key, value]) => {
                     if (value) {
                         initialPreviews[key] = {
                             src: getFileSrc(value) || value,
@@ -98,13 +115,19 @@ export default function UpdateBeneficiarioDinamicoModal({
             }
             setPreviews(initialPreviews)
 
-            if (beneficiario.convenio_id) {
-                ConveniosService.getConvenioById(beneficiario.convenio_id)
+            if (data.convenio_id) {
+                ConveniosService.getConvenioById(data.convenio_id)
                     .then(setConvenio)
                     .catch(() => toast.error("No se pudo cargar la configuración del convenio"))
             }
+        } catch (error) {
+            console.error("Error fetching full beneficiary data:", error)
+            toast.error("No se pudo cargar la información del beneficiario")
+            onOpenChange(false)
+        } finally {
+            setIsFetching(false)
         }
-    }, [beneficiario, open, form])
+    }
 
     const handleFileChange = async (file: File, label: string) => {
         if (!file) return
@@ -188,8 +211,14 @@ export default function UpdateBeneficiarioDinamicoModal({
                     </Dialog.DialogDescription>
                 </Dialog.DialogHeader>
 
-                <Form.Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {isFetching ? (
+                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                        <Icon.Loader2Icon className="h-10 w-10 animate-spin text-primary" />
+                        <p className="text-sm text-muted-foreground animate-pulse">Cargando datos del beneficiario...</p>
+                    </div>
+                ) : (
+                    <Form.Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <Form.FormField
                                 control={form.control}
@@ -394,6 +423,7 @@ export default function UpdateBeneficiarioDinamicoModal({
                         </div>
                     </form>
                 </Form.Form>
+                )}
             </Dialog.DialogContent>
         </Dialog.Dialog>
     )
