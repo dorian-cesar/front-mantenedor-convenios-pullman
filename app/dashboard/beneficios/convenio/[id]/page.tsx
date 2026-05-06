@@ -50,6 +50,7 @@ export default function BeneficiariosConvenioPage() {
     const [statusFilter, setStatusFilter] = useState("")
     const [idFilter, setIdFilter] = useState("")
     const [rutFilter, setRutFilter] = useState("")
+    const [emailFilter, setEmailFilter] = useState("")
     const [summary, setSummary] = useState({ activo: 0, inactivo: 0, rechazado: 0 })
     const [selectedBeneficiario, setSelectedBeneficiario] = useState<Beneficiario | null>(null)
     const [showUpdateModal, setShowUpdateModal] = useState(false)
@@ -93,6 +94,7 @@ export default function BeneficiariosConvenioPage() {
             if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
             if (idFilter.trim()) params.id = idFilter.trim()
             if (rutFilter.trim()) params.rut = rutFilter.trim()
+            if (emailFilter.trim()) params.email = emailFilter.trim()
 
             const response = await api.get<any>("/beneficiarios", { params })
             const data = response.data
@@ -126,7 +128,7 @@ export default function BeneficiariosConvenioPage() {
 
     useEffect(() => {
         fetchBeneficiarios()
-    }, [convenioId, pagination.page, pagination.limit, debouncedSearch, statusFilter, idFilter, rutFilter])
+    }, [convenioId, pagination.page, pagination.limit, debouncedSearch, statusFilter, idFilter, rutFilter, emailFilter])
 
     const handleCopy = (text: string, label: string) => {
         navigator.clipboard.writeText(text)
@@ -251,7 +253,17 @@ export default function BeneficiariosConvenioPage() {
                     />
                 </div>
 
-                {(statusFilter || idFilter || rutFilter) && (
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground border-r pr-2">Email:</span>
+                    <Input
+                        placeholder="ejemplo@correo.com"
+                        value={emailFilter}
+                        onChange={(e) => setEmailFilter(e.target.value)}
+                        className="h-9 w-[200px] shadow-sm"
+                    />
+                </div>
+
+                {(statusFilter || idFilter || rutFilter || emailFilter) && (
                     <Button
                         variant="ghost"
                         size="sm"
@@ -259,6 +271,7 @@ export default function BeneficiariosConvenioPage() {
                             setStatusFilter("")
                             setIdFilter("")
                             setRutFilter("")
+                            setEmailFilter("")
                         }}
                         className="h-9 text-muted-foreground hover:text-foreground"
                     >
