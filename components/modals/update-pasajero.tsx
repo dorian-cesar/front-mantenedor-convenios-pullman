@@ -99,7 +99,7 @@ export default function UpdatePasajeroModal({
                 const existingPreviews: Record<string, { src: string; isPDF: boolean }> = {}
                 Object.entries(pasajero.imagenes).forEach(([key, src]) => {
                     existingPreviews[key] = {
-                        src: getFileSrc(src),
+                        src: getFileSrc(src) || "",
                         isPDF: isPDF(src)
                     }
                 })

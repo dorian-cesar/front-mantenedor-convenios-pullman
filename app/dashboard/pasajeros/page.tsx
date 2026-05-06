@@ -605,7 +605,7 @@ export default function PasajerosPage() {
                 onOpenChange={setOpenDetails}
                 pasajero={selectedPasajero}
                 onToggleStatus={handleToggleStatus}
-            />
+            /> */}
         </div>
     )
 }
