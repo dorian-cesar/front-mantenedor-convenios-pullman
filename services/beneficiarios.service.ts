@@ -82,12 +82,7 @@ export class BeneficiariosService {
     }
 
     static async toggleStatus(id: number, currentStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO"): Promise<Beneficiario> {
-        let newStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO";
-        if (currentStatus === "ACTIVO" || currentStatus === "RECHAZADO") {
-            newStatus = "INACTIVO";
-        } else {
-            newStatus = "ACTIVO";
-        }
+        const newStatus = currentStatus === "ACTIVO" ? "INACTIVO" : "ACTIVO";
         return this.updateBeneficiario(id, { status: newStatus });
     }
 
