@@ -64,6 +64,9 @@ export default function BeneficiariosConvenioPage() {
         hasPrevPage: false,
     })
 
+    const normalizeString = (str: string) =>
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
     const debouncedSearch = useDebounce(searchValue, 300)
 
     // Fetch convenio details
@@ -184,6 +187,28 @@ export default function BeneficiariosConvenioPage() {
             toast.error("No se pudo eliminar el beneficiario")
         }
     }
+
+    const filteredBeneficiarios = beneficiarios.filter(b => {
+        if (!searchValue.trim()) return true;
+
+        const cleanRutStr = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
+        const searchTerms = normalizeString(searchValue).split(/\s+/).filter(Boolean);
+
+        const idString = b.id ? b.id.toString() : "";
+        const nombreNorm = b.nombre ? normalizeString(b.nombre) : "";
+        const rutClean = cleanRutStr(b.rut || "");
+        const correoNorm = b.correo ? normalizeString(b.correo) : "";
+
+        return searchTerms.every(term => {
+            const termClean = cleanRutStr(term);
+            return (
+                idString.includes(term) ||
+                nombreNorm.includes(term) ||
+                (termClean !== "" && rutClean.includes(termClean)) ||
+                correoNorm.includes(term)
+            );
+        });
+    });
 
     const filters = (
         <div className="flex flex-col gap-5 w-full">
@@ -335,14 +360,14 @@ export default function BeneficiariosConvenioPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : beneficiarios.length === 0 ? (
+                        ) : filteredBeneficiarios.length === 0 ? (
                             <Table.TableRow>
                                 <Table.TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                                    No se encontraron beneficiarios para este convenio
+                                    No se encontraron beneficiarios que coincidan con la búsqueda
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            beneficiarios.map((b) => (
+                            filteredBeneficiarios.map((b) => (
                                 <Table.TableRow key={b.id}>
                                     <Table.TableCell>
                                         <span className="font-mono text-[10px] text-muted-foreground">{b.id}</span>
