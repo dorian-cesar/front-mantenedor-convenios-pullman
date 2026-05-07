@@ -258,7 +258,7 @@ export default function BeneficiariosConvenioPage() {
                     <Input
                         placeholder="12.345.678-9"
                         value={rutFilter}
-                        onChange={(e) => setRutFilter(formatRut(e.target.value))}
+                        onChange={(e) => setRutFilter(e.target.value)}
                         className="h-9 w-[160px] shadow-sm"
                     />
                 </div>
