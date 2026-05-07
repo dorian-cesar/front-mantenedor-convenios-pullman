@@ -86,12 +86,18 @@ export default function BeneficiariosConvenioPage() {
         if (!convenioId) return
         setIsLoading(true)
         try {
+            const hasSpecificFilter = debouncedId.trim() || debouncedRut.trim() || debouncedEmail.trim()
+            
             const params: any = {
-                convenio_id: convenioId,
                 page: pagination.page,
                 limit: pagination.limit,
                 sortBy: "id",
                 order: "DESC",
+            }
+
+            // Si hay un filtro específico (RUT, ID o Email), buscamos en toda la empresa, no solo en el convenio
+            if (!hasSpecificFilter) {
+                params.convenio_id = convenioId;
             }
             
             if (convenio?.empresa_id) {
