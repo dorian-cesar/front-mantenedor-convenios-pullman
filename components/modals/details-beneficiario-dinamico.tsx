@@ -155,14 +155,27 @@ export default function DetailsBeneficiarioDinamicoModal({
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Fecha Creación</p>
-                                    <p className="text-sm font-medium">{currentBeneficiario?.createdAt ? formatDateOnly(currentBeneficiario.createdAt) : "-"}</p>
-                                </div>
-                                <div className="space-y-1">
                                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Convenio</p>
                                     <p className="text-sm font-medium">{currentBeneficiario?.convenio?.nombre || "-"}</p>
                                 </div>
+                                <div className="space-y-1">
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Empresa ID</p>
+                                    <p className="text-sm font-medium">{(currentBeneficiario as any)?.empresa_id || "-"}</p>
+                                </div>
                             </div>
+
+                            {(currentBeneficiario as any)?.nombre_beneficio || (currentBeneficiario as any)?.tipo_beneficio ? (
+                                <div className="grid gap-4 grid-cols-2 p-3 bg-slate-50 border rounded-md">
+                                    <div className="space-y-1">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nombre Beneficio</p>
+                                        <p className="text-sm font-medium">{(currentBeneficiario as any)?.nombre_beneficio || "-"}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tipo Beneficio</p>
+                                        <p className="text-sm font-medium">{(currentBeneficiario as any)?.tipo_beneficio || "-"}</p>
+                                    </div>
+                                </div>
+                            ) : null}
 
                             {currentBeneficiario?.razon_rechazo && currentBeneficiario.status === "RECHAZADO" && (
                                 <div className="p-3 bg-red-50 border border-red-100 rounded-md">
@@ -170,6 +183,19 @@ export default function DetailsBeneficiarioDinamicoModal({
                                     <p className="text-sm text-red-800">{currentBeneficiario.razon_rechazo}</p>
                                 </div>
                             )}
+
+                            <div className="grid gap-4 grid-cols-2 pt-4 border-t border-dashed">
+                                <div className="space-y-1">
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Creado por</p>
+                                    <p className="text-sm font-medium">{(currentBeneficiario as any)?.created_by || "-"}</p>
+                                    <p className="text-[10px] text-muted-foreground">{currentBeneficiario?.createdAt ? formatDateOnly(currentBeneficiario.createdAt) : ""}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actualizado por</p>
+                                    <p className="text-sm font-medium">{(currentBeneficiario as any)?.updated_by || "-"}</p>
+                                    <p className="text-[10px] text-muted-foreground">{(currentBeneficiario as any)?.updatedAt ? formatDateOnly((currentBeneficiario as any).updatedAt) : ""}</p>
+                                </div>
+                            </div>
 
                             <div className="space-y-4 pt-4 border-t">
                                 <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Documentos y Archivos</h4>
