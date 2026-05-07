@@ -95,12 +95,8 @@ export default function BeneficiariosConvenioPage() {
                 order: "DESC",
             }
 
-            // Si hay un filtro específico (RUT, ID o Email), buscamos en toda la empresa (todos sus convenios)
-            if (hasSpecificFilter) {
-                // No enviamos convenio_id para buscar en otros convenios de la misma empresa
-            } else {
-                params.convenio_id = convenioId;
-            }
+            // Siempre restringimos la búsqueda al convenio actual
+            params.convenio_id = convenioId;
 
             if (convenio?.empresa_id) {
                 params.empresa_id = convenio.empresa_id;
