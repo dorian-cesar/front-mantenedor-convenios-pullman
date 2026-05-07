@@ -104,7 +104,7 @@ export default function BeneficiariosConvenioPage() {
             if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
             if (debouncedId.trim()) params.id = debouncedId.trim()
             if (debouncedRut.trim()) params.rut = debouncedRut.trim()
-            if (debouncedEmail.trim()) params.email = debouncedEmail.trim()
+            if (debouncedEmail.trim()) params.correo = debouncedEmail.trim()
 
             const response = await api.get<any>("/beneficiarios", { params })
             const data = response.data
