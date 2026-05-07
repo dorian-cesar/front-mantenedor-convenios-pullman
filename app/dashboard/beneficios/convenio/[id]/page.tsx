@@ -95,16 +95,17 @@ export default function BeneficiariosConvenioPage() {
                 order: "DESC",
             }
 
-            // Si hay un filtro específico (RUT, ID o Email), buscamos en toda la base de datos (global)
+            // Si hay un filtro específico (RUT, ID o Email), buscamos en toda la empresa (todos sus convenios)
             if (hasSpecificFilter) {
-                // No enviamos convenio_id ni empresa_id para que sea global
+                // No enviamos convenio_id para buscar en otros convenios de la misma empresa
             } else {
                 params.convenio_id = convenioId;
-                if (convenio?.empresa_id) {
-                    params.empresa_id = convenio.empresa_id;
-                } else if (convenio?.empresa?.id) {
-                    params.empresa_id = convenio.empresa.id;
-                }
+            }
+
+            if (convenio?.empresa_id) {
+                params.empresa_id = convenio.empresa_id;
+            } else if (convenio?.empresa?.id) {
+                params.empresa_id = convenio.empresa.id;
             }
 
             if (statusFilter) params.status = statusFilter
