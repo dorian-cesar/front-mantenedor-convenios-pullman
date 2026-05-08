@@ -47,7 +47,7 @@ export default function LoginPage() {
       }
 
       setTimeout(() => {
-        router.replace("/dashboard");
+        router.replace("/dashboard/eventos");
       }, 2000);
 
     } catch (error: any) {

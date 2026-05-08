@@ -1,6 +1,7 @@
 "use client";
 import { PageHeader } from "@/components/dashboard/page-header"
 import * as Card from "@/components/ui/card"
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import ExportModal from "@/components/modals/export";
 import { useState, useEffect } from "react";
@@ -64,6 +65,12 @@ const chartConfig = {
 
 
 export default function DashboardPage() {
+    const router = useRouter()
+    
+    useEffect(() => {
+        router.replace("/dashboard/eventos")
+    }, [])
+
     const [isLoading, setIsLoading] = useState(true)
     const [openExport, setOpenExport] = useState(false);
     const [resumen, setResumen] = useState<Resumen[]>([]);

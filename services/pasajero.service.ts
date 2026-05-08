@@ -14,6 +14,15 @@ export interface Pasajero {
     convenio_id: number | null;
     status: "ACTIVO" | "INACTIVO";
     imagenes?: Record<string, string>;
+    empresa?: {
+        id: number;
+        nombre: string;
+        rut_empresa?: string;
+    };
+    convenio?: {
+        id: number;
+        nombre: string;
+    };
     createdAt?: string;
     updatedAt?: string;
 }

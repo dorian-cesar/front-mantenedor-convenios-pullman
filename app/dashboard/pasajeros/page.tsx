@@ -196,6 +196,11 @@ export default function PasajerosPage() {
         setOpenAdd(false)
     }
 
+    const copyToClipboard = (text: string, label: string) => {
+        navigator.clipboard.writeText(text)
+        toast.success(`${label} copiado al portapapeles`)
+    }
+
     const handlePasajeroAsociado = () => {
         fetchPasajeros()
         setOpenAsociar(false)
@@ -495,19 +500,72 @@ export default function PasajerosPage() {
                         ) : (
                             pasajeros.map((pasajero) => (
                                 <Table.TableRow key={pasajero.id}>
-                                    <Table.TableCell>{pasajero.id}</Table.TableCell>
-                                    <Table.TableCell>{formatRut(pasajero.rut)}</Table.TableCell>
                                     <Table.TableCell>
-                                        <div className="font-medium">
-                                            {pasajero.nombres || "Sin nombre"} {pasajero.apellidos || ""}
+                                        <div className="flex items-center gap-2 group">
+                                            <span>{pasajero.id}</span>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={() => copyToClipboard(pasajero.id.toString(), "ID")}
+                                            >
+                                                <Icon.Copy className="h-3 w-3" />
+                                            </Button>
                                         </div>
                                     </Table.TableCell>
                                     <Table.TableCell>
-                                        {pasajero.correo || "Sin correo"}
+                                        <div className="flex items-center gap-2 group">
+                                            <span className="font-mono text-xs">{formatRut(pasajero.rut)}</span>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={() => copyToClipboard(pasajero.rut, "RUT")}
+                                            >
+                                                <Icon.Copy className="h-3 w-3" />
+                                            </Button>
+                                        </div>
                                     </Table.TableCell>
-                                    {/* <Table.TableCell>{getTipoPasajeroNombre(pasajero.tipo_pasajero_id)}</Table.TableCell> */}
-                                    <Table.TableCell>{getEmpresaNombre(pasajero.empresa_id)}</Table.TableCell>
-                                    <Table.TableCell>{getConvenioNombre(pasajero.convenio_id)}</Table.TableCell>
+                                    <Table.TableCell>
+                                        <div className="flex items-center gap-2 group">
+                                            <div className="font-medium truncate max-w-[200px]">
+                                                {pasajero.nombres || "Sin nombre"} {pasajero.apellidos || ""}
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={() => copyToClipboard(`${pasajero.nombres || ""} ${pasajero.apellidos || ""}`.trim(), "Nombre")}
+                                            >
+                                                <Icon.Copy className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        <div className="flex items-center gap-2 group">
+                                            <span className="truncate max-w-[150px]">{pasajero.correo || "Sin correo"}</span>
+                                            {pasajero.correo && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    onClick={() => copyToClipboard(pasajero.correo!, "Correo")}
+                                                >
+                                                    <Icon.Copy className="h-3 w-3" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        <span className="text-xs">
+                                            {pasajero.empresa?.nombre || getEmpresaNombre(pasajero.empresa_id)}
+                                        </span>
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        <span className="text-xs">
+                                            {pasajero.convenio?.nombre || getConvenioNombre(pasajero.convenio_id)}
+                                        </span>
+                                    </Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={pasajero.status === "ACTIVO" ? "active" : "inactive"}>
                                             {pasajero.status === "ACTIVO" ? "Activo" : "Inactivo"}

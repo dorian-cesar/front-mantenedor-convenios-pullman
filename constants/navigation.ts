@@ -31,16 +31,16 @@ export type NavItem = {
 }
 
 export const NAVIGATION: NavItem[] = [
-    {
-        id: "dashboard",
-        title: "Dashboard",
-        href: "/dashboard",
-        icon: LayoutDashboard,
-        description: "Resumen del sistema",
-        group: "General",
-        section: "main",
-        roles: ["SUPER_USUARIO", "USUARIO"]
-    },
+    // {
+    //     id: "dashboard",
+    //     title: "Dashboard",
+    //     href: "/dashboard",
+    //     icon: LayoutDashboard,
+    //     description: "Resumen del sistema",
+    //     group: "General",
+    //     section: "main",
+    //     roles: ["SUPER_USUARIO", "USUARIO"]
+    // },
     {
         id: "boletos",
         title: "Boletos",
