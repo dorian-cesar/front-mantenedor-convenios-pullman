@@ -20,6 +20,15 @@ export const cleanRut = (rut: string | null | undefined) => {
   return rut.replace(/\./g, "").replace(/-/g, "").toUpperCase()
 }
 
+export const formatRutForBackend = (rut: string | null | undefined) => {
+  if (!rut) return ""
+  const clean = rut.replace(/\./g, "").replace(/-/g, "").toUpperCase()
+  if (clean.length < 2) return clean
+  const body = clean.slice(0, -1)
+  const dv = clean.slice(-1)
+  return `${body}-${dv}`
+}
+
 export const validateRut = (rut: string | null | undefined): boolean => {
   if (!rut) return false
   

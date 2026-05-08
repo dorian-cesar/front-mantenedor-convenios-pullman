@@ -24,7 +24,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { api } from "@/lib/api"
 import { type Convenio } from "@/services/convenio.service"
 import { toast } from "sonner"
-import { fileToBase64, formatRut, cleanRut } from "@/utils/helpers"
+import { fileToBase64, formatRut, cleanRut, formatRutForBackend } from "@/utils/helpers"
 import { FileTextIcon, UploadIcon, XIcon, Loader2Icon, PlusIcon } from "lucide-react"
 
 interface AddBeneficiarioDinamicoModalProps {
@@ -123,7 +123,7 @@ export default function AddBeneficiarioDinamicoModal({
         try {
             const payload = {
                 ...data,
-                rut: cleanRut(data.rut),
+                rut: formatRutForBackend(data.rut),
                 convenio_id: convenio.id,
             }
             await api.post('/beneficiarios', payload)

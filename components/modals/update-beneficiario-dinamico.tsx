@@ -12,7 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { BeneficiariosService, type Beneficiario } from "@/services/beneficiarios.service"
 import { ConveniosService, type Convenio } from "@/services/convenio.service"
 import { toast } from "sonner"
-import { fileToBase64, formatRut, getFileSrc, isPDF, rotateImage, cleanRut } from "@/utils/helpers"
+import { fileToBase64, formatRut, getFileSrc, isPDF, rotateImage, cleanRut, formatRutForBackend } from "@/utils/helpers"
 import {
     Select,
     SelectContent,
@@ -187,7 +187,7 @@ export default function UpdateBeneficiarioDinamicoModal({
         try {
             await BeneficiariosService.updateBeneficiario(beneficiario.id, {
                 ...data,
-                rut: cleanRut(data.rut)
+                rut: formatRutForBackend(data.rut)
             })
             toast.success("Beneficiario actualizado correctamente")
             onSuccess?.()
