@@ -58,7 +58,7 @@ export default function BusquedaGlobalBeneficiariosPage() {
     const [openEmpresaPopover, setOpenEmpresaPopover] = useState(false)
     const [openCategoriaPopover, setOpenCategoriaPopover] = useState(false)
 
-    const [summary, setSummary] = useState({ activo: 0, inactivo: 0, rechazado: 0 })
+    const [summary, setSummary] = useState({ activo: 0, inactivo: 0, rechazado: 0, total: 0 })
     const [selectedBeneficiario, setSelectedBeneficiario] = useState<Beneficiario | null>(null)
     const [showDetailsModal, setShowDetailsModal] = useState(false)
     const [showUpdateModal, setShowUpdateModal] = useState(false)
@@ -122,6 +122,7 @@ export default function BusquedaGlobalBeneficiariosPage() {
                     activo: response.total || 0,
                     inactivo: 0,
                     rechazado: 0,
+                    total: response.total || 0
                 })
             }
         } catch (error) {
