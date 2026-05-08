@@ -40,6 +40,7 @@ export interface GetPasajerosParams {
     convenio_id?: number;
     tipo_pasajero_id?: number;
     search?: string;
+    nombre?: string;
 }
 
 export interface PasajerosResponse {
@@ -47,6 +48,11 @@ export interface PasajerosResponse {
     rows: Pasajero[];
     totalPages?: number;
     currentPage?: number;
+    summary?: {
+        activos: number;
+        inactivos: number;
+        total: number;
+    };
 }
 
 export interface CreatePasajeroData {

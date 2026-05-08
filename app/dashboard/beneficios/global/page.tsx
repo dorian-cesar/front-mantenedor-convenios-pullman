@@ -447,7 +447,9 @@ export default function BusquedaGlobalBeneficiariosPage() {
                                 <Table.TableHead>Convenio</Table.TableHead>
                                 <Table.TableHead>Categoría</Table.TableHead>
                                 <Table.TableHead>Beneficiario</Table.TableHead>
-                                <Table.TableHead>Contacto</Table.TableHead>
+                                <Table.TableHead>RUT</Table.TableHead>
+                                <Table.TableHead>Correo</Table.TableHead>
+                                <Table.TableHead>Teléfono</Table.TableHead>
                                 <Table.TableHead>Estado</Table.TableHead>
                                 <Table.TableHead className="text-right">Acciones</Table.TableHead>
                             </Table.TableRow>
@@ -455,7 +457,7 @@ export default function BusquedaGlobalBeneficiariosPage() {
                         <Table.TableBody>
                             {isLoading ? (
                                 <Table.TableRow>
-                                    <Table.TableCell colSpan={7} className="h-24 text-center">
+                                    <Table.TableCell colSpan={9} className="h-24 text-center">
                                         <div className="flex items-center justify-center">
                                             <Icon.Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                                         </div>
@@ -463,7 +465,7 @@ export default function BusquedaGlobalBeneficiariosPage() {
                                 </Table.TableRow>
                             ) : beneficiarios.length === 0 ? (
                                 <Table.TableRow>
-                                    <Table.TableCell colSpan={7} className="h-24 text-center">
+                                    <Table.TableCell colSpan={9} className="h-24 text-center">
                                         No se encontraron beneficiarios.
                                     </Table.TableCell>
                                 </Table.TableRow>
@@ -496,6 +498,8 @@ export default function BusquedaGlobalBeneficiariosPage() {
                                                 {beneficiario.nombre}
                                                 <Icon.Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
                                             </div>
+                                        </Table.TableCell>
+                                        <Table.TableCell>
                                             <div
                                                 className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors group flex items-center gap-1"
                                                 onClick={() => handleCopy(beneficiario.rut, "RUT")}
@@ -506,30 +510,34 @@ export default function BusquedaGlobalBeneficiariosPage() {
                                             </div>
                                         </Table.TableCell>
                                         <Table.TableCell>
-                                            <div className="text-sm">
-                                                {beneficiario.correo && (
-                                                    <div
-                                                        className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors group"
-                                                        onClick={() => handleCopy(beneficiario.correo, "Correo")}
-                                                        title="Copiar correo"
-                                                    >
-                                                        <Icon.Mail className="h-3 w-3" />
-                                                        {beneficiario.correo}
-                                                        <Icon.Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
-                                                    </div>
-                                                )}
-                                                {beneficiario.telefono && (
-                                                    <div
-                                                        className="flex items-center gap-1 mt-1 cursor-pointer hover:text-primary transition-colors group"
-                                                        onClick={() => handleCopy(beneficiario.telefono, "Teléfono")}
-                                                        title="Copiar teléfono"
-                                                    >
-                                                        <Icon.Phone className="h-3 w-3" />
-                                                        {beneficiario.telefono}
-                                                        <Icon.Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
-                                                    </div>
-                                                )}
-                                            </div>
+                                            {beneficiario.correo ? (
+                                                <div
+                                                    className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors group text-sm"
+                                                    onClick={() => handleCopy(beneficiario.correo, "Correo")}
+                                                    title="Copiar correo"
+                                                >
+                                                    <Icon.Mail className="h-3 w-3 text-muted-foreground" />
+                                                    {beneficiario.correo}
+                                                    <Icon.Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground opacity-50">-</span>
+                                            )}
+                                        </Table.TableCell>
+                                        <Table.TableCell>
+                                            {beneficiario.telefono ? (
+                                                <div
+                                                    className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors group text-sm"
+                                                    onClick={() => handleCopy(beneficiario.telefono, "Teléfono")}
+                                                    title="Copiar teléfono"
+                                                >
+                                                    <Icon.Phone className="h-3 w-3 text-muted-foreground" />
+                                                    {beneficiario.telefono}
+                                                    <Icon.Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground opacity-50">-</span>
+                                            )}
                                         </Table.TableCell>
                                         <Table.TableCell>
                                             <BadgeStatus status={beneficiario.status}>

@@ -370,7 +370,8 @@ export default function BeneficiariosConvenioPage() {
                     <Table.TableHeader>
                         <Table.TableRow>
                             <Table.TableHead>ID</Table.TableHead>
-                            <Table.TableHead>Nombre / Correo</Table.TableHead>
+                            <Table.TableHead>Nombre</Table.TableHead>
+                            <Table.TableHead>Correo</Table.TableHead>
                             <Table.TableHead>RUT</Table.TableHead>
                             <Table.TableHead>Teléfono</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
@@ -399,37 +400,39 @@ export default function BeneficiariosConvenioPage() {
                                         <span className="font-mono text-[10px] text-muted-foreground">{b.id}</span>
                                     </Table.TableCell>
                                     <Table.TableCell className="font-medium text-sm">
-                                        <div className="flex flex-col gap-0.5">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span
+                                                        className="cursor-pointer hover:text-primary transition-colors hover:underline underline-offset-4"
+                                                        onClick={() => handleCopy(b.nombre, "Nombre")}
+                                                    >
+                                                        {b.nombre}
+                                                    </span>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Clic para copiar nombre</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        {b.correo ? (
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <span
-                                                            className="cursor-pointer hover:text-primary transition-colors hover:underline underline-offset-4"
-                                                            onClick={() => handleCopy(b.nombre, "Nombre")}
+                                                            className="text-sm text-muted-foreground cursor-pointer hover:text-primary transition-colors hover:underline underline-offset-4 flex items-center gap-1"
+                                                            onClick={() => handleCopy(b.correo || "", "Correo")}
                                                         >
-                                                            {b.nombre}
+                                                            <Icon.Mail className="h-3 w-3" />
+                                                            {b.correo}
                                                         </span>
                                                     </TooltipTrigger>
-                                                    <TooltipContent>Clic para copiar nombre</TooltipContent>
+                                                    <TooltipContent>Clic para copiar correo</TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
-                                            {b.correo && (
-                                                <TooltipProvider>
-                                                    <Tooltip>
-                                                        <TooltipTrigger asChild>
-                                                            <span
-                                                                className="text-[10px] text-muted-foreground cursor-pointer hover:text-primary transition-colors hover:underline underline-offset-4 flex items-center gap-1"
-                                                                onClick={() => handleCopy(b.correo || "", "Correo")}
-                                                            >
-                                                                <Icon.Mail className="h-3 w-3" />
-                                                                {b.correo}
-                                                            </span>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>Clic para copiar correo</TooltipContent>
-                                                    </Tooltip>
-                                                </TooltipProvider>
-                                            )}
-                                        </div>
+                                        ) : (
+                                            <span className="text-muted-foreground opacity-50">-</span>
+                                        )}
                                     </Table.TableCell>
                                     <Table.TableCell>
                                         <TooltipProvider>

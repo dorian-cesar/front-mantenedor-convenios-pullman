@@ -38,12 +38,16 @@ export default function PasajerosPage() {
     const [openAsociar, setOpenAsociar] = useState(false)
     const [openUpdate, setOpenUpdate] = useState(false)
     const [openDetails, setOpenDetails] = useState(false)
+    const [summary, setSummary] = useState({ activos: 0, inactivos: 0, total: 0 })
     const [selectedPasajero, setSelectedPasajero] = useState<Pasajero | null>(null)
     const [selectedEmpresa, setSelectedEmpresa] = useState<number | null>(null)
     const [selectedConvenio, setSelectedConvenio] = useState<number | null>(null)
     const [selectedTipoPasajero, setSelectedTipoPasajero] = useState<number | null>(null)
     const [statusFilter, setStatusFilter] = useState<string>("")
     const [rutFilter, setRutFilter] = useState("")
+    const [correoFilter, setCorreoFilter] = useState("")
+    const [nombreFilter, setNombreFilter] = useState("")
+    const [idFilter, setIdFilter] = useState("")
     const { user } = useAuth()
 
     const [pagination, setPagination] = useState({
@@ -57,50 +61,45 @@ export default function PasajerosPage() {
 
     const debouncedSearch = useDebounce(searchValue, 300)
     const debouncedRut = useDebounce(rutFilter, 300)
+    const debouncedCorreo = useDebounce(correoFilter, 300)
+    const debouncedNombre = useDebounce(nombreFilter, 300)
+    const debouncedId = useDebounce(idFilter, 300)
 
 
     const fetchPasajeros = async () => {
         setIsLoading(true)
         try {
-            const params: GetPasajerosParams = {
+            const params: any = {
                 page: pagination.page,
                 limit: pagination.limit,
                 sortBy: 'id',
                 order: 'DESC',
             }
 
-            const searchTerm = debouncedSearch.trim()
-            if (searchTerm) {
-                params.search = searchTerm
-            }
-
-            const rutTerm = debouncedRut.trim()
-            if (rutTerm) {
-                params.rut = rutTerm
-            }
+            if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
+            if (debouncedRut.trim()) params.rut = debouncedRut.trim()
+            if (debouncedCorreo.trim()) params.correo = debouncedCorreo.trim()
+            if (debouncedNombre.trim()) params.nombre = debouncedNombre.trim()
+            if (debouncedId.trim()) params.id = debouncedId.trim()
+            if (statusFilter) params.status = statusFilter
 
             if (selectedEmpresa) {
                 params.empresa_id = selectedEmpresa
             } else {
-                // Restricción por Rol: Si es USUARIO (o user), forzar su empresa_id
                 const isUserRole = user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user";
                 const effectiveEmpresaId = user?.empresa_id || user?.empresaId || user?.id_empresa || user?.empresa?.id;
-                
-                if (isUserRole && effectiveEmpresaId) {
-                    params.empresa_id = effectiveEmpresaId;
-                }
+                if (isUserRole && effectiveEmpresaId) params.empresa_id = effectiveEmpresaId;
             }
 
-            if (selectedConvenio) {
-                params.convenio_id = selectedConvenio
-            }
-
-            if (selectedTipoPasajero) {
-                params.tipo_pasajero_id = selectedTipoPasajero
-            }
+            if (selectedConvenio) params.convenio_id = selectedConvenio
+            if (selectedTipoPasajero) params.tipo_pasajero_id = selectedTipoPasajero
 
             const response = await PasajerosService.getPasajeros(params)
             setPasajeros(response.rows)
+
+            if (response.summary) {
+                setSummary(response.summary)
+            }
 
             setPagination(prev => ({
                 ...prev,
@@ -153,10 +152,25 @@ export default function PasajerosPage() {
 
     useEffect(() => {
         fetchPasajeros()
+    }, [
+        pagination.page, 
+        pagination.limit, 
+        debouncedSearch, 
+        debouncedRut, 
+        debouncedCorreo, 
+        debouncedNombre, 
+        debouncedId,
+        selectedEmpresa, 
+        selectedConvenio, 
+        selectedTipoPasajero, 
+        statusFilter
+    ])
+
+    useEffect(() => {
         fetchEmpresas()
         fetchConvenios()
         fetchTiposPasajero()
-    }, [pagination.page, pagination.limit, debouncedSearch, debouncedRut, selectedEmpresa, selectedConvenio, selectedTipoPasajero, statusFilter])
+    }, [])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -228,27 +242,19 @@ export default function PasajerosPage() {
         try {
             toast.loading("Preparando exportación...", { id: "export" })
 
-            const params: GetPasajerosParams = {
+            const params: any = {
                 sortBy: "id",
                 order: "DESC",
             }
 
-            const searchTerm = debouncedSearch.trim()
-            if (searchTerm) {
-                params.search = searchTerm
-            }
-
-            if (selectedEmpresa) {
-                params.empresa_id = selectedEmpresa
-            }
-
-            if (selectedConvenio) {
-                params.convenio_id = selectedConvenio
-            }
-
-            if (selectedTipoPasajero) {
-                params.tipo_pasajero_id = selectedTipoPasajero
-            }
+            if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
+            if (debouncedRut.trim()) params.rut = debouncedRut.trim()
+            if (debouncedCorreo.trim()) params.correo = debouncedCorreo.trim()
+            if (debouncedNombre.trim()) params.nombre = debouncedNombre.trim()
+            if (selectedEmpresa) params.empresa_id = selectedEmpresa
+            if (selectedConvenio) params.convenio_id = selectedConvenio
+            if (selectedTipoPasajero) params.tipo_pasajero_id = selectedTipoPasajero
+            if (statusFilter) params.status = statusFilter
 
             const response = await PasajerosService.getPasajeros(params)
 
@@ -266,8 +272,8 @@ export default function PasajerosPage() {
                 Correo: pasajero.correo || "Sin correo",
                 Teléfono: pasajero.telefono || "Sin teléfono",
                 Tipo_Pasajero: tiposPasajero.find(t => t.id === pasajero.tipo_pasajero_id)?.nombre || "Sin tipo",
-                Empresa_ID: pasajero.empresa_id || "Sin empresa",
-                Convenio_ID: pasajero.convenio_id || "Sin convenio",
+                Empresa: pasajero.empresa?.nombre || "Sin empresa",
+                Convenio: pasajero.convenio?.nombre || "Sin convenio",
                 Estado: pasajero.status,
             }))
 
@@ -301,170 +307,250 @@ export default function PasajerosPage() {
         return convenio?.nombre || `Convenio #${convenioId}`
     }
 
-    // Función para obtener nombre de tipo de pasajero
-    const getTipoPasajeroNombre = (tipoId: number | null): string => {
-        if (!tipoId) return "Sin tipo"
-        const tipo = tiposPasajero.find(t => t.id === tipoId)
-        return tipo?.nombre || `Tipo #${tipoId}`
-    }
-
     const actionButtons = [
         {
             label: "Nuevo Pasajero",
             onClick: () => setOpenAdd(true),
             icon: <Icon.PlusIcon className="h-4 w-4" />
-        },
-        // {
-        //     label: "Asociar Pasajero",
-        //     onClick: () => setOpenAsociar(true),
-        //     variant: "outline" as const,
-        //     icon: <Icon.LinkIcon className="h-4 w-4" />
-        // }
+        }
     ]
 
 
 
     const filters = (
-        <div className="flex flex-wrap gap-2 items-center">
-            <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">RUT:</span>
-                <Input
-                    placeholder="Filtrar por RUT..."
-                    value={rutFilter}
-                    onChange={(e) => setRutFilter(e.target.value)}
-                    className="h-9 w-[150px] shadow-sm"
-                />
+        <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap gap-2 items-center">
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">RUT:</span>
+                    <Input
+                        placeholder="Filtrar por RUT..."
+                        value={rutFilter}
+                        onChange={(e) => setRutFilter(e.target.value)}
+                        className="h-9 w-[150px] shadow-sm"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Nombre:</span>
+                    <Input
+                        placeholder="Buscar por nombre..."
+                        value={nombreFilter}
+                        onChange={(e) => setNombreFilter(e.target.value)}
+                        className="h-9 w-[180px] shadow-sm"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Correo:</span>
+                    <Input
+                        placeholder="Buscar por correo..."
+                        value={correoFilter}
+                        onChange={(e) => setCorreoFilter(e.target.value)}
+                        className="h-9 w-[180px] shadow-sm"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">ID:</span>
+                    <Input
+                        placeholder="ID..."
+                        value={idFilter}
+                        onChange={(e) => setIdFilter(e.target.value)}
+                        className="h-9 w-[80px] shadow-sm"
+                    />
+                </div>
             </div>
-                {(user?.rol?.toUpperCase() === "SUPER_USUARIO" || user?.rol?.toUpperCase() === "SISTEMA") && (
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Empresa:</span>
-                        <Dropdown.DropdownMenu>
-                            <Dropdown.DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left shadow-sm">
-                                    <span className="truncate">
-                                        {selectedEmpresa ? empresas.find(e => e.id === selectedEmpresa)?.nombre || "Seleccionar..." : "Todas"}
-                                    </span>
-                                    <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </Dropdown.DropdownMenuTrigger>
-                            <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
-                                <Dropdown.DropdownMenuItem onClick={() => setSelectedEmpresa(null)}>
-                                    Todas
-                                </Dropdown.DropdownMenuItem>
-                                {empresas.map((empresa) => (
-                                    <Dropdown.DropdownMenuItem key={empresa.id} onClick={() => setSelectedEmpresa(empresa.id)}>
-                                        {empresa.nombre}
+
+            <div className="flex flex-wrap gap-2 items-center">
+                    {(user?.rol?.toUpperCase() === "SUPER_USUARIO" || user?.rol?.toUpperCase() === "SISTEMA") && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">Empresa:</span>
+                            <Dropdown.DropdownMenu>
+                                <Dropdown.DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left shadow-sm">
+                                        <span className="truncate">
+                                            {selectedEmpresa ? empresas.find(e => e.id === selectedEmpresa)?.nombre || "Seleccionar..." : "Todas"}
+                                        </span>
+                                        <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </Dropdown.DropdownMenuTrigger>
+                                <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                                    <Dropdown.DropdownMenuItem onClick={() => setSelectedEmpresa(null)}>
+                                        Todas
                                     </Dropdown.DropdownMenuItem>
-                                ))}
-                            </Dropdown.DropdownMenuContent>
-                        </Dropdown.DropdownMenu>
-                    </div>
-                )}
+                                    {empresas.map((empresa) => (
+                                        <Dropdown.DropdownMenuItem key={empresa.id} onClick={() => setSelectedEmpresa(empresa.id)}>
+                                            {empresa.nombre}
+                                        </Dropdown.DropdownMenuItem>
+                                    ))}
+                                </Dropdown.DropdownMenuContent>
+                            </Dropdown.DropdownMenu>
+                        </div>
+                    )}
 
-            <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Convenio:</span>
-                <Dropdown.DropdownMenu>
-                    <Dropdown.DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
-                            <span className="truncate">
-                                {selectedConvenio ? convenios.find(c => c.id === selectedConvenio)?.nombre || "Seleccionar..." : "Todos"}
-                            </span>
-                            <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
-                        </Button>
-                    </Dropdown.DropdownMenuTrigger>
-                    <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
-                        <Dropdown.DropdownMenuItem onClick={() => setSelectedConvenio(null)}>
-                            Todos
-                        </Dropdown.DropdownMenuItem>
-                        {convenios.map((convenio) => (
-                            <Dropdown.DropdownMenuItem key={convenio.id} onClick={() => setSelectedConvenio(convenio.id)}>
-                                {convenio.nombre}
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Convenio:</span>
+                    <Dropdown.DropdownMenu>
+                        <Dropdown.DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left shadow-sm">
+                                <span className="truncate">
+                                    {selectedConvenio ? convenios.find(c => c.id === selectedConvenio)?.nombre || "Seleccionar..." : "Todos"}
+                                </span>
+                                <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                            </Button>
+                        </Dropdown.DropdownMenuTrigger>
+                        <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                            <Dropdown.DropdownMenuItem onClick={() => setSelectedConvenio(null)}>
+                                Todos
                             </Dropdown.DropdownMenuItem>
-                        ))}
-                    </Dropdown.DropdownMenuContent>
-                </Dropdown.DropdownMenu>
-            </div>
+                            {convenios.map((convenio) => (
+                                <Dropdown.DropdownMenuItem key={convenio.id} onClick={() => setSelectedConvenio(convenio.id)}>
+                                    {convenio.nombre}
+                                </Dropdown.DropdownMenuItem>
+                            ))}
+                        </Dropdown.DropdownMenuContent>
+                    </Dropdown.DropdownMenu>
+                </div>
 
-            <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Status:</span>
-                <Dropdown.DropdownMenu>
-                    <Dropdown.DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
-                            {statusFilter === "ACTIVO" ? "Activo" : statusFilter === "INACTIVO" ? "Inactivo" : "Todos"}
-                            <Icon.ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                    </Dropdown.DropdownMenuTrigger>
-                    <Dropdown.DropdownMenuContent align="start">
-                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("")}>
-                            Todos
-                        </Dropdown.DropdownMenuItem>
-                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("ACTIVO")}>
-                            Activo
-                        </Dropdown.DropdownMenuItem>
-                        <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("INACTIVO")}>
-                            Inactivo
-                        </Dropdown.DropdownMenuItem>
-                    </Dropdown.DropdownMenuContent>
-                </Dropdown.DropdownMenu>
-            </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Status:</span>
+                    <Dropdown.DropdownMenu>
+                        <Dropdown.DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between shadow-sm">
+                                {statusFilter === "ACTIVO" ? "Activo" : statusFilter === "INACTIVO" ? "Inactivo" : "Todos"}
+                                <Icon.ChevronDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        </Dropdown.DropdownMenuTrigger>
+                        <Dropdown.DropdownMenuContent align="start">
+                            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("")}>
+                                Todos
+                            </Dropdown.DropdownMenuItem>
+                            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("ACTIVO")}>
+                                Activo
+                            </Dropdown.DropdownMenuItem>
+                            <Dropdown.DropdownMenuItem onClick={() => setStatusFilter("INACTIVO")}>
+                                Inactivo
+                            </Dropdown.DropdownMenuItem>
+                        </Dropdown.DropdownMenuContent>
+                    </Dropdown.DropdownMenu>
+                </div>
 
-            {(statusFilter || selectedEmpresa || selectedConvenio || rutFilter) && (
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                        setStatusFilter("");
-                        setSelectedEmpresa(null);
-                        setSelectedConvenio(null);
-                        setRutFilter("");
-                    }}
-                    className="h-9"
-                >
-                    <Icon.X className="mr-2 h-4 w-4" />
-                    Limpiar
-                </Button>
-            )}
+                {(statusFilter || selectedEmpresa || selectedConvenio || rutFilter || nombreFilter || correoFilter || idFilter || searchValue) && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                            setStatusFilter("");
+                            setSelectedEmpresa(null);
+                            setSelectedConvenio(null);
+                            setRutFilter("");
+                            setNombreFilter("");
+                            setCorreoFilter("");
+                            setIdFilter("");
+                            setSearchValue("");
+                        }}
+                        className="h-9"
+                    >
+                        <Icon.X className="mr-2 h-4 w-4" />
+                        Limpiar
+                    </Button>
+                )}
+            </div>
         </div>
     )
 
     return (
-        <div className="flex flex-col justify-center space-y-4">
-            <PageHeader
-                title="Pasajeros"
-                description="Listado de los pasajeros disponibles"
-                actionButtons={user?.rol === "SUPER_USUARIO" ? actionButtons : undefined}
-                actionMenu={{
-                    title: "Detalles",
-                    items: [
-                        {
-                            label: "Exportar",
-                            onClick: () => setOpenExport(true),
-                            icon: <Icon.DownloadIcon className="h-4 w-4" />
-                        }
-                    ]
-                }}
-                showSearch={true}
-                searchValue={searchValue}
-                onSearchChange={setSearchValue}
-                onSearchClear={() => setSearchValue("")}
-                filters={filters}
-                showPagination={true}
-                paginationComponent={
-                    <Pagination
-                        currentPage={pagination.page}
-                        totalPages={pagination.totalPages}
-                        totalItems={pagination.total}
-                        onPageChange={handlePageChange}
-                        hasPrevPage={pagination.hasPrevPage}
-                        hasNextPage={pagination.hasNextPage}
-                        className="w-full"
-                        limit={pagination.limit}
-                        onLimitChange={handleLimitChange}
-                    />
-                }
-                showRefreshButton={true}
-                onRefresh={handleRefresh}
-            />
+        <div className="flex flex-col justify-center space-y-6">
+            <div className="space-y-2">
+                <hr className="border-t border-muted" />
+                <PageHeader
+                    title="Consulta Pasajeros"
+                    description="Gestión y búsqueda avanzada de pasajeros del sistema."
+                    actionButtons={user?.rol === "SUPER_USUARIO" ? actionButtons : undefined}
+                    actionMenu={{
+                        title: "Acciones",
+                        items: [
+                            {
+                                label: "Exportar CSV",
+                                onClick: () => handleExport("csv"),
+                                icon: <Icon.DownloadIcon className="h-4 w-4" />
+                            },
+                            {
+                                label: "Exportar Excel",
+                                onClick: () => handleExport("excel"),
+                                icon: <Icon.FileTextIcon className="h-4 w-4" />
+                            }
+                        ]
+                    }}
+                    showSearch={true}
+                    searchValue={searchValue}
+                    onSearchChange={setSearchValue}
+                    onSearchClear={() => setSearchValue("")}
+                    filters={filters}
+                    showPagination={true}
+                    paginationComponent={
+                        <Pagination
+                            currentPage={pagination.page}
+                            totalPages={pagination.totalPages}
+                            totalItems={pagination.total}
+                            onPageChange={handlePageChange}
+                            hasPrevPage={pagination.hasPrevPage}
+                            hasNextPage={pagination.hasNextPage}
+                            className="w-full"
+                            limit={pagination.limit}
+                            onLimitChange={handleLimitChange}
+                        />
+                    }
+                    showRefreshButton={true}
+                    onRefresh={handleRefresh}
+                />
+                <hr className="border-t border-muted" />
+            </div>
+
+            {/* Dashboard de Tarjetas */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card.Card 
+                    className={`cursor-pointer transition-all hover:shadow-md border-l-4 border-l-primary ${statusFilter === "" ? "ring-2 ring-primary" : ""}`}
+                    onClick={() => setStatusFilter("")}
+                >
+                    <Card.CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <Card.CardTitle className="text-sm font-bold uppercase text-muted-foreground">Total Pasajeros</Card.CardTitle>
+                        <Icon.Users className="h-4 w-4 text-muted-foreground" />
+                    </Card.CardHeader>
+                    <Card.CardContent>
+                        <div className="text-2xl font-bold">{summary.total}</div>
+                        <p className="text-xs text-muted-foreground">Universo total de pasajeros</p>
+                    </Card.CardContent>
+                </Card.Card>
+
+                <Card.Card 
+                    className={`cursor-pointer transition-all hover:shadow-md border-l-4 border-l-emerald-500 ${statusFilter === "ACTIVO" ? "ring-2 ring-emerald-500" : ""}`}
+                    onClick={() => setStatusFilter("ACTIVO")}
+                >
+                    <Card.CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <Card.CardTitle className="text-sm font-bold uppercase text-emerald-600">Pasajeros Activos</Card.CardTitle>
+                        <Icon.UserCheck className="h-4 w-4 text-emerald-500" />
+                    </Card.CardHeader>
+                    <Card.CardContent>
+                        <div className="text-2xl font-bold text-emerald-600">{summary.activos}</div>
+                        <p className="text-xs text-muted-foreground">Habilitados para viajar</p>
+                    </Card.CardContent>
+                </Card.Card>
+
+                <Card.Card 
+                    className={`cursor-pointer transition-all hover:shadow-md border-l-4 border-l-amber-500 ${statusFilter === "INACTIVO" ? "ring-2 ring-amber-500" : ""}`}
+                    onClick={() => setStatusFilter("INACTIVO")}
+                >
+                    <Card.CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <Card.CardTitle className="text-sm font-bold uppercase text-amber-600">Pasajeros Inactivos</Card.CardTitle>
+                        <Icon.UserX className="h-4 w-4 text-amber-500" />
+                    </Card.CardHeader>
+                    <Card.CardContent>
+                        <div className="text-2xl font-bold text-amber-600">{summary.inactivos}</div>
+                        <p className="text-xs text-muted-foreground">Cuentas desactivadas</p>
+                    </Card.CardContent>
+                </Card.Card>
+            </div>
 
             <Card.Card>
                 <Table.Table>
