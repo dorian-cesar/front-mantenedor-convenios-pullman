@@ -12,9 +12,9 @@ const BADGE_STATUS_CLASSES: Record<string, string> = {
 }
 
 function normalizeStatus(value: StatusValue): string {
-    if (value === 1 || value === true || value === "active" || value === "completado" || value === "CONFIRMADO" || value === "confirmado") return "active"
-    if (value === 0 || value === false || value === "inactive" || value === "cancelado" || value === "ANULADO" || value === "anulado") return "inactive"
-    if (value === "pending" || value === "error_confirmacion" || value === "revisar") return "pending"
+    if (value === 1 || value === true || value === "active" || value === "ACTIVO" || value === "completado" || value === "CONFIRMADO" || value === "confirmado") return "active"
+    if (value === 0 || value === false || value === "inactive" || value === "INACTIVO" || value === "cancelado" || value === "ANULADO" || value === "anulado") return "inactive"
+    if (value === "pending" || value === "RECHAZADO" || value === "error_confirmacion" || value === "revisar") return "pending"
     if (value === "expirado") return "expirado"
     return "pending"
 }

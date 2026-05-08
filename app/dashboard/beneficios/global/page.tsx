@@ -25,10 +25,14 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
+import * as Dropdown from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/hooks/useAuth"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
 
+import UpdateBeneficiarioDinamicoModal from "@/components/modals/update-beneficiario-dinamico"
 import DetailsBeneficiarioDinamicoModal from "@/components/modals/details-beneficiario-dinamico"
+import RechazarModal from "@/components/modals/rechazar"
 import { BeneficiariosService, type Beneficiario } from "@/services/beneficiarios.service"
 import { EmpresasService, type Empresa } from "@/services/empresa.service"
 import { CategoriasService, type Categoria } from "@/services/categoria.service"
@@ -57,6 +61,9 @@ export default function BusquedaGlobalBeneficiariosPage() {
     const [summary, setSummary] = useState({ activo: 0, inactivo: 0, rechazado: 0 })
     const [selectedBeneficiario, setSelectedBeneficiario] = useState<Beneficiario | null>(null)
     const [showDetailsModal, setShowDetailsModal] = useState(false)
+    const [showUpdateModal, setShowUpdateModal] = useState(false)
+    const [showRechazarModal, setShowRechazarModal] = useState(false)
+    const { user } = useAuth()
     const [pagination, setPagination] = useState({
         page: 1,
         limit: 50,
@@ -74,7 +81,7 @@ export default function BusquedaGlobalBeneficiariosPage() {
     useEffect(() => {
         // Cargar empresas y categorías al montar
         EmpresasService.getEmpresas({ limit: 1000 }).then(res => setEmpresas(res.rows || [])).catch(console.error)
-        CategoriasService.getCategorias({ limit: 1000 } as any).then(res => setCategorias(Array.isArray(res) ? res : [])).catch(console.error)
+        CategoriasService.getCategorias().then(res => setCategorias(Array.isArray(res) ? res : [])).catch(console.error)
     }, [])
 
     const fetchBeneficiarios = async () => {
@@ -157,6 +164,68 @@ export default function BusquedaGlobalBeneficiariosPage() {
         setSelectedEmpresas([])
         setSelectedCategorias([])
         setPagination(p => ({ ...p, page: 1 }))
+    }
+
+    const handleEdit = (b: Beneficiario) => {
+        setSelectedBeneficiario(b)
+        setShowUpdateModal(true)
+    }
+
+    const handleDetails = (b: Beneficiario) => {
+        setSelectedBeneficiario(b)
+        setShowDetailsModal(true)
+    }
+
+    const handleRechazar = (b: Beneficiario) => {
+        setSelectedBeneficiario(b)
+        setShowRechazarModal(true)
+    }
+
+    const handleToggleStatus = async (id: number, currentStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO") => {
+        try {
+            await BeneficiariosService.toggleStatus(id, currentStatus)
+            toast.success(
+                currentStatus === "ACTIVO" 
+                    ? "Beneficiario desactivado (se notificará por correo)" 
+                    : "Beneficiario activado (se notificará por correo)"
+            )
+            fetchBeneficiarios()
+        } catch {
+            toast.error("No se pudo cambiar el estado")
+        }
+    }
+
+    const handleConfirmRechazo = async (motivo: string) => {
+        if (!selectedBeneficiario) return
+        try {
+            await BeneficiariosService.rechazarBeneficiario(selectedBeneficiario.id, { 
+                razon_rechazo: motivo, 
+                status: "RECHAZADO" 
+            })
+            toast.success("Beneficiario rechazado (se notificará por correo)")
+            setShowRechazarModal(false)
+            fetchBeneficiarios()
+        } catch {
+            toast.error("No se pudo rechazar al beneficiario")
+        }
+    }
+
+    const handleDelete = async (id: number) => {
+        if (!confirm("¿Está seguro de eliminar este beneficiario? Esta acción no se puede deshacer.")) return
+        try {
+            await BeneficiariosService.deleteBeneficiario(id)
+            toast.success("Beneficiario eliminado")
+            fetchBeneficiarios()
+        } catch {
+            toast.error("No se pudo eliminar el beneficiario")
+        }
+    }
+
+    const handleCopy = (text: string | undefined | null, label: string) => {
+        if (!text) return
+        navigator.clipboard.writeText(text).then(() => {
+            toast.success(`${label} copiado al portapapeles`)
+        })
     }
 
     return (
@@ -371,53 +440,116 @@ export default function BusquedaGlobalBeneficiariosPage() {
                                 beneficiarios.map((beneficiario: any) => (
                                     <Table.TableRow key={beneficiario.id}>
                                         <Table.TableCell className="font-medium text-muted-foreground">
-                                            #{beneficiario.id}
+                                            <span
+                                                className="cursor-pointer hover:text-foreground transition-colors"
+                                                title="Copiar ID"
+                                                onClick={() => handleCopy(String(beneficiario.id), "ID")}
+                                            >
+                                                #{beneficiario.id}
+                                            </span>
                                         </Table.TableCell>
                                         <Table.TableCell>
                                             <div className="font-medium">{beneficiario.convenio_nombre}</div>
                                         </Table.TableCell>
                                         <Table.TableCell>
                                             <div className="text-sm text-muted-foreground">
-                                                {categorias.find(c => c.id === beneficiario.categoria_id)?.nombre || "Sin Categoría"}
+                                                {beneficiario.categoria_nombre || "Sin Categoría"}
                                             </div>
                                         </Table.TableCell>
                                         <Table.TableCell>
-                                            <div className="font-medium">{beneficiario.nombre}</div>
-                                            <div className="text-sm text-muted-foreground">
+                                            <div
+                                                className="font-medium cursor-pointer hover:text-primary transition-colors group flex items-center gap-1"
+                                                onClick={() => handleCopy(beneficiario.nombre, "Nombre")}
+                                                title="Copiar nombre"
+                                            >
+                                                {beneficiario.nombre}
+                                                <Icon.Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                                            </div>
+                                            <div
+                                                className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors group flex items-center gap-1"
+                                                onClick={() => handleCopy(beneficiario.rut, "RUT")}
+                                                title="Copiar RUT"
+                                            >
                                                 {formatRut(beneficiario.rut)}
+                                                <Icon.Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
                                             </div>
                                         </Table.TableCell>
                                         <Table.TableCell>
                                             <div className="text-sm">
                                                 {beneficiario.correo && (
-                                                    <div className="flex items-center gap-2">
+                                                    <div
+                                                        className="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors group"
+                                                        onClick={() => handleCopy(beneficiario.correo, "Correo")}
+                                                        title="Copiar correo"
+                                                    >
                                                         <Icon.Mail className="h-3 w-3" />
                                                         {beneficiario.correo}
+                                                        <Icon.Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
                                                     </div>
                                                 )}
                                                 {beneficiario.telefono && (
-                                                    <div className="flex items-center gap-2 mt-1">
+                                                    <div
+                                                        className="flex items-center gap-1 mt-1 cursor-pointer hover:text-primary transition-colors group"
+                                                        onClick={() => handleCopy(beneficiario.telefono, "Teléfono")}
+                                                        title="Copiar teléfono"
+                                                    >
                                                         <Icon.Phone className="h-3 w-3" />
                                                         {beneficiario.telefono}
+                                                        <Icon.Copy className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
                                                     </div>
                                                 )}
                                             </div>
                                         </Table.TableCell>
                                         <Table.TableCell>
-                                            <BadgeStatus status={beneficiario.status} />
+                                            <BadgeStatus status={beneficiario.status}>
+                                                {beneficiario.status === "ACTIVO" ? "Activo" : beneficiario.status === "RECHAZADO" ? "Rechazado" : "Inactivo"}
+                                            </BadgeStatus>
                                         </Table.TableCell>
                                         <Table.TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => {
-                                                    setSelectedBeneficiario(beneficiario)
-                                                    setShowDetailsModal(true)
-                                                }}
-                                                title="Ver Detalles"
-                                            >
-                                                <Icon.Eye className="h-4 w-4" />
-                                            </Button>
+                                            <Dropdown.DropdownMenu>
+                                                <Dropdown.DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <Icon.MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </Dropdown.DropdownMenuTrigger>
+                                                <Dropdown.DropdownMenuContent align="end">
+                                                    <Dropdown.DropdownMenuItem onClick={() => handleDetails(beneficiario)}>
+                                                        <Icon.Eye className="mr-2 h-4 w-4" />
+                                                        Ver detalles
+                                                    </Dropdown.DropdownMenuItem>
+                                                    <Dropdown.DropdownMenuItem onClick={() => handleEdit(beneficiario)}>
+                                                        <Icon.Pencil className="mr-2 h-4 w-4" />
+                                                        Editar
+                                                    </Dropdown.DropdownMenuItem>
+                                                    <Dropdown.DropdownMenuSeparator />
+                                                    {beneficiario.status === "ACTIVO" ? (
+                                                        <Dropdown.DropdownMenuItem 
+                                                            variant="destructive"
+                                                            onClick={() => handleToggleStatus(beneficiario.id, "ACTIVO")}
+                                                        >
+                                                            <Icon.Ban className="mr-2 h-4 w-4" />
+                                                            Desactivar
+                                                        </Dropdown.DropdownMenuItem>
+                                                    ) : (
+                                                        <>
+                                                            <Dropdown.DropdownMenuItem onClick={() => handleToggleStatus(beneficiario.id, beneficiario.status)}>
+                                                                <Icon.CheckCircle2 className="mr-2 h-4 w-4" />
+                                                                Activar
+                                                            </Dropdown.DropdownMenuItem>
+                                                            {beneficiario.status !== "RECHAZADO" && (
+                                                                <Dropdown.DropdownMenuItem 
+                                                                    variant="destructive"
+                                                                    onClick={() => handleRechazar(beneficiario)}
+                                                                >
+                                                                    <Icon.XCircle className="mr-2 h-4 w-4" />
+                                                                    Rechazar
+                                                                </Dropdown.DropdownMenuItem>
+                                                            )}
+                                                        </>
+                                                    )}
+
+                                                </Dropdown.DropdownMenuContent>
+                                            </Dropdown.DropdownMenu>
                                         </Table.TableCell>
                                     </Table.TableRow>
                                 ))
@@ -438,10 +570,29 @@ export default function BusquedaGlobalBeneficiariosPage() {
             </Card.Card>
 
             {selectedBeneficiario && (
+                <UpdateBeneficiarioDinamicoModal 
+                    open={showUpdateModal} 
+                    onOpenChange={setShowUpdateModal} 
+                    onSuccess={fetchBeneficiarios} 
+                    beneficiario={selectedBeneficiario} 
+                />
+            )}
+
+            {selectedBeneficiario && (
                 <DetailsBeneficiarioDinamicoModal
                     open={showDetailsModal}
                     onOpenChange={setShowDetailsModal}
                     beneficiario={selectedBeneficiario}
+                    onToggleStatus={handleToggleStatus}
+                    onRechazar={handleRechazar}
+                />
+            )}
+
+            {selectedBeneficiario && (
+                <RechazarModal 
+                    open={showRechazarModal} 
+                    onOpenChange={setShowRechazarModal} 
+                    onSubmit={handleConfirmRechazo} 
                 />
             )}
         </div>

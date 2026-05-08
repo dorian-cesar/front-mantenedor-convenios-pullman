@@ -496,18 +496,7 @@ export default function BeneficiariosConvenioPage() {
                                                          )}
                                                      </>
                                                  )}
-                                                 {user?.rol === "SUPER_USUARIO" && (
-                                                     <>
-                                                         <Dropdown.DropdownMenuSeparator />
-                                                         <Dropdown.DropdownMenuItem 
-                                                             variant="destructive"
-                                                             onClick={() => handleDelete(b.id)}
-                                                         >
-                                                             <Icon.Trash2 className="mr-2 h-4 w-4" />
-                                                             Eliminar
-                                                         </Dropdown.DropdownMenuItem>
-                                                     </>
-                                                 )}
+
                                              </Dropdown.DropdownMenuContent>
                                          </Dropdown.DropdownMenu>
                                      </Table.TableCell>

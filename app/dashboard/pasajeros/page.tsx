@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import * as Dropdown from "@/components/ui/dropdown-menu"
 import * as Table from "@/components/ui/table"
 import * as Icon from "lucide-react"
@@ -42,6 +43,7 @@ export default function PasajerosPage() {
     const [selectedConvenio, setSelectedConvenio] = useState<number | null>(null)
     const [selectedTipoPasajero, setSelectedTipoPasajero] = useState<number | null>(null)
     const [statusFilter, setStatusFilter] = useState<string>("")
+    const [rutFilter, setRutFilter] = useState("")
     const { user } = useAuth()
 
     const [pagination, setPagination] = useState({
@@ -54,8 +56,8 @@ export default function PasajerosPage() {
     })
 
     const debouncedSearch = useDebounce(searchValue, 300)
-    const normalizeString = (str: string) =>
-        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const debouncedRut = useDebounce(rutFilter, 300)
+
 
     const fetchPasajeros = async () => {
         setIsLoading(true)
@@ -70,6 +72,11 @@ export default function PasajerosPage() {
             const searchTerm = debouncedSearch.trim()
             if (searchTerm) {
                 params.search = searchTerm
+            }
+
+            const rutTerm = debouncedRut.trim()
+            if (rutTerm) {
+                params.rut = rutTerm
             }
 
             if (selectedEmpresa) {
@@ -149,7 +156,7 @@ export default function PasajerosPage() {
         fetchEmpresas()
         fetchConvenios()
         fetchTiposPasajero()
-    }, [pagination.page, pagination.limit, debouncedSearch, selectedEmpresa, selectedConvenio, selectedTipoPasajero, statusFilter])
+    }, [pagination.page, pagination.limit, debouncedSearch, debouncedRut, selectedEmpresa, selectedConvenio, selectedTipoPasajero, statusFilter])
 
     const handlePageChange = (newPage: number) => {
         setPagination(prev => ({ ...prev, page: newPage }))
@@ -310,33 +317,19 @@ export default function PasajerosPage() {
         // }
     ]
 
-    // Client-side filtering for immediate feedback
-    const filteredPasajeros = pasajeros.filter(pasajero => {
-        if (!searchValue.trim()) return true;
 
-        const cleanRut = (r: string) => r?.replace(/[^0-9kK]/g, "").toLowerCase() || "";
-        const searchTerms = normalizeString(searchValue).split(/\s+/).filter(Boolean);
-
-        const idString = pasajero.id ? pasajero.id.toString() : "";
-        const nombres = pasajero.nombres ? normalizeString(pasajero.nombres) : "";
-        const apellidos = pasajero.apellidos ? normalizeString(pasajero.apellidos) : "";
-        const rutClean = cleanRut(pasajero.rut || "");
-        const correo = pasajero.correo ? normalizeString(pasajero.correo) : "";
-
-        return searchTerms.every(term => {
-            const termClean = cleanRut(term);
-            return (
-                idString.includes(term) ||
-                nombres.includes(term) ||
-                apellidos.includes(term) ||
-                (termClean !== "" && rutClean.includes(termClean)) ||
-                correo.includes(term)
-            );
-        });
-    });
 
     const filters = (
         <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">RUT:</span>
+                <Input
+                    placeholder="Filtrar por RUT..."
+                    value={rutFilter}
+                    onChange={(e) => setRutFilter(e.target.value)}
+                    className="h-9 w-[150px] shadow-sm"
+                />
+            </div>
                 {(user?.rol?.toUpperCase() === "SUPER_USUARIO" || user?.rol?.toUpperCase() === "SISTEMA") && (
                     <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">Empresa:</span>
@@ -410,7 +403,7 @@ export default function PasajerosPage() {
                 </Dropdown.DropdownMenu>
             </div>
 
-            {(statusFilter || selectedEmpresa || selectedConvenio) && (
+            {(statusFilter || selectedEmpresa || selectedConvenio || rutFilter) && (
                 <Button
                     variant="ghost"
                     size="sm"
@@ -418,6 +411,7 @@ export default function PasajerosPage() {
                         setStatusFilter("");
                         setSelectedEmpresa(null);
                         setSelectedConvenio(null);
+                        setRutFilter("");
                     }}
                     className="h-9"
                 >
@@ -492,14 +486,14 @@ export default function PasajerosPage() {
                                     </div>
                                 </Table.TableCell>
                             </Table.TableRow>
-                        ) : filteredPasajeros.length === 0 ? (
+                        ) : pasajeros.length === 0 ? (
                             <Table.TableRow>
                                 <Table.TableCell colSpan={8} className="text-center py-8">
                                     No se encontraron pasajeros
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : (
-                            filteredPasajeros.map((pasajero) => (
+                            pasajeros.map((pasajero) => (
                                 <Table.TableRow key={pasajero.id}>
                                     <Table.TableCell>{pasajero.id}</Table.TableCell>
                                     <Table.TableCell>{formatRut(pasajero.rut)}</Table.TableCell>

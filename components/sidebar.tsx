@@ -149,6 +149,9 @@ export function Sidebar({ collapsed, onToggle, onLogout, width, onWidthChange }:
     const secondaryItems = getSectionItems("secondary")
     const tertiaryItems = getSectionItems("tertiary")
 
+    const apiItems = secondaryItems.filter(item => item.id.includes("api"))
+    const fuerzasOrdenItems = secondaryItems.filter(item => !item.id.includes("api"))
+
     const renderNavItem = (item: NavItem, depth = 0) => {
         const hasChildren = item.children && item.children.length > 0;
         const isActive = item.href ? pathname === item.href : false;
@@ -279,7 +282,14 @@ export function Sidebar({ collapsed, onToggle, onLogout, width, onWidthChange }:
     };
 
     const renderNavItems = (items: typeof NAVIGATION) => {
-        return items.map(item => renderNavItem(item));
+        return items.map((item, index) => (
+            <div key={item.id}>
+                {item.separator && index > 0 && (
+                    <div className="my-2 border-t border-sidebar-border opacity-50" />
+                )}
+                {renderNavItem(item)}
+            </div>
+        ));
     };
 
     const getLogoPath = () => {
@@ -338,11 +348,16 @@ export function Sidebar({ collapsed, onToggle, onLogout, width, onWidthChange }:
                         </div>
                     )}
 
-                    {secondaryItems.length > 0 && (
+                    {apiItems.length > 0 && (
                         <>
                             <div className="my-4 border-t border-sidebar-border" />
+                            {!collapsed && (
+                                <p className="px-4 py-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
+                                    Apis
+                                </p>
+                            )}
                             <div className="flex flex-col gap-1 px-3">
-                                {renderNavItems(secondaryItems)}
+                                {renderNavItems(apiItems)}
                             </div>
                         </>
                     )}
@@ -351,9 +366,14 @@ export function Sidebar({ collapsed, onToggle, onLogout, width, onWidthChange }:
                     {!loadingBeneficios && beneficioEmpresas.length > 0 && (
                         <>
                             <div className="my-4 border-t border-sidebar-border" />
+                            {!collapsed && (
+                                <p className="px-4 py-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
+                                    Consultas
+                                </p>
+                            )}
                             
-                            {/* Búsqueda Global (placed manually right above the dynamic Empresas list) */}
-                            <div className="flex flex-col gap-1 px-3 mb-2">
+                            {/* Búsqueda Global + Fuerzas de Orden (Consultas) */}
+                            <div className="flex flex-col gap-1 px-3 mb-1">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Link
@@ -371,13 +391,18 @@ export function Sidebar({ collapsed, onToggle, onLogout, width, onWidthChange }:
                                     </TooltipTrigger>
                                     {collapsed && <TooltipContent side="right">Búsqueda Global Beneficio</TooltipContent>}
                                 </Tooltip>
+                                
+                                {renderNavItems(fuerzasOrdenItems)}
                             </div>
 
+                            {/* Separador + título de sección */}
+                            <div className="my-2 border-t border-sidebar-border" />
                             {!collapsed && (
-                                <p className="px-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
-                                    Empresas
+                                <p className="px-4 py-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
+                                    Convenios por Empresa
                                 </p>
                             )}
+
                             <div className="flex flex-col gap-1 px-3">
                                 {beneficioEmpresas.map((empresa) => {
                                     const isOpen = openMenus[`empresa-${empresa.id}`]

@@ -8,15 +8,11 @@ import {
     IdCard,
     QrCode,
     Plug,
-    Gift,
-    HeartHandshake,
-    BadgeCheck,
-    GraduationCap,
-    ShieldUser,
     Swords,
     BookUser,
     FileDown,
-    Tags
+    Tags,
+    ShieldUser,
 } from "lucide-react"
 
 export type UserRole = "SUPER_USUARIO" | "USUARIO" | "SISTEMA"
@@ -31,6 +27,7 @@ export type NavItem = {
     section: "main" | "secondary" | "tertiary" | "sub"
     children?: NavItem[]
     roles?: UserRole[]
+    separator?: boolean
 }
 
 export const NAVIGATION: NavItem[] = [
@@ -111,7 +108,8 @@ export const NAVIGATION: NavItem[] = [
         description: "endpoints · integraciones · terceros · externos · api · url",
         group: "Convenios y Beneficios",
         section: "secondary",
-        roles: ["SUPER_USUARIO"]
+        roles: ["SUPER_USUARIO"],
+        separator: true
     },
     {
         id: "api-registro",
@@ -125,40 +123,14 @@ export const NAVIGATION: NavItem[] = [
     },
     {
         id: "beneficios",
-        title: "Beneficios",
-        icon: Gift,
-        description: "gestión de beneficios y convenios",
+        title: "Fuerzas de Orden",
+        icon: ShieldUser,
+        description: "carabineros · fuerzas armadas · descuentos · convenios",
         group: "Convenios y Beneficios",
         section: "secondary",
         roles: ["SUPER_USUARIO", "SISTEMA"],
+        separator: true,
         children: [
-            {
-                id: "mayores",
-                title: "Adultos Mayores",
-                href: "/dashboard/beneficios/adultos-mayores",
-                icon: HeartHandshake,
-                description: "beneficios · alianzas · adultos mayores · descuentos",
-                group: "Convenios y Beneficios",
-                section: "sub",
-            },
-            {
-                id: "estudiantes",
-                title: "Estudiantes",
-                href: "/dashboard/beneficios/estudiantes",
-                icon: GraduationCap,
-                description: "beneficios · alianzas · estudiantes · descuentos",
-                group: "Convenios y Beneficios",
-                section: "sub",
-            },
-            {
-                id: "frecuentes",
-                title: "Pasajeros Frecuentes",
-                href: "/dashboard/beneficios/usuarios-frecuentes",
-                icon: BadgeCheck,
-                description: "beneficios · alianzas · usuarios frecuentes · descuentos",
-                group: "Convenios y Beneficios",
-                section: "sub",
-            },
             {
                 id: "carabineros",
                 title: "Carabineros",
