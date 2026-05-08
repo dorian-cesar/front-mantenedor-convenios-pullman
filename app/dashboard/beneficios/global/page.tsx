@@ -408,7 +408,20 @@ export default function BusquedaGlobalBeneficiariosPage() {
             </Card.Card>
 
             <Card.Card>
-                <div className="rounded-md border">
+                <div className="p-4 border-b flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Resultados</h3>
+                    <Pagination
+                        currentPage={pagination.page}
+                        totalPages={pagination.totalPages}
+                        totalItems={pagination.total}
+                        limit={pagination.limit}
+                        hasPrevPage={pagination.hasPrevPage}
+                        hasNextPage={pagination.hasNextPage}
+                        onPageChange={handlePageChange}
+                        onLimitChange={handleLimitChange}
+                    />
+                </div>
+                <div className="rounded-md border-x">
                     <Table.Table>
                         <Table.TableHeader>
                             <Table.TableRow>
@@ -557,18 +570,7 @@ export default function BusquedaGlobalBeneficiariosPage() {
                         </Table.TableBody>
                     </Table.Table>
                 </div>
-                <div className="p-4 border-t">
-                    <Pagination
-                        currentPage={pagination.page}
-                        totalPages={pagination.totalPages}
-                        totalItems={pagination.total}
-                        limit={pagination.limit}
-                        hasPrevPage={pagination.hasPrevPage}
-                        hasNextPage={pagination.hasNextPage}
-                        onPageChange={handlePageChange}
-                        onLimitChange={handleLimitChange}
-                    />
-                </div>
+
             </Card.Card>
 
             {selectedBeneficiario && (
