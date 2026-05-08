@@ -92,6 +92,7 @@ export const NAVIGATION: NavItem[] = [
         section: "main",
         roles: ["SUPER_USUARIO", "USUARIO"]
     },
+
     {
         id: "tablas-clientes-corporativos",
         title: "Clientes Corporativos",

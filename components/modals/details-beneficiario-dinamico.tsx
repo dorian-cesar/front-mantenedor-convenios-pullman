@@ -7,7 +7,7 @@ import { getFileSrc, isPDF } from "@/utils/helpers"
 import { useState } from "react"
 import FileViewerModal from "./file-viewer-modal"
 import { Button } from "@/components/ui/button"
-import { Maximize2Icon, FileTextIcon, Ban, CheckCircle2, XCircle, Loader2Icon } from "lucide-react"
+import { Maximize2Icon, FileTextIcon, Ban, CheckCircle2, XCircle, Loader2Icon, Copy } from "lucide-react"
 import { BeneficiariosService } from "@/services/beneficiarios.service"
 import { toast } from "sonner"
 import { useEffect } from "react"
@@ -19,6 +19,19 @@ interface DetailsBeneficiarioDinamicoModalProps {
     onToggleStatus?: (id: number, currentStatus: "ACTIVO" | "INACTIVO" | "RECHAZADO") => Promise<void>
     onRechazar?: (beneficiario: Beneficiario) => void
 }
+
+const CopyBtn = ({ text, label }: { text: any, label: string }) => {
+    if (!text || text === "-") return null;
+    return (
+        <button 
+            onClick={() => { navigator.clipboard.writeText(String(text)); toast.success(`${label} copiado`); }} 
+            className="text-muted-foreground hover:text-primary transition-colors ml-2 align-middle focus:outline-none"
+            title={`Copiar ${label}`}
+        >
+            <Copy className="h-3.5 w-3.5 inline" />
+        </button>
+    );
+};
 
 export default function DetailsBeneficiarioDinamicoModal({
     open,
@@ -124,20 +137,24 @@ export default function DetailsBeneficiarioDinamicoModal({
                         <div className="grid gap-6 py-4">
                             <div className="grid gap-4 grid-cols-2">
                                 <div className="space-y-1">
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ID Registro</p>
+                                    <p className="text-sm font-medium">{currentBeneficiario?.id || "-"}<CopyBtn text={currentBeneficiario?.id} label="ID" /></p>
+                                </div>
+                                <div className="space-y-1">
                                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nombre</p>
-                                    <p className="text-sm font-medium">{currentBeneficiario?.nombre || "-"}</p>
+                                    <p className="text-sm font-medium">{currentBeneficiario?.nombre || "-"}<CopyBtn text={currentBeneficiario?.nombre} label="Nombre" /></p>
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">RUT</p>
-                                    <p className="text-sm font-medium">{currentBeneficiario?.rut || "-"}</p>
+                                    <p className="text-sm font-medium">{currentBeneficiario?.rut || "-"}<CopyBtn text={currentBeneficiario?.rut} label="RUT" /></p>
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Teléfono</p>
-                                    <p className="text-sm font-medium">{currentBeneficiario?.telefono || "-"}</p>
+                                    <p className="text-sm font-medium">{currentBeneficiario?.telefono || "-"}<CopyBtn text={currentBeneficiario?.telefono} label="Teléfono" /></p>
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Correo</p>
-                                    <p className="text-sm font-medium">{currentBeneficiario?.correo || "-"}</p>
+                                    <p className="text-sm font-medium">{currentBeneficiario?.correo || "-"}<CopyBtn text={currentBeneficiario?.correo} label="Correo" /></p>
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Dirección</p>
@@ -160,7 +177,7 @@ export default function DetailsBeneficiarioDinamicoModal({
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Empresa ID</p>
-                                    <p className="text-sm font-medium">{(currentBeneficiario as any)?.empresa_id || "-"}</p>
+                                    <p className="text-sm font-medium">{currentBeneficiario?.convenio?.empresa_id || "-"}</p>
                                 </div>
                             </div>
 
@@ -186,14 +203,12 @@ export default function DetailsBeneficiarioDinamicoModal({
 
                             <div className="grid gap-4 grid-cols-2 pt-4 border-t border-dashed">
                                 <div className="space-y-1">
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Creado por</p>
-                                    <p className="text-sm font-medium">{(currentBeneficiario as any)?.created_by || "-"}</p>
-                                    <p className="text-[10px] text-muted-foreground">{currentBeneficiario?.createdAt ? formatDateOnly(currentBeneficiario.createdAt) : ""}</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Fecha de Registro</p>
+                                    <p className="text-sm font-medium">{currentBeneficiario?.createdAt ? formatDateOnly(currentBeneficiario.createdAt) : "-"}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actualizado por</p>
-                                    <p className="text-sm font-medium">{(currentBeneficiario as any)?.updated_by || "-"}</p>
-                                    <p className="text-[10px] text-muted-foreground">{(currentBeneficiario as any)?.updatedAt ? formatDateOnly((currentBeneficiario as any).updatedAt) : ""}</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Última Actualización</p>
+                                    <p className="text-sm font-medium">{(currentBeneficiario as any)?.updatedAt ? formatDateOnly((currentBeneficiario as any).updatedAt) : "-"}</p>
                                 </div>
                             </div>
 

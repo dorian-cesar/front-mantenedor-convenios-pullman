@@ -31,6 +31,7 @@ export interface GetBeneficiariosParams {
     id?: number | string;
     rut?: string;
     correo?: string;
+    categoria_id?: number | string;
 }
 
 export interface BeneficiariosResponse {

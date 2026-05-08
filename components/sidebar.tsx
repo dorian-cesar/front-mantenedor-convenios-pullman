@@ -12,6 +12,7 @@ import {
     Building2,
     FileText,
     Folder,
+    Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -350,6 +351,28 @@ export function Sidebar({ collapsed, onToggle, onLogout, width, onWidthChange }:
                     {!loadingBeneficios && beneficioEmpresas.length > 0 && (
                         <>
                             <div className="my-4 border-t border-sidebar-border" />
+                            
+                            {/* Búsqueda Global (placed manually right above the dynamic Empresas list) */}
+                            <div className="flex flex-col gap-1 px-3 mb-2">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Link
+                                            href="/dashboard/beneficios/global"
+                                            className={cn(
+                                                "flex items-center gap-3 rounded-lg py-2.5 px-3 text-sm font-medium transition-colors w-full",
+                                                pathname === "/dashboard/beneficios/global"
+                                                    ? "bg-sidebar-accent text-sidebar-primary"
+                                                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                                            )}
+                                        >
+                                            <Search className="h-5 w-5 shrink-0" />
+                                            {!collapsed && <span className="flex-1 text-left">Búsqueda Global Beneficio</span>}
+                                        </Link>
+                                    </TooltipTrigger>
+                                    {collapsed && <TooltipContent side="right">Búsqueda Global Beneficio</TooltipContent>}
+                                </Tooltip>
+                            </div>
+
                             {!collapsed && (
                                 <p className="px-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/40">
                                     Empresas
