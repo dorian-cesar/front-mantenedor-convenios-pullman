@@ -11,7 +11,10 @@ export interface Beneficiario {
     razon_rechazo?: string;
     convenio_id?: number;
     convenio?: {
+        id: number;
         nombre: string;
+        categoria_id?: number;
+        empresa_id?: number;
     };
     empresa_id?: number;
     imagenes?: Record<string, string>;

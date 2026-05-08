@@ -563,6 +563,8 @@ export default function BusquedaGlobalBeneficiariosPage() {
                         totalPages={pagination.totalPages}
                         totalItems={pagination.total}
                         limit={pagination.limit}
+                        hasPrevPage={pagination.hasPrevPage}
+                        hasNextPage={pagination.hasNextPage}
                         onPageChange={handlePageChange}
                         onLimitChange={handleLimitChange}
                     />
