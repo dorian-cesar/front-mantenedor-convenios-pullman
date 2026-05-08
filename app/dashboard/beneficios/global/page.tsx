@@ -113,12 +113,17 @@ export default function BusquedaGlobalBeneficiariosPage() {
                 hasPrevPage: pagination.page > 1,
             }))
 
-            // Resumen local
-            setSummary({
-                activo: rows.filter((b: any) => b.status === "ACTIVO").length,
-                inactivo: rows.filter((b: any) => b.status === "INACTIVO").length,
-                rechazado: rows.filter((b: any) => b.status === "RECHAZADO").length,
-            })
+            // Resumen desde el backend (global para los filtros seleccionados)
+            if (response.summary) {
+                setSummary(response.summary)
+            } else {
+                // Fallback de seguridad si el backend no envía el summary
+                setSummary({
+                    activo: response.total || 0,
+                    inactivo: 0,
+                    rechazado: 0,
+                })
+            }
         } catch (error) {
             console.error("Error loading beneficiarios:", error)
             toast.error("No se pudieron cargar los beneficiarios")
@@ -236,16 +241,22 @@ export default function BusquedaGlobalBeneficiariosPage() {
             />
 
             <div className="grid gap-4 md:grid-cols-4">
-                <Card.Card>
+                <Card.Card 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors border-l-4 border-l-primary"
+                    onClick={() => { setStatusFilter(""); setPagination(p => ({ ...p, page: 1 })) }}
+                >
                     <Card.CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <Card.CardTitle className="text-sm font-medium">Total Listados</Card.CardTitle>
                         <Icon.Users className="h-4 w-4 text-muted-foreground" />
                     </Card.CardHeader>
                     <Card.CardContent>
-                        <div className="text-2xl font-bold">{beneficiarios.length}</div>
+                        <div className="text-2xl font-bold">{summary.total || pagination.total}</div>
                     </Card.CardContent>
                 </Card.Card>
-                <Card.Card>
+                <Card.Card 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors border-l-4 border-l-emerald-600"
+                    onClick={() => { setStatusFilter("ACTIVO"); setPagination(p => ({ ...p, page: 1 })) }}
+                >
                     <Card.CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <Card.CardTitle className="text-sm font-medium text-emerald-600">Activos</Card.CardTitle>
                         <Icon.CheckCircle2 className="h-4 w-4 text-emerald-600" />
@@ -254,7 +265,10 @@ export default function BusquedaGlobalBeneficiariosPage() {
                         <div className="text-2xl font-bold">{summary.activo}</div>
                     </Card.CardContent>
                 </Card.Card>
-                <Card.Card>
+                <Card.Card 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors border-l-4 border-l-amber-600"
+                    onClick={() => { setStatusFilter("INACTIVO"); setPagination(p => ({ ...p, page: 1 })) }}
+                >
                     <Card.CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <Card.CardTitle className="text-sm font-medium text-amber-600">Inactivos</Card.CardTitle>
                         <Icon.PauseCircle className="h-4 w-4 text-amber-600" />
@@ -263,7 +277,10 @@ export default function BusquedaGlobalBeneficiariosPage() {
                         <div className="text-2xl font-bold">{summary.inactivo}</div>
                     </Card.CardContent>
                 </Card.Card>
-                <Card.Card>
+                <Card.Card 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors border-l-4 border-l-red-600"
+                    onClick={() => { setStatusFilter("RECHAZADO"); setPagination(p => ({ ...p, page: 1 })) }}
+                >
                     <Card.CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <Card.CardTitle className="text-sm font-medium text-red-600">Rechazados</Card.CardTitle>
                         <Icon.XCircle className="h-4 w-4 text-red-600" />

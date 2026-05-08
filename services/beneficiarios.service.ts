@@ -42,6 +42,12 @@ export interface BeneficiariosResponse {
     total: number;
     pages: number;
     currentPage: number;
+    summary?: {
+        activo: number;
+        inactivo: number;
+        rechazado: number;
+        total: number;
+    };
 }
 
 export interface UpdateBeneficiarioData {
