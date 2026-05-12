@@ -164,7 +164,7 @@ export default function ReembolsosPage() {
     return (
         <div className="flex flex-col space-y-4">
             <PageHeader
-                title="Reembolsos Internos"
+                title="Reembolso Administración Interna"
                 description="Gestión de solicitudes de devolución y reembolso de boletos."
                 actionButtons={actionButtons}
                 showSearch={true}
