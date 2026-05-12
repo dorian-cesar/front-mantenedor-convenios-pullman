@@ -1,0 +1,281 @@
+"use client"
+
+import { Button } from "@/components/ui/button"
+import * as Table from "@/components/ui/table"
+import * as Icon from "lucide-react"
+import { BadgeStatus } from "@/components/ui/badge-status"
+import * as Card from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { PageHeader } from "@/components/dashboard/page-header"
+import { Badge } from "@/components/ui/badge"
+import { Pagination } from "@/components/dashboard/Pagination"
+import { formatNumber, formatDateTime, formatRut } from "@/utils/helpers"
+import { Input } from "@/components/ui/input"
+import { ReembolsoService, type Reembolso } from "@/services/reembolso.service"
+import { toast } from "sonner"
+import { useDebounce } from "@/hooks/use-debounce"
+import { useAuth } from "@/hooks/useAuth"
+import AddReembolsoModal from "@/components/modals/add-reembolso"
+
+export default function ReembolsosPage() {
+    const [reembolsos, setReembolsos] = useState<Reembolso[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [openAddModal, setOpenAddModal] = useState(false)
+    const { user, initialized: authInitialized } = useAuth()
+    
+    // Role protection: Only SISTEMA and SUPER_USUARIO
+    const hasAccess = user?.rol?.toUpperCase() === "SISTEMA" || user?.rol?.toUpperCase() === "SUPER_USUARIO"
+
+    const [searchValue, setSearchValue] = useState("")
+    const [rutFilter, setRutFilter] = useState("")
+    const [pnrFilter, setPnrFilter] = useState("")
+    const [estadoFilter, setEstadoFilter] = useState<string | null>(null)
+
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+    })
+
+    const debouncedSearch = useDebounce(searchValue, 500)
+    const debouncedRut = useDebounce(rutFilter, 500)
+    const debouncedPnr = useDebounce(pnrFilter, 500)
+
+    const fetchReembolsos = async () => {
+        if (!authInitialized || !hasAccess) return
+        
+        setIsLoading(true)
+        try {
+            const response = await ReembolsoService.getReembolsos({
+                page: pagination.page,
+                limit: pagination.limit,
+                search: debouncedSearch,
+                rut: debouncedRut,
+                pnr: debouncedPnr,
+                estado: estadoFilter || undefined
+            })
+            setReembolsos(response.rows)
+            setPagination(prev => ({
+                ...prev,
+                total: response.total,
+                totalPages: response.totalPages
+            }))
+        } catch (error) {
+            console.error('Error fetching reembolsos:', error)
+            toast.error("No se pudieron cargar los reembolsos")
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchReembolsos()
+    }, [
+        pagination.page,
+        pagination.limit,
+        debouncedSearch,
+        debouncedRut,
+        debouncedPnr,
+        estadoFilter,
+        authInitialized
+    ])
+
+    const handlePageChange = (newPage: number) => {
+        setPagination(prev => ({ ...prev, page: newPage }))
+    }
+
+    const handleLimitChange = (newLimit: number) => {
+        setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }))
+    }
+
+    if (authInitialized && !hasAccess) {
+        return (
+            <div className="flex items-center justify-center h-[60vh]">
+                <div className="text-center space-y-4">
+                    <Icon.ShieldAlert className="h-16 w-16 text-red-500 mx-auto" />
+                    <h1 className="text-2xl font-bold">Acceso Denegado</h1>
+                    <p className="text-muted-foreground">No tienes permisos para acceder a este módulo.</p>
+                </div>
+            </div>
+        )
+    }
+
+    const actionButtons = [
+        {
+            label: "Nueva Solicitud",
+            onClick: () => setOpenAddModal(true),
+            variant: "default" as const,
+            icon: <Icon.Plus className="h-4 w-4" />
+        }
+    ]
+
+    const filters = (
+        <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">RUT:</span>
+                    <Input
+                        placeholder="Buscar RUT..."
+                        value={rutFilter}
+                        onChange={(e) => setRutFilter(e.target.value)}
+                        className="h-9 w-[150px]"
+                    />
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">PNR:</span>
+                    <Input
+                        placeholder="Buscar PNR..."
+                        value={pnrFilter}
+                        onChange={(e) => setPnrFilter(e.target.value)}
+                        className="h-9 w-[150px]"
+                    />
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Estado:</span>
+                    <select 
+                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        value={estadoFilter || ""}
+                        onChange={(e) => setEstadoFilter(e.target.value || null)}
+                    >
+                        <option value="">Todos</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Success">Success</option>
+                        <option value="Failed">Failed</option>
+                    </select>
+                </div>
+                
+                <div className="ml-auto">
+                    <Badge variant="secondary" className="h-9 px-4">
+                        Total: {pagination.total} registros
+                    </Badge>
+                </div>
+            </div>
+        </div>
+    )
+
+    return (
+        <div className="flex flex-col space-y-4">
+            <PageHeader
+                title="Reembolsos Internos"
+                description="Gestión de solicitudes de devolución y reembolso de boletos."
+                actionButtons={actionButtons}
+                showSearch={true}
+                searchValue={searchValue}
+                onSearchChange={setSearchValue}
+                onSearchClear={() => setSearchValue("")}
+                onRefresh={fetchReembolsos}
+                showRefreshButton={true}
+                showPagination={true}
+                paginationComponent={
+                    <Pagination
+                        currentPage={pagination.page}
+                        totalPages={pagination.totalPages}
+                        totalItems={pagination.total}
+                        onPageChange={handlePageChange}
+                        limit={pagination.limit}
+                        onLimitChange={handleLimitChange}
+                    />
+                }
+                filters={filters}
+            />
+
+            <div className="rounded-md border bg-card">
+                <Table.Table>
+                    <Table.TableHeader>
+                        <Table.TableRow>
+                            <Table.TableHead>Número PNR</Table.TableHead>
+                            <Table.TableHead>Categoría</Table.TableHead>
+                            <Table.TableHead>Asiento</Table.TableHead>
+                            <Table.TableHead>Operador</Table.TableHead>
+                            <Table.TableHead>Fecha Cancelación</Table.TableHead>
+                            <Table.TableHead>Monto</Table.TableHead>
+                            <Table.TableHead>Correo</Table.TableHead>
+                            <Table.TableHead>Nº Documento</Table.TableHead>
+                            <Table.TableHead>Banco / Cuenta</Table.TableHead>
+                            <Table.TableHead>Tipo Cuenta</Table.TableHead>
+                            <Table.TableHead>Estado</Table.TableHead>
+                            <Table.TableHead>Actualizado en</Table.TableHead>
+                            <Table.TableHead className="text-right">Acciones</Table.TableHead>
+                        </Table.TableRow>
+                    </Table.TableHeader>
+                    <Table.TableBody>
+                        {isLoading ? (
+                            <Table.TableRow>
+                                <Table.TableCell colSpan={13} className="h-24 text-center">
+                                    Cargando datos...
+                                </Table.TableCell>
+                            </Table.TableRow>
+                        ) : reembolsos.length === 0 ? (
+                            <Table.TableRow>
+                                <Table.TableCell colSpan={13} className="h-24 text-center text-muted-foreground">
+                                    No se encontraron solicitudes de reembolso.
+                                </Table.TableCell>
+                            </Table.TableRow>
+                        ) : (
+                            reembolsos.map((item) => (
+                                <Table.TableRow key={item.id}>
+                                    <Table.TableCell className="font-mono text-xs">{item.pnr}</Table.TableCell>
+                                    <Table.TableCell>
+                                        <Badge variant="outline" className={item.categoria === 'ANULACION' ? 'border-orange-500 text-orange-600' : 'border-blue-500 text-blue-600'}>
+                                            {item.categoria}
+                                        </Badge>
+                                    </Table.TableCell>
+                                    <Table.TableCell>{item.numero_asiento}</Table.TableCell>
+                                    <Table.TableCell>{item.operador}</Table.TableCell>
+                                    <Table.TableCell>{item.fecha_cancelacion}</Table.TableCell>
+                                    <Table.TableCell className="font-bold">
+                                        ${formatNumber(item.monto)}
+                                    </Table.TableCell>
+                                    <Table.TableCell className="max-w-[150px] truncate" title={item.correo}>
+                                        {item.correo || <span className="text-xs text-muted-foreground italic">Pendiente</span>}
+                                    </Table.TableCell>
+                                    <Table.TableCell>{item.rut ? formatRut(item.rut) : <span className="text-xs text-muted-foreground italic">Pendiente</span>}</Table.TableCell>
+                                    <Table.TableCell>
+                                        {item.banco ? (
+                                            <div className="flex flex-col">
+                                                <span className="font-medium text-xs">{item.banco}</span>
+                                                <span className="text-[10px] text-muted-foreground">{item.numero_cuenta}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground italic">Sin datos</span>
+                                        )}
+                                    </Table.TableCell>
+                                    <Table.TableCell className="text-[10px]">{item.tipo_cuenta || "-"}</Table.TableCell>
+                                    <Table.TableCell>
+                                        <BadgeStatus status={item.estado.toLowerCase()}>
+                                            {item.estado}
+                                        </BadgeStatus>
+                                    </Table.TableCell>
+                                    <Table.TableCell className="text-[10px] text-muted-foreground">
+                                        {formatDateTime(item.updated_at || item.created_at)}
+                                    </Table.TableCell>
+                                    <Table.TableCell className="text-right">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            title="Copiar link de formulario"
+                                            onClick={() => {
+                                                const url = `${window.location.origin}/reembolso/completar/${item.token}`
+                                                navigator.clipboard.writeText(url)
+                                                toast.success("Link copiado al portapapeles")
+                                            }}
+                                        >
+                                            <Icon.Link className="h-4 w-4" />
+                                        </Button>
+                                    </Table.TableCell>
+                                </Table.TableRow>
+                            ))
+                        )}
+                    </Table.TableBody>
+                </Table.Table>
+            </div>
+
+            <AddReembolsoModal 
+                open={openAddModal} 
+                onOpenChange={setOpenAddModal} 
+                onSuccess={fetchReembolsos}
+            />
+        </div>
+    )
+}

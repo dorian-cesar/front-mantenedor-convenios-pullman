@@ -13,6 +13,7 @@ import {
     FileDown,
     Tags,
     ShieldUser,
+    RotateCcw,
 } from "lucide-react"
 
 export type UserRole = "SUPER_USUARIO" | "USUARIO" | "SISTEMA"
@@ -49,6 +50,16 @@ export const NAVIGATION: NavItem[] = [
         description: "eventos · viajes · tickets · pasajes · ventas",
         group: "Operación",
         section: "main",
+    },
+    {
+        id: "reembolsos",
+        title: "Reembolsos",
+        href: "/dashboard/reembolsos",
+        icon: RotateCcw,
+        description: "reembolsos · devoluciones · pagos · anulaciones",
+        group: "Operación",
+        section: "main",
+        roles: ["SUPER_USUARIO", "SISTEMA"]
     },
     {
         id: "consulta-tickets",
