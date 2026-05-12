@@ -42,10 +42,10 @@ export default function ReembolsosPage() {
     const debouncedRut = useDebounce(rutFilter, 500)
     const debouncedPnr = useDebounce(pnrFilter, 500)
 
-    const fetchReembolsos = async () => {
+    const fetchReembolsos = async (isSilent = false) => {
         if (!authInitialized || !hasAccess) return
         
-        setIsLoading(true)
+        if (!isSilent) setIsLoading(true)
         try {
             const response = await ReembolsoService.getReembolsos({
                 page: pagination.page,
@@ -63,14 +63,21 @@ export default function ReembolsosPage() {
             }))
         } catch (error) {
             console.error('Error fetching reembolsos:', error)
-            toast.error("No se pudieron cargar los reembolsos")
+            if (!isSilent) toast.error("No se pudieron cargar los reembolsos")
         } finally {
-            setIsLoading(false)
+            if (!isSilent) setIsLoading(false)
         }
     }
 
     useEffect(() => {
         fetchReembolsos()
+        
+        // Auto-refresco cada 20 segundos (silencioso)
+        const interval = setInterval(() => {
+            fetchReembolsos(true)
+        }, 20000)
+
+        return () => clearInterval(interval)
     }, [
         pagination.page,
         pagination.limit,
