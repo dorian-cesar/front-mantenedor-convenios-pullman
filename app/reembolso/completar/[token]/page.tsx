@@ -24,15 +24,20 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ReembolsoService, type Reembolso } from "@/services/reembolso.service"
 import { toast } from "sonner"
-import { formatRut, cleanRut, formatNumber } from "@/utils/helpers"
+import { formatRut, cleanRut, formatNumber, validateRut, formatRutForBackend } from "@/utils/helpers"
 import { Loader2Icon, CheckCircle2Icon, LandmarkIcon, UserIcon, TicketIcon, BanknoteIcon } from "lucide-react"
 
 const formSchema = z.object({
     correo: z.string().email("Correo electrónico inválido"),
-    rut: z.string().min(1, "El RUT es requerido"),
+    rut: z.string()
+        .min(1, "El RUT es requerido")
+        .refine((val) => validateRut(val), {
+            message: "RUT inválido o dígito verificador incorrecto",
+        }),
     numero_cuenta: z.string().min(1, "El número de cuenta es requerido"),
     banco: z.string().min(1, "El nombre del banco es requerido"),
     tipo_cuenta: z.string().min(1, "El tipo de cuenta es requerido"),
+    nombre_beneficiario: z.string().min(1, "El nombre del beneficiario es requerido"),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -53,6 +58,7 @@ export default function CompletarReembolsoPage() {
             numero_cuenta: "",
             banco: "",
             tipo_cuenta: "CUENTA VISTA",
+            nombre_beneficiario: "",
         },
     })
 
@@ -87,7 +93,7 @@ export default function CompletarReembolsoPage() {
         try {
             await ReembolsoService.updateReembolsoByToken(token, {
                 ...data,
-                rut: cleanRut(data.rut)
+                rut: formatRutForBackend(data.rut)
             })
             setIsSuccess(true)
             toast.success("Información enviada correctamente")
@@ -214,6 +220,26 @@ export default function CompletarReembolsoPage() {
 
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                            <FormField
+                                control={form.control}
+                                name="nombre_beneficiario"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-slate-600">Nombre completo del Beneficiario</FormLabel>
+                                        <FormControl>
+                                            <div className="relative">
+                                                <UserIcon className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+                                                <Input 
+                                                    placeholder="Nombre y Apellidos" 
+                                                    className="h-11 pl-10 focus-visible:ring-primary"
+                                                    {...field} 
+                                                />
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <FormField
                                     control={form.control}
@@ -223,10 +249,10 @@ export default function CompletarReembolsoPage() {
                                             <FormLabel className="text-slate-600">RUT del Beneficiario</FormLabel>
                                             <FormControl>
                                                 <Input 
-                                                    placeholder="12.345.678-9" 
+                                                    placeholder="12345678-9" 
                                                     className="h-11 focus-visible:ring-primary"
                                                     {...field} 
-                                                    onChange={(e) => field.onChange(formatRut(e.target.value))}
+                                                    onChange={(e) => field.onChange(formatRutForBackend(e.target.value))}
                                                 />
                                             </FormControl>
                                             <FormMessage />

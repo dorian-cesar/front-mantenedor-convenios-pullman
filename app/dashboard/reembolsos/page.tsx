@@ -184,12 +184,15 @@ export default function ReembolsosPage() {
                 <Table.Table>
                     <Table.TableHeader>
                         <Table.TableRow>
-                            <Table.TableHead>Número PNR</Table.TableHead>
+                            <Table.TableHead>Nro Reserva</Table.TableHead>
+                            <Table.TableHead>Origen</Table.TableHead>
+                            <Table.TableHead>Destino</Table.TableHead>
                             <Table.TableHead>Categoría</Table.TableHead>
                             <Table.TableHead>Asiento</Table.TableHead>
                             <Table.TableHead>Operador</Table.TableHead>
                             <Table.TableHead>Fecha Cancelación</Table.TableHead>
                             <Table.TableHead>Monto</Table.TableHead>
+                            <Table.TableHead>Beneficiario</Table.TableHead>
                             <Table.TableHead>Correo</Table.TableHead>
                             <Table.TableHead>Nº Documento</Table.TableHead>
                             <Table.TableHead>Banco / Cuenta</Table.TableHead>
@@ -215,7 +218,9 @@ export default function ReembolsosPage() {
                         ) : (
                             reembolsos.map((item) => (
                                 <Table.TableRow key={item.id}>
-                                    <Table.TableCell className="font-mono text-xs">{item.pnr}</Table.TableCell>
+                                    <Table.TableCell className="font-mono text-xs font-bold">{item.pnr}</Table.TableCell>
+                                    <Table.TableCell className="text-[10px] uppercase font-medium">{item.origen || '-'}</Table.TableCell>
+                                    <Table.TableCell className="text-[10px] uppercase font-medium">{item.destino || '-'}</Table.TableCell>
                                     <Table.TableCell>
                                         <Badge variant="outline" className={item.categoria === 'ANULACION' ? 'border-orange-500 text-orange-600' : 'border-blue-500 text-blue-600'}>
                                             {item.categoria}
@@ -225,7 +230,12 @@ export default function ReembolsosPage() {
                                     <Table.TableCell>{item.operador}</Table.TableCell>
                                     <Table.TableCell>{item.fecha_cancelacion}</Table.TableCell>
                                     <Table.TableCell className="font-bold">
-                                        ${formatNumber(item.monto)}
+                                        {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(item.monto)}
+                                    </Table.TableCell>
+                                    <Table.TableCell className="max-w-[150px] truncate" title={item.nombre_beneficiario}>
+                                        <span className="text-primary font-semibold uppercase text-[10px]">
+                                            {item.nombre_beneficiario || <span className="text-muted-foreground italic font-normal lowercase">Pendiente</span>}
+                                        </span>
                                     </Table.TableCell>
                                     <Table.TableCell className="max-w-[150px] truncate" title={item.correo}>
                                         {item.correo || <span className="text-xs text-muted-foreground italic">Pendiente</span>}
@@ -262,6 +272,61 @@ export default function ReembolsosPage() {
                                             }}
                                         >
                                             <Icon.Link className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            title="Enviar link por Email"
+                                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            onClick={async () => {
+                                                if (!item.id) return;
+                                                const promise = ReembolsoService.sendEmail(item.id);
+                                                toast.promise(promise, {
+                                                    loading: 'Enviando correo...',
+                                                    success: 'Correo enviado correctamente',
+                                                    error: (err) => err.response?.data?.message || 'Error al enviar el correo'
+                                                });
+                                            }}
+                                        >
+                                            <Icon.Mail className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            title="Sincronizar con Monday"
+                                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                            onClick={async () => {
+                                                if (!item.id) return;
+                                                const promise = ReembolsoService.syncMonday(item.id);
+                                                toast.promise(promise, {
+                                                    loading: 'Sincronizando con Monday...',
+                                                    success: (data) => `Sincronizado: ID Monday ${data.mondayItemId}`,
+                                                    error: 'Error al sincronizar con Monday'
+                                                });
+                                            }}
+                                            disabled={item.estado !== 'Completado'}
+                                        >
+                                            <Icon.Share2 className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            title="Reiniciar solicitud (Limpiar datos y reabrir link)"
+                                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                            onClick={async () => {
+                                                if (!item.id) return;
+                                                if (confirm('¿Estás seguro de reiniciar esta solicitud? Se borrarán los datos bancarios y el link público volverá a estar habilitado.')) {
+                                                    try {
+                                                        await ReembolsoService.resetReembolso(item.id);
+                                                        toast.success("Solicitud reiniciada correctamente");
+                                                        fetchReembolsos();
+                                                    } catch (error) {
+                                                        toast.error("Error al reiniciar la solicitud");
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            <Icon.RotateCcw className="h-4 w-4" />
                                         </Button>
                                     </Table.TableCell>
                                 </Table.TableRow>

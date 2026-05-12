@@ -14,6 +14,7 @@ export interface Reembolso {
     numero_cuenta: string;
     banco: string;
     tipo_cuenta: string;
+    nombre_beneficiario?: string;
     estado: string;
     created_at?: string;
     updated_at?: string;
@@ -72,6 +73,21 @@ export class ReembolsoService {
 
     static async updateReembolsoByToken(token: string, data: Partial<Reembolso>): Promise<Reembolso> {
         const response = await api.put(`/reembolsos/public/${token}`, data);
+        return response.data;
+    }
+
+    static async syncMonday(id: number): Promise<{ message: string; mondayItemId: string }> {
+        const response = await api.post(`reembolsos/${id}/sync-monday`);
+        return response.data;
+    }
+
+    static async resetReembolso(id: number): Promise<{ message: string }> {
+        const response = await api.post(`reembolsos/${id}/reset`);
+        return response.data;
+    }
+
+    static async sendEmail(id: number, email?: string): Promise<{ message: string }> {
+        const response = await api.post<{ message: string }>(`/reembolsos/${id}/send-email`, { email });
         return response.data;
     }
 }
