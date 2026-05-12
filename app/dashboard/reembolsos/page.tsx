@@ -175,6 +175,8 @@ export default function ReembolsosPage() {
                         onPageChange={handlePageChange}
                         limit={pagination.limit}
                         onLimitChange={handleLimitChange}
+                        hasPrevPage={pagination.page > 1}
+                        hasNextPage={pagination.page < pagination.totalPages}
                     />
                 }
                 filters={filters}
@@ -198,6 +200,7 @@ export default function ReembolsosPage() {
                             <Table.TableHead>Banco / Cuenta</Table.TableHead>
                             <Table.TableHead>Tipo Cuenta</Table.TableHead>
                             <Table.TableHead>Estado</Table.TableHead>
+                            <Table.TableHead>Gestionado por</Table.TableHead>
                             <Table.TableHead>Actualizado en</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
@@ -205,13 +208,13 @@ export default function ReembolsosPage() {
                     <Table.TableBody>
                         {isLoading ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={13} className="h-24 text-center">
+                                <Table.TableCell colSpan={17} className="h-24 text-center">
                                     Cargando datos...
                                 </Table.TableCell>
                             </Table.TableRow>
                         ) : reembolsos.length === 0 ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={13} className="h-24 text-center text-muted-foreground">
+                                <Table.TableCell colSpan={17} className="h-24 text-center text-muted-foreground">
                                     No se encontraron solicitudes de reembolso.
                                 </Table.TableCell>
                             </Table.TableRow>
@@ -256,6 +259,9 @@ export default function ReembolsosPage() {
                                         <BadgeStatus status={item.estado.toLowerCase()}>
                                             {item.estado}
                                         </BadgeStatus>
+                                    </Table.TableCell>
+                                    <Table.TableCell className="text-[10px] font-medium text-slate-500 uppercase">
+                                        {item.created_by || 'system'}
                                     </Table.TableCell>
                                     <Table.TableCell className="text-[10px] text-muted-foreground">
                                         {formatDateTime(item.updated_at || item.created_at)}

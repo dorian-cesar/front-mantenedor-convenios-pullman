@@ -9,11 +9,13 @@ export interface Reembolso {
     operador: string;
     fecha_cancelacion: string;
     monto: number;
-    correo: string;
-    rut: string;
-    numero_cuenta: string;
-    banco: string;
-    tipo_cuenta: string;
+    origen?: string;
+    destino?: string;
+    correo?: string;
+    rut?: string;
+    numero_cuenta?: string;
+    banco?: string;
+    tipo_cuenta?: string;
     nombre_beneficiario?: string;
     estado: string;
     created_at?: string;

@@ -30,7 +30,7 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ReembolsoService } from "@/services/reembolso.service"
 import { toast } from "sonner"
-import { formatRut, cleanRut } from "@/utils/helpers"
+import { formatRut, cleanRut, formatRutForBackend } from "@/utils/helpers"
 import { PlusIcon, Loader2Icon, SearchIcon } from "lucide-react"
 import { EventosService } from "@/services/evento.service"
 
@@ -75,8 +75,7 @@ export default function AddReembolsoModal({
     const [montoOriginal, setMontoOriginal] = useState(0)
 
     const form = useForm<ReembolsoFormValues>({
-        // ... (rest of config)
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(formSchema) as any,
         defaultValues: {
             pnr: "",
             categoria: "REEMBOLSO",
