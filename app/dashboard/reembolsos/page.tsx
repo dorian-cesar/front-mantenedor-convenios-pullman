@@ -89,8 +89,11 @@ export default function ReembolsosPage() {
     useEffect(() => {
         fetchReembolsos()
         
-        // Auto-refresco cada 20 segundos (silencioso)
+        // Auto-refresco + sync con Monday cada 20 segundos (silencioso)
         const interval = setInterval(() => {
+            if (authInitialized && hasAccess) {
+                ReembolsoService.syncStatuses().catch(() => {})
+            }
             fetchReembolsos(true)
         }, 20000)
 
@@ -173,6 +176,7 @@ export default function ReembolsosPage() {
                         <option value="Pending">Pendiente</option>
                         <option value="DatosBancarios">Datos Bancarios</option>
                         <option value="Completado">Completado</option>
+                        <option value="Pagado">Pagado</option>
                     </select>
                 </div>
                 
