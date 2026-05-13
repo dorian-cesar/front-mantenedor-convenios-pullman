@@ -9,10 +9,14 @@ const BADGE_STATUS_CLASSES: Record<string, string> = {
     inactive: "bg-red-500/50 text-red-900 dark:text-black hover:bg-red-100",
     pending: "bg-yellow-500/50 text-yellow-900 dark:text-black hover:bg-yellow-100",
     expirado: "bg-slate-500/50 text-slate-900 dark:text-black hover:bg-slate-100",
+    datosbancarios: "bg-orange-500/60 text-orange-900 dark:text-black hover:bg-orange-100",
+    pagado: "bg-emerald-600/80 text-white dark:text-white hover:bg-emerald-600",
 }
 
 function normalizeStatus(value: StatusValue): string {
     const v = String(value).toLowerCase();
+    if (v === "pagado") return "pagado"
+    if (v === "datosbancarios") return "datosbancarios"
     if (v === "1" || v === "true" || v === "active" || v === "activo" || v === "completado" || v === "confirmado" || v === "success") return "active"
     if (v === "0" || v === "false" || v === "inactive" || v === "inactivo" || v === "cancelado" || v === "anulado" || v === "failed") return "inactive"
     if (v === "pending" || v === "rechazado" || v === "error_confirmacion" || v === "revisar") return "pending"
