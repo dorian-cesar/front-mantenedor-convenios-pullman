@@ -84,7 +84,7 @@ export class ReembolsoService {
     }
 
     static async resetReembolso(id: number): Promise<{ message: string }> {
-        const response = await api.post(`reembolsos/${id}/reset`);
+        const response = await api.post(`/reembolsos/reiniciar/${id}`);
         return response.data;
     }
 
