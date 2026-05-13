@@ -25,6 +25,23 @@ export default function ReembolsosPage() {
     
     // Role protection: Only SISTEMA and SUPER_USUARIO
     const hasAccess = user?.rol?.toUpperCase() === "SISTEMA" || user?.rol?.toUpperCase() === "SUPER_USUARIO"
+    
+    const [isSyncing, setIsSyncing] = useState(false)
+
+    const handleSyncStatus = async () => {
+        setIsSyncing(true)
+        const toastId = toast.loading("Sincronizando estados con Monday...")
+        try {
+            const res = await ReembolsoService.syncStatuses()
+            toast.success(res.message, { id: toastId })
+            // @ts-ignore
+            fetchReembolsos() // Refrescar la tabla
+        } catch (error) {
+            toast.error("Error al sincronizar estados", { id: toastId })
+        } finally {
+            setIsSyncing(false)
+        }
+    }
 
     const [searchValue, setSearchValue] = useState("")
     const [rutFilter, setRutFilter] = useState("")
@@ -110,6 +127,13 @@ export default function ReembolsosPage() {
 
     const actionButtons = [
         {
+            label: "Sincronizar Estados",
+            onClick: handleSyncStatus,
+            variant: "outline" as const,
+            icon: <Icon.RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />,
+            disabled: isSyncing
+        },
+        {
             label: "Nueva Solicitud",
             onClick: () => setOpenAddModal(true),
             variant: "default" as const,
@@ -146,9 +170,9 @@ export default function ReembolsosPage() {
                         onChange={(e) => setEstadoFilter(e.target.value || null)}
                     >
                         <option value="">Todos</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Success">Success</option>
-                        <option value="Failed">Failed</option>
+                        <option value="Pending">Pendiente</option>
+                        <option value="DatosBancarios">Datos Bancarios</option>
+                        <option value="Completado">Completado</option>
                     </select>
                 </div>
                 
@@ -199,6 +223,7 @@ export default function ReembolsosPage() {
                             <Table.TableHead>Categoría</Table.TableHead>
                             <Table.TableHead>Asiento</Table.TableHead>
                             <Table.TableHead>Operador</Table.TableHead>
+                            <Table.TableHead>Fecha Salida</Table.TableHead>
                             <Table.TableHead>Fecha Cancelación</Table.TableHead>
                             <Table.TableHead>Monto</Table.TableHead>
                             <Table.TableHead>Beneficiario</Table.TableHead>
@@ -207,8 +232,8 @@ export default function ReembolsosPage() {
                             <Table.TableHead>Banco / Cuenta</Table.TableHead>
                             <Table.TableHead>Tipo Cuenta</Table.TableHead>
                             <Table.TableHead>Estado</Table.TableHead>
+                            <Table.TableHead>ID Elemento</Table.TableHead>
                             <Table.TableHead>Gestionado por</Table.TableHead>
-                            <Table.TableHead>Actualizado en</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
                     </Table.TableHeader>
@@ -238,6 +263,7 @@ export default function ReembolsosPage() {
                                     </Table.TableCell>
                                     <Table.TableCell>{item.numero_asiento}</Table.TableCell>
                                     <Table.TableCell>{item.operador}</Table.TableCell>
+                                    <Table.TableCell>{item.fecha_salida ? item.fecha_salida.split('T')[0] : '-'}</Table.TableCell>
                                     <Table.TableCell>{item.fecha_cancelacion}</Table.TableCell>
                                     <Table.TableCell className="font-bold">
                                         {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(item.monto)}
@@ -267,11 +293,11 @@ export default function ReembolsosPage() {
                                             {item.estado}
                                         </BadgeStatus>
                                     </Table.TableCell>
+                                    <Table.TableCell className="font-mono text-[10px] text-slate-400">
+                                        {item.monday_item_id || '-'}
+                                    </Table.TableCell>
                                     <Table.TableCell className="text-[10px] font-medium text-slate-500 uppercase">
                                         {item.created_by || 'system'}
-                                    </Table.TableCell>
-                                    <Table.TableCell className="text-[10px] text-muted-foreground">
-                                        {formatDateTime(item.updated_at || item.created_at)}
                                     </Table.TableCell>
                                     <Table.TableCell className="text-right">
                                         <Button

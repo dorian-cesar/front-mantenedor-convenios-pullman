@@ -228,7 +228,7 @@ export default function AddReembolsoModal({
                                         <span>Información del Ticket</span>
                                         <SearchIcon className="h-3 w-3" />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-3 gap-2">
                                         <div className="flex flex-col">
                                             <span className="text-[9px] text-slate-500 font-medium uppercase">Origen</span>
                                             <span className="text-xs font-bold text-slate-700 uppercase truncate">{form.getValues("origen") || 'No especificado'}</span>
@@ -236,6 +236,10 @@ export default function AddReembolsoModal({
                                         <div className="flex flex-col">
                                             <span className="text-[9px] text-slate-500 font-medium uppercase">Destino</span>
                                             <span className="text-xs font-bold text-slate-700 uppercase truncate">{form.getValues("destino") || 'No especificado'}</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] text-slate-500 font-medium uppercase">Fecha Viaje</span>
+                                            <span className="text-xs font-bold text-slate-700 uppercase truncate">{form.getValues("fecha_salida") || 'No especificado'}</span>
                                         </div>
                                     </div>
                                     <div className="flex justify-between items-center pt-1">

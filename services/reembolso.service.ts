@@ -11,6 +11,7 @@ export interface Reembolso {
     monto: number;
     origen?: string;
     destino?: string;
+    fecha_salida?: string;
     correo?: string;
     rut?: string;
     numero_cuenta?: string;
@@ -18,6 +19,7 @@ export interface Reembolso {
     tipo_cuenta?: string;
     nombre_beneficiario?: string;
     estado: string;
+    monday_item_id?: string;
     created_at?: string;
     updated_at?: string;
     created_by?: string;
@@ -85,6 +87,11 @@ export class ReembolsoService {
 
     static async resetReembolso(id: number): Promise<{ message: string }> {
         const response = await api.post(`/reembolsos/reiniciar/${id}`);
+        return response.data;
+    }
+
+    static async syncStatuses(): Promise<{ message: string, actualizados: number }> {
+        const response = await api.post(`/reembolsos/sync-status`);
         return response.data;
     }
 
