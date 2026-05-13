@@ -102,7 +102,7 @@ export default function AddReembolsoModal({
     const categoria = form.watch("categoria")
     useEffect(() => {
         if (montoOriginal > 0) {
-            const factor = categoria === "ANULACION" ? 0.95 : 1.0;
+            const factor = categoria === "ANULACION" ? 0.85 : 1.0;
             const nuevoMonto = Math.round(montoOriginal * factor);
             form.setValue("monto", nuevoMonto);
         }
@@ -126,7 +126,7 @@ export default function AddReembolsoModal({
                 form.setValue("numero_asiento", evento.numero_asiento || "");
                 
                 // El useEffect se encargará de setear el monto final basado en la categoría actual
-                const factor = form.getValues("categoria") === "ANULACION" ? 0.95 : 1.0;
+                const factor = form.getValues("categoria") === "ANULACION" ? 0.85 : 1.0;
                 form.setValue("monto", Math.round(montoBase * factor));
                 
                 // Campos extra para Monday con fallback por si ciudad_origen viene vacío
