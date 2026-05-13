@@ -129,12 +129,16 @@ export default function AddReembolsoModal({
                 const factor = form.getValues("categoria") === "ANULACION" ? 0.95 : 1.0;
                 form.setValue("monto", Math.round(montoBase * factor));
                 
-                // Campos extra para Monday
-                form.setValue("origen", evento.ciudad_origen || "");
-                form.setValue("destino", evento.ciudad_destino || "");
-                form.setValue("fecha_salida", evento.fecha_viaje || "");
+                // Campos extra para Monday con fallback por si ciudad_origen viene vacío
+                const origenStr = evento.ciudad_origen || evento.terminal_origen || "-";
+                const destinoStr = evento.ciudad_destino || evento.terminal_destino || "-";
                 
-                toast.success("Datos del boleto cargados");
+                form.setValue("origen", origenStr);
+                form.setValue("destino", destinoStr);
+                form.setValue("fecha_salida", evento.fecha_viaje || "");
+                form.setValue("nombre_pasajero", evento.pasajero ? `${evento.pasajero.nombres} ${evento.pasajero.apellidos}` : "");
+                
+                toast.success(`Datos cargados: ${origenStr} -> ${destinoStr}`);
             } else {
                 toast.info("No se encontró información para este PNR en el sistema")
             }

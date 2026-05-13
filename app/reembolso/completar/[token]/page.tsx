@@ -28,16 +28,16 @@ import { formatRut, cleanRut, formatNumber, validateRut, formatRutForBackend } f
 import { Loader2Icon, CheckCircle2Icon, LandmarkIcon, UserIcon, TicketIcon, BanknoteIcon } from "lucide-react"
 
 const formSchema = z.object({
-    correo: z.string().email("Correo electrónico inválido"),
+    correo: z.string().min(1, "El correo electrónico es requerido").email("Correo electrónico inválido"),
     rut: z.string()
         .min(1, "El RUT es requerido")
         .refine((val) => validateRut(val), {
-            message: "RUT inválido o dígito verificador incorrecto",
+            message: "RUT inválido (ej: 12345678-9)",
         }),
-    numero_cuenta: z.string().min(1, "El número de cuenta es requerido"),
-    banco: z.string().min(1, "El nombre del banco es requerido"),
-    tipo_cuenta: z.string().min(1, "El tipo de cuenta es requerido"),
-    nombre_beneficiario: z.string().min(1, "El nombre del beneficiario es requerido"),
+    numero_cuenta: z.string().min(5, "El número de cuenta debe tener al menos 5 dígitos"),
+    banco: z.string().min(3, "Ingresa el nombre completo de tu banco"),
+    tipo_cuenta: z.string().min(1, "Selecciona un tipo de cuenta"),
+    nombre_beneficiario: z.string().min(3, "El nombre completo es requerido"),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -225,7 +225,7 @@ export default function CompletarReembolsoPage() {
                                 name="nombre_beneficiario"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-slate-600">Nombre completo del Beneficiario</FormLabel>
+                                        <FormLabel className="text-slate-600">Nombre completo del Beneficiario <span className="text-red-500">*</span></FormLabel>
                                         <FormControl>
                                             <div className="relative">
                                                 <UserIcon className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
@@ -246,7 +246,7 @@ export default function CompletarReembolsoPage() {
                                     name="rut"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-slate-600">RUT del Beneficiario</FormLabel>
+                                            <FormLabel className="text-slate-600">RUT del Beneficiario <span className="text-red-500">*</span></FormLabel>
                                             <FormControl>
                                                 <Input 
                                                     placeholder="12345678-9" 
@@ -264,7 +264,7 @@ export default function CompletarReembolsoPage() {
                                     name="correo"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-slate-600">Correo Electrónico</FormLabel>
+                                            <FormLabel className="text-slate-600">Correo Electrónico <span className="text-red-500">*</span></FormLabel>
                                             <FormControl>
                                                 <Input 
                                                     type="email"
@@ -285,7 +285,7 @@ export default function CompletarReembolsoPage() {
                                     name="banco"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-slate-600">Nombre del Banco</FormLabel>
+                                            <FormLabel className="text-slate-600">Nombre del Banco <span className="text-red-500">*</span></FormLabel>
                                             <FormControl>
                                                 <Input 
                                                     placeholder="Ej: Banco Estado, BCI, etc." 
@@ -304,7 +304,7 @@ export default function CompletarReembolsoPage() {
                                         name="tipo_cuenta"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="text-slate-600">Tipo de Cuenta</FormLabel>
+                                                <FormLabel className="text-slate-600">Tipo de Cuenta <span className="text-red-500">*</span></FormLabel>
                                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                     <FormControl>
                                                         <SelectTrigger className="h-11">
@@ -326,7 +326,7 @@ export default function CompletarReembolsoPage() {
                                         name="numero_cuenta"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="text-slate-600">Número de Cuenta</FormLabel>
+                                                <FormLabel className="text-slate-600">Número de Cuenta <span className="text-red-500">*</span></FormLabel>
                                                 <FormControl>
                                                     <Input 
                                                         placeholder="0000000000" 
