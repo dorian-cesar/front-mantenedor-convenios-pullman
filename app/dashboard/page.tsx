@@ -67,10 +67,8 @@ const chartConfig = {
 export default function DashboardPage() {
     const router = useRouter()
     
-    useEffect(() => {
-        router.replace("/dashboard/eventos")
-    }, [])
-
+    // No redireccionamos, permitimos que Usuarios vean su Dashboard.
+    
     const [isLoading, setIsLoading] = useState(true)
     const [openExport, setOpenExport] = useState(false);
     const [resumen, setResumen] = useState<Resumen[]>([]);
@@ -146,19 +144,23 @@ export default function DashboardPage() {
             icon: <ArrowDownToLine />
         }
     ];
-
+    
     return (
         <div className="flex flex-col justify-center space-y-4">
 
             <PageHeader
-                title="Dashboard"
-                description={`Resumen de rendimiento y actividad del sistema. ${user?.rol === 'USUARIO' ? `| Empresa ID: ${user?.empresa_id || 'No asignada'}` : ''}`}
+                title={user?.rol?.toUpperCase() === 'USUARIO' ? "Dashboard Corporativo" : "Dashboard Global"}
+                description={user?.rol?.toUpperCase() === 'USUARIO' 
+                    ? `Panel de control para ${user?.nombre || 'la empresa'}. Solo información autorizada.`
+                    : "Resumen general de todas las operaciones del sistema."
+                }
                 showRefreshButton={true}
                 onRefresh={handleRefresh}
             />
-            <div className="grid grid-cols-1 md:grid-cols-12 auto-rows-[140px] gap-4">
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
-                <Card.Card className="md:col-span-4 row-span-1">
+                <Card.Card className="row-span-1">
                     <Card.CardHeader>
                         <Card.CardTitle>Ventas Totales</Card.CardTitle>
                         <Card.CardAction><DollarSign className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
@@ -168,7 +170,7 @@ export default function DashboardPage() {
                     </Card.CardContent>
                 </Card.Card>
 
-                <Card.Card className="md:col-span-4 row-span-1">
+                <Card.Card className="row-span-1">
                     <Card.CardHeader>
                         <Card.CardTitle>Devoluciones</Card.CardTitle>
                         <Card.CardAction><Undo2 className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
@@ -178,7 +180,7 @@ export default function DashboardPage() {
                     </Card.CardContent>
                 </Card.Card>
 
-                <Card.Card className="md:col-span-4 row-span-1">
+                <Card.Card className="row-span-1">
                     <Card.CardHeader>
                         <Card.CardTitle>Total Descuentos</Card.CardTitle>
                         <Card.CardAction><Percent className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
@@ -188,8 +190,19 @@ export default function DashboardPage() {
                     </Card.CardContent>
                 </Card.Card>
 
+                <Card.Card className="row-span-1">
+                    <Card.CardHeader>
+                        <Card.CardTitle>Total Pasajes</Card.CardTitle>
+                        <Card.CardAction><Activity className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
+                    </Card.CardHeader>
+                    <Card.CardContent>
+                        {isLoading ? "Cargando..." : <p className="text-2xl font-bold">{formatNumber(resumen[0]?.total_pasajeros || 0)}</p>}
+                    </Card.CardContent>
+                </Card.Card>
+            </div>
 
-                <Card.Card className="md:col-span-12 row-span-2 flex">
+            <div className="grid grid-cols-1 gap-4">
+                <Card.Card className="flex flex-col h-[450px]">
                     <Card.CardHeader>
                         <Card.CardTitle>Resumen de Ventas</Card.CardTitle>
                         <Card.CardAction>

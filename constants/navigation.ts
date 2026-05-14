@@ -32,16 +32,16 @@ export type NavItem = {
 }
 
 export const NAVIGATION: NavItem[] = [
-    // {
-    //     id: "dashboard",
-    //     title: "Dashboard",
-    //     href: "/dashboard",
-    //     icon: LayoutDashboard,
-    //     description: "Resumen del sistema",
-    //     group: "General",
-    //     section: "main",
-    //     roles: ["SUPER_USUARIO", "USUARIO"]
-    // },
+    {
+        id: "dashboard",
+        title: "Dashboard",
+        href: "/dashboard",
+        icon: LayoutDashboard,
+        description: "Resumen del sistema",
+        group: "General",
+        section: "main",
+        roles: ["SUPER_USUARIO", "USUARIO", "SISTEMA"]
+    },
     {
         id: "boletos",
         title: "Boletos",
@@ -50,6 +50,7 @@ export const NAVIGATION: NavItem[] = [
         description: "eventos · viajes · tickets · pasajes · ventas",
         group: "Operación",
         section: "main",
+        roles: ["SUPER_USUARIO", "USUARIO", "SISTEMA"]
     },
     {
         id: "reembolsos",
@@ -69,7 +70,7 @@ export const NAVIGATION: NavItem[] = [
         description: "consulta · tickets · boletos · kupos · pnr",
         group: "Operación",
         section: "main",
-        roles: ["SUPER_USUARIO", "USUARIO", "SISTEMA"]
+        roles: ["SUPER_USUARIO", "SISTEMA"]
     },
     {
         id: "empresas",
@@ -79,7 +80,7 @@ export const NAVIGATION: NavItem[] = [
         description: "empresas · compañias · organizaciones · clientes",
         group: "Empresas",
         section: "main",
-        roles: ["SUPER_USUARIO", "USUARIO", "SISTEMA"]
+        roles: ["SUPER_USUARIO", "SISTEMA"]
     },
     {
         id: "convenios",
@@ -89,6 +90,7 @@ export const NAVIGATION: NavItem[] = [
         description: "convenios · beneficios · alianzas",
         group: "Convenios y Beneficios",
         section: "main",
+        roles: ["SUPER_USUARIO", "SISTEMA"]
     },
     {
         id: "categorias",
@@ -98,7 +100,7 @@ export const NAVIGATION: NavItem[] = [
         description: "categorías · clasificación · organización",
         group: "Convenios y Beneficios",
         section: "main",
-        roles: ["SUPER_USUARIO", "USUARIO"]
+        roles: ["SUPER_USUARIO", "SISTEMA"]
     },
 
     {
@@ -180,7 +182,7 @@ export const NAVIGATION: NavItem[] = [
         description: "pasajeros · clientes · personas · tipos de usuarios",
         group: "Operación",
         section: "tertiary",
-        roles: ["SUPER_USUARIO", "SISTEMA", "USUARIO"]
+        roles: ["SUPER_USUARIO", "SISTEMA"]
     },
     {
         id: "exportaciones",

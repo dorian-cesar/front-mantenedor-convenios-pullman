@@ -116,7 +116,7 @@ export function Sidebar({ collapsed, onToggle, onLogout, width, onWidthChange }:
             .map(item => {
                 const hasAccess =
                     !item.roles ||
-                    (user?.rol && item.roles.includes(user.rol))
+                    (user?.rol && item.roles.some(r => r.toUpperCase() === user.rol.toUpperCase()))
 
                 // Si tiene hijos → filtrarlos primero
                 if (item.children) {
@@ -362,8 +362,8 @@ export function Sidebar({ collapsed, onToggle, onLogout, width, onWidthChange }:
                         </>
                     )}
 
-                    {/* Dynamic beneficio menu: Empresa → Convenio → Beneficiarios */}
-                    {!loadingBeneficios && beneficioEmpresas.length > 0 && (
+                    {/* Dynamic beneficio menu: Solo para Admins */}
+                    {!loadingBeneficios && beneficioEmpresas.length > 0 && (user?.rol?.toUpperCase() === 'SUPER_USUARIO' || user?.rol?.toUpperCase() === 'SISTEMA') && (
                         <>
                             <div className="my-4 border-t border-sidebar-border" />
                             {!collapsed && (
