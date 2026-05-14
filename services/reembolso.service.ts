@@ -24,6 +24,10 @@ export interface Reembolso {
     updated_at?: string;
     created_by?: string;
     updated_by?: string;
+    usuario_creador?: {
+        nombre: string;
+        correo: string;
+    };
 }
 
 export interface GetReembolsosParams {

@@ -301,7 +301,7 @@ export default function ReembolsosPage() {
                                         {item.monday_item_id || '-'}
                                     </Table.TableCell>
                                     <Table.TableCell className="text-[10px] font-medium text-slate-500 uppercase">
-                                        {item.created_by || 'system'}
+                                        {item.usuario_creador?.nombre || item.created_by || 'system'}
                                     </Table.TableCell>
                                     <Table.TableCell className="text-right">
                                         <Button
