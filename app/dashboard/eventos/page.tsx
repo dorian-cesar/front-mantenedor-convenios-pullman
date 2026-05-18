@@ -31,7 +31,7 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { format } from "date-fns"
+import { format, addDays, addHours, startOfDay } from "date-fns"
 import { EventosService, type Evento, type GetEventosParams } from "@/services/evento.service"
 import { toast } from "sonner"
 import { useDebounce } from "@/hooks/use-debounce"
@@ -41,6 +41,42 @@ import { EmpresasService, type Empresa } from "@/services/empresa.service"
 import { PasajerosService, type Pasajero } from "@/services/pasajero.service"
 import { ConveniosService, type Convenio } from "@/services/convenio.service"
 import { useAuth } from "@/hooks/useAuth"
+import { KpiService, type Resumen, type GetResumenParams } from "@/services/kpi.service";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell, Pie, PieChart, ResponsiveContainer, Legend } from "recharts"
+import {
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+    type ChartConfig,
+} from "@/components/ui/chart"
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+
+const chartConfig = {
+    ventas: {
+        label: "Ventas",
+        color: "var(--chart-1)",
+    },
+} satisfies ChartConfig
+
+const selectOptions = [
+    { value: "diario", label: "Diario" },
+    { value: "semanal", label: "Semanal" },
+    { value: "mensual", label: "Mensual" },
+    { value: "trimestral", label: "Trimestral" },
+    { value: "semestral", label: "Semestral" },
+    { value: "anual", label: "Anual" },
+    { value: "bienal", label: "2 Años" },
+    { value: "trienal", label: "3 Años" },
+    { value: "cuatrienal", label: "4 Años" },
+    { value: "quinquenal", label: "5 Años" },
+]
 
 export default function EventosPage() {
     const [openExport, setOpenExport] = useState(false);
@@ -115,6 +151,127 @@ export default function EventosPage() {
         hasNextPage: false,
         hasPrevPage: false,
     })
+
+    // KPI States para el rol USUARIO
+    const [resumen, setResumen] = useState<Resumen[]>([]);
+    const [porConvenio, setPorConvenio] = useState<any[]>([]);
+    const [isKpiLoading, setIsKpiLoading] = useState(false);
+    const [granularidad, setGranularidad] = useState<"diario" | "semanal" | "mensual" | "trimestral" | "semestral" | "anual" | "bienal" | "trienal" | "cuatrienal" | "quinquenal">("diario")
+
+    const fetchResumen = async () => {
+        if (!isUserRole) return;
+        setIsKpiLoading(true)
+        try {
+            const params: GetResumenParams = {
+                granularidad,
+                fecha_inicio: dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined,
+                fecha_fin: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined,
+            }
+            
+            // Forzamos la actualización de KPIs con los mismos parámetros que las estadísticas
+            const [resResponse, convResponse] = await Promise.all([
+                KpiService.getResumen(params),
+                KpiService.getPorConvenio(params)
+            ])
+            
+            setResumen(resResponse.rows || [])
+            setPorConvenio(convResponse || [])
+        } catch (error) {
+            console.error('Error fetching resumen:', error)
+            setResumen([])
+            setPorConvenio([])
+        } finally {
+            setIsKpiLoading(false)
+        }
+    }
+
+    const chartData = useMemo(() => {
+        if (resumen.length === 0) return [];
+
+        const data = resumen.map(item => ({
+            periodo: item.periodo,
+            cantidad: Number(item.total_pasajeros || 0),
+            ventas: Number(item.total_ventas || 0),
+            fecha: new Date(item.fecha_ref)
+        }));
+
+        const filled: any[] = [];
+        // Priorizar el rango del calendario si existe
+        const startBound = dateRange?.from || data[0].fecha;
+        const endBound = dateRange?.to || (data.length > 1 ? data[data.length - 1].fecha : new Date());
+
+        // Lógica de relleno según granularidad
+        if (granularidad === 'diario') {
+            // Rellenar horas (Desde el inicio del día seleccionado hasta el fin del día seleccionado)
+            let current = new Date(startBound);
+            current.setHours(0, 0, 0, 0);
+            const limit = new Date(endBound);
+            limit.setHours(23, 59, 59, 999);
+            
+            while (current <= limit) {
+                // Buscamos si hay un registro en esta hora exacta de este día exacto
+                const found = data.find(d => 
+                    d.fecha.getDate() === current.getDate() && 
+                    d.fecha.getMonth() === current.getMonth() &&
+                    d.fecha.getHours() === current.getHours()
+                );
+                
+                filled.push({
+                    periodo: format(current, "HH:00"),
+                    fullLabel: format(current, "dd/MM HH:00"),
+                    cantidad: found ? found.cantidad : 0,
+                    ventas: found ? found.ventas : 0
+                });
+                current = addHours(current, 1);
+            }
+        } else if (granularidad === 'semanal' || granularidad === 'mensual') {
+            // Rellenar días según el rango seleccionado
+            let current = startOfDay(startBound);
+            const limit = startOfDay(endBound);
+            
+            while (current <= limit) {
+                const label = format(current, "dd/MM");
+                const found = data.find(d => format(d.fecha, "dd/MM") === label);
+                filled.push({
+                    periodo: label,
+                    cantidad: found ? found.cantidad : 0,
+                    ventas: found ? found.ventas : 0
+                });
+                current = addDays(current, 1);
+            }
+        } else if (granularidad === 'anual') {
+            // Rellenar meses (Desde Enero del año de inicio hasta el fin del rango)
+            let current = new Date(startBound.getFullYear(), 0, 1); 
+            const limit = new Date(endBound.getFullYear(), endBound.getMonth(), 1);
+            
+            while (current <= limit) {
+                const label = format(current, "MMM yyyy", { locale: es });
+                // Buscamos coincidencia por mes y año
+                const found = data.find(d => 
+                    d.fecha.getMonth() === current.getMonth() && 
+                    d.fecha.getFullYear() === current.getFullYear()
+                );
+                
+                filled.push({
+                    periodo: label.charAt(0).toUpperCase() + label.slice(1),
+                    cantidad: found ? found.cantidad : 0,
+                    ventas: found ? found.ventas : 0
+                });
+                current = new Date(current.setMonth(current.getMonth() + 1));
+            }
+        } else {
+            return data;
+        }
+
+        return filled;
+    }, [resumen, granularidad]);
+
+    const chartConfig = {
+        cantidad: {
+            label: "Boletos Vendidos",
+            color: "hsl(var(--primary))",
+        },
+    } satisfies ChartConfig
 
     const debouncedSearch = useDebounce(searchValue, 500)
     const debouncedRut = useDebounce(rutFilter, 500)
@@ -330,12 +487,14 @@ export default function EventosPage() {
 
     useEffect(() => {
         fetchStats()
+        fetchResumen()
     }, [
         pasajeroFilter,
         convenioFilter,
         dateRange,
         user,
-        authInitialized
+        authInitialized,
+        granularidad
     ])
 
     const handlePageChange = (newPage: number) => {
@@ -353,6 +512,7 @@ export default function EventosPage() {
     const handleRefresh = () => {
         fetchEventos()
         fetchStats()
+        fetchResumen()
     }
 
     const handleCopyToClipboard = (text: string, label: string) => {
@@ -722,6 +882,138 @@ export default function EventosPage() {
                 }
                 filters={filters}
             />
+
+            {/* Dashboard para Rol USUARIO */}
+            {isUserRole && (
+                <div className="space-y-4 animate-in fade-in duration-700">
+                    {/* Totales Calculados */}
+                    {(() => {
+                        const totalVentas = resumen.reduce((acc, curr) => acc + Number(curr.total_ventas || 0), 0);
+                        const totalDevoluciones = resumen.reduce((acc, curr) => acc + Number(curr.total_devoluciones || 0), 0);
+                        const totalDescuento = resumen.reduce((acc, curr) => acc + Number(curr.total_descuento || 0), 0);
+                        const totalPasajesCount = resumen.reduce((acc, curr) => acc + Number(curr.total_pasajeros || 0), 0);
+
+                        return (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <Card.Card className="row-span-1">
+                                    <Card.CardHeader>
+                                        <Card.CardTitle>Ventas Totales</Card.CardTitle>
+                                        <Card.CardAction><Icon.DollarSign className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
+                                    </Card.CardHeader>
+                                    <Card.CardContent>
+                                        {isKpiLoading ? "Cargando..." : <p className="text-2xl font-bold">${formatNumber(totalVentas)}</p>}
+                                    </Card.CardContent>
+                                </Card.Card>
+
+                                <Card.Card className="row-span-1">
+                                    <Card.CardHeader>
+                                        <Card.CardTitle>Devoluciones</Card.CardTitle>
+                                        <Card.CardAction><Icon.Undo2 className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
+                                    </Card.CardHeader>
+                                    <Card.CardContent>
+                                        {isKpiLoading ? "Cargando..." : <p className="text-2xl font-bold">${formatNumber(totalDevoluciones)}</p>}
+                                    </Card.CardContent>
+                                </Card.Card>
+
+                                <Card.Card className="row-span-1">
+                                    <Card.CardHeader>
+                                        <Card.CardTitle>Total Descuentos</Card.CardTitle>
+                                        <Card.CardAction><Icon.Percent className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
+                                    </Card.CardHeader>
+                                    <Card.CardContent>
+                                        {isKpiLoading ? "Cargando..." : <p className="text-2xl font-bold">${formatNumber(totalDescuento)}</p>}
+                                    </Card.CardContent>
+                                </Card.Card>
+
+                                <Card.Card className="row-span-1">
+                                    <Card.CardHeader>
+                                        <Card.CardTitle>Total Pasajes</Card.CardTitle>
+                                        <Card.CardAction><Icon.Activity className="h-4 w-4 text-muted-foreground" /></Card.CardAction>
+                                    </Card.CardHeader>
+                                    <Card.CardContent>
+                                        {isKpiLoading ? "Cargando..." : <p className="text-2xl font-bold">{totalPasajesCount}</p>}
+                                    </Card.CardContent>
+                                </Card.Card>
+                            </div>
+                        );
+                    })()}
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <Card.Card className="flex flex-col h-[450px] w-full">
+                            <Card.CardHeader>
+                                <Card.CardTitle>Resumen de Ventas</Card.CardTitle>
+                                <Card.CardAction>
+                                    <div className="flex items-center gap-2">
+                                        <Select value={granularidad} onValueChange={(v: any) => setGranularidad(v)}>
+                                            <SelectTrigger className="h-8 w-[180px]">
+                                                <SelectValue placeholder="Granularidad" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="diario">Diario</SelectItem>
+                                                <SelectItem value="semanal">Semanal</SelectItem>
+                                                <SelectItem value="mensual">Mensual</SelectItem>
+                                                <SelectItem value="trimestral">Trimestral</SelectItem>
+                                                <SelectItem value="semestral">Semestral</SelectItem>
+                                                <SelectItem value="anual">Anual</SelectItem>
+                                                <SelectItem value="bienal">Últimos 2 años</SelectItem>
+                                                <SelectItem value="trienal">Últimos 3 años</SelectItem>
+                                                <SelectItem value="cuatrienal">Últimos 4 años</SelectItem>
+                                                <SelectItem value="quinquenal">Últimos 5 años</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </Card.CardAction>
+                            </Card.CardHeader>
+                            <Card.CardContent className="flex-1 pb-0">
+                                {isKpiLoading ? (
+                                    <div className="flex items-center justify-center h-full w-full">Cargando...</div>
+                                ) : resumen.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center h-full w-full text-muted-foreground text-center p-4">
+                                        <Icon.BarChart3 className="h-8 w-8 mb-2 opacity-20" />
+                                        <p className="font-medium">Sin datos para el período</p>
+                                        <p className="text-xs">Prueba cambiando la granularidad (Mes/Año) o el rango de fechas.</p>
+                                    </div>
+                                ) : (
+                                    <ChartContainer config={chartConfig} className="aspect-auto h-[320px] w-full">
+                                        <BarChart
+                                            accessibilityLayer
+                                            data={chartData}
+                                            margin={{ left: 12, right: 12 }}
+                                        >
+                                            <CartesianGrid vertical={false} />
+                                            <XAxis
+                                                dataKey="periodo"
+                                                tickLine={false}
+                                                axisLine={false}
+                                                tickMargin={8}
+                                                tickFormatter={(value) => value}
+                                            />
+                                            <ChartTooltip
+                                                cursor={false}
+                                                content={<ChartTooltipContent indicator="dashed" />}
+                                            />
+                                            <Bar
+                                                dataKey="cantidad"
+                                                radius={[4, 4, 0, 0]}
+                                            >
+                                                {chartData.map((entry, index) => (
+                                                    <Cell 
+                                                        key={`cell-${index}`} 
+                                                        fill={[
+                                                            '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
+                                                            '#ec4899', '#06b6d4', '#f43f5e', '#14b8a6', '#6366f1'
+                                                        ][index % 10]} 
+                                                    />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ChartContainer>
+                                )}
+                            </Card.CardContent>
+                        </Card.Card>
+                    </div>
+                </div>
+            )}
 
             {(stats.error_confirmacion > dismissedErrorCount || stats.revisar > dismissedRevisarCount || stats.expirados > dismissedExpiradoCount) && (
                 <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-4 duration-500 shadow-lg border-red-200">
