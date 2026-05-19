@@ -89,11 +89,8 @@ export default function ReembolsosPage() {
     useEffect(() => {
         fetchReembolsos()
         
-        // Auto-refresco + sync con Monday cada 20 segundos (silencioso)
+        // Auto-refresco cada 20 segundos (silencioso, solo actualiza la lista local)
         const interval = setInterval(() => {
-            if (authInitialized && hasAccess) {
-                ReembolsoService.syncStatuses().catch(() => {})
-            }
             fetchReembolsos(true)
         }, 20000)
 
