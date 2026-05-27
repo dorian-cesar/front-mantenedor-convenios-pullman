@@ -344,7 +344,7 @@ export default function ReembolsosPage() {
                                                     error: 'Error al sincronizar con Monday'
                                                 });
                                             }}
-                                            disabled={!['DatosBancarios', 'Completado'].includes(item.estado)}
+                                            disabled={!item.estado || !['datosbancarios', 'completado'].includes(item.estado.toLowerCase())}
                                         >
                                             <Icon.Share2 className="h-4 w-4" />
                                         </Button>
