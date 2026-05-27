@@ -192,7 +192,7 @@ export default function EventosPage() {
             periodo: item.periodo,
             cantidad: Number(item.total_pasajeros || 0),
             ventas: Number(item.total_ventas || 0),
-            fecha: new Date(item.fecha_ref)
+            fecha: new Date(item.fecha_ref || '')
         }));
 
         const filled: any[] = [];

@@ -6,6 +6,7 @@ export interface Resumen {
     total_devoluciones: string;
     total_descuento: string;
     total_pasajeros: number;
+    fecha_ref?: string;
 }
 
 export interface GetResumenParams {
