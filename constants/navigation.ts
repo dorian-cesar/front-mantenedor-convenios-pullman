@@ -14,6 +14,7 @@ import {
     Tags,
     ShieldUser,
     RotateCcw,
+    Terminal,
 } from "lucide-react"
 
 export type UserRole = "SUPER_USUARIO" | "USUARIO" | "SISTEMA"
@@ -191,6 +192,16 @@ export const NAVIGATION: NavItem[] = [
         icon: FileDown,
         description: "exportar datos · descargar · beneficiarios",
         group: "Reportes",
+        section: "tertiary",
+        roles: ["SUPER_USUARIO"]
+    },
+    {
+        id: "logger",
+        title: "Logger",
+        href: "/dashboard/logger",
+        icon: Terminal,
+        description: "logs · invalidaciones · errores de validación",
+        group: "Monitoreo",
         section: "tertiary",
         roles: ["SUPER_USUARIO"]
     },
