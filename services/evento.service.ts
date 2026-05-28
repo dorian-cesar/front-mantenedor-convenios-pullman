@@ -31,6 +31,7 @@ export interface Evento {
     created_at?: string;
     updated_at?: string;
     status?: string;
+    invitado?: boolean;
     pasajero?: {
         id: number;
         rut: string;

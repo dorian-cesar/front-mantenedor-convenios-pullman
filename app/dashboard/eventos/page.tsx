@@ -580,6 +580,7 @@ export default function EventosPage() {
                     evento.status?.toLowerCase() === "error_confirmacion" ? "Error" :
                     (evento.status?.toLowerCase() === "revisar" || !evento.estado) ? "N/A" :
                     evento.estado || "N/A",
+                "Tipo Pasajero": evento.convenio_id ? (evento.invitado ? "Invitado" : "Beneficiario") : "N/A",
             }))
 
             if (type === "csv") {
@@ -1168,6 +1169,7 @@ export default function EventosPage() {
                             <Table.TableHead>Monto Pagado</Table.TableHead>
                             <Table.TableHead>Autorización</Table.TableHead>
                             <Table.TableHead>Estado</Table.TableHead>
+                            <Table.TableHead>Tipo Pasajero</Table.TableHead>
                         </Table.TableRow>
                     </Table.TableHeader>
                     <Table.TableBody>
@@ -1299,6 +1301,26 @@ export default function EventosPage() {
                                                 evento.status?.toLowerCase() === "revisar" ? "N/A" :
                                                     evento.estado || evento.status || "N/A"}
                                         </BadgeStatus>
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        {evento.convenio_id ? (
+                                            <Badge 
+                                                variant={evento.invitado ? "outline" : "secondary"}
+                                                className={`text-[10px] px-2 py-0.5 ${
+                                                    evento.invitado 
+                                                        ? 'border-amber-400 text-amber-700 bg-amber-50' 
+                                                        : 'border-green-400 text-green-700 bg-green-50'
+                                                }`}
+                                            >
+                                                {evento.invitado ? (
+                                                    <><Icon.UserPlus className="h-3 w-3 mr-1" />Invitado</>
+                                                ) : (
+                                                    <><Icon.UserCheck className="h-3 w-3 mr-1" />Beneficiario</>
+                                                )}
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-[10px] text-muted-foreground">—</span>
+                                        )}
                                     </Table.TableCell>
                                 </Table.TableRow>
                             ))
