@@ -34,7 +34,7 @@ const formSchema = z.object({
         .refine((val) => validateRut(val), {
             message: "RUT inválido (ej: 12345678-9)",
         }),
-    numero_cuenta: z.string().min(5, "El número de cuenta debe tener al menos 5 dígitos"),
+    numero_cuenta: z.string().min(5, "El número de cuenta debe tener al menos 5 dígitos").regex(/^\d+$/, "El número de cuenta solo debe contener números"),
     banco: z.string().min(3, "Ingresa el nombre completo de tu banco"),
     tipo_cuenta: z.string().min(1, "Selecciona un tipo de cuenta"),
     nombre_beneficiario: z.string().min(3, "El nombre completo es requerido"),
@@ -332,6 +332,7 @@ export default function CompletarReembolsoPage() {
                                                         placeholder="0000000000" 
                                                         className="h-11 focus-visible:ring-primary"
                                                         {...field} 
+                                                        onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
                                                     />
                                                 </FormControl>
                                                 <FormMessage />
