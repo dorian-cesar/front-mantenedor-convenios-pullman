@@ -559,7 +559,7 @@ export default function EventosPage() {
             const formattedData = response.rows.map((evento) => ({
                 ID: evento.id,
                 Tipo: evento.tipo_evento || "COMPRA",
-                "Fecha Compra": formatDateTime(evento.fecha_compra),
+                "Fecha Compra": formatDateTime(evento.fecha_compra || evento.created_at || evento.fecha_evento),
                 PNR: evento.pnr || "N/A",
                 Ticket: evento.numero_ticket || "S/N",
                 Asiento: evento.numero_asiento || "N/A",
@@ -1208,7 +1208,7 @@ export default function EventosPage() {
                                             </Badge>
                                         </div>
                                     </Table.TableCell>
-                                    <Table.TableCell className="text-xs">{formatDateTime(evento.fecha_compra)}</Table.TableCell>
+                                    <Table.TableCell className="text-xs">{formatDateTime(evento.fecha_compra || evento.created_at || evento.fecha_evento)}</Table.TableCell>
                                     <Table.TableCell>
                                         <div className="flex flex-col">
                                             <Tooltip>
