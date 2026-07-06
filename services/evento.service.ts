@@ -3,6 +3,7 @@ import { api } from '@/lib/api';
 export interface Evento {
     id: number;
     tipo_evento: "COMPRA" | "CAMBIO" | "DEVOLUCION";
+    tipo_pago?: string;
     evento_origen_id: number | null;
     pasajero_id: number;
     empresa_id: number;

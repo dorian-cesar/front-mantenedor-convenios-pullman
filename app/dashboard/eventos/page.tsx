@@ -109,7 +109,7 @@ export default function EventosPage() {
     const [eventos, setEventos] = useState<Evento[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const { user, initialized: authInitialized } = useAuth()
-    
+
     // Lógica de Rol y Empresa robusta
     const isUserRole = user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user";
     const effectiveEmpresaId = user?.empresa_id || user?.empresaId || user?.id_empresa || user?.empresa?.id;
@@ -167,13 +167,13 @@ export default function EventosPage() {
                 fecha_inicio: dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined,
                 fecha_fin: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined,
             }
-            
+
             // Forzamos la actualización de KPIs con los mismos parámetros que las estadísticas
             const [resResponse, convResponse] = await Promise.all([
                 KpiService.getResumen(params),
                 KpiService.getPorConvenio(params)
             ])
-            
+
             setResumen(resResponse.rows || [])
             setPorConvenio(convResponse || [])
         } catch (error) {
@@ -207,15 +207,15 @@ export default function EventosPage() {
             current.setHours(0, 0, 0, 0);
             const limit = new Date(endBound);
             limit.setHours(23, 59, 59, 999);
-            
+
             while (current <= limit) {
                 // Buscamos si hay un registro en esta hora exacta de este día exacto
-                const found = data.find(d => 
-                    d.fecha.getDate() === current.getDate() && 
+                const found = data.find(d =>
+                    d.fecha.getDate() === current.getDate() &&
                     d.fecha.getMonth() === current.getMonth() &&
                     d.fecha.getHours() === current.getHours()
                 );
-                
+
                 filled.push({
                     periodo: format(current, "HH:00"),
                     fullLabel: format(current, "dd/MM HH:00"),
@@ -228,7 +228,7 @@ export default function EventosPage() {
             // Rellenar días según el rango seleccionado
             let current = startOfDay(startBound);
             const limit = startOfDay(endBound);
-            
+
             while (current <= limit) {
                 const label = format(current, "dd/MM");
                 const found = data.find(d => format(d.fecha, "dd/MM") === label);
@@ -241,17 +241,17 @@ export default function EventosPage() {
             }
         } else if (granularidad === 'anual') {
             // Rellenar meses (Desde Enero del año de inicio hasta el fin del rango)
-            let current = new Date(startBound.getFullYear(), 0, 1); 
+            let current = new Date(startBound.getFullYear(), 0, 1);
             const limit = new Date(endBound.getFullYear(), endBound.getMonth(), 1);
-            
+
             while (current <= limit) {
                 const label = format(current, "MMM yyyy", { locale: es });
                 // Buscamos coincidencia por mes y año
-                const found = data.find(d => 
-                    d.fecha.getMonth() === current.getMonth() && 
+                const found = data.find(d =>
+                    d.fecha.getMonth() === current.getMonth() &&
                     d.fecha.getFullYear() === current.getFullYear()
                 );
-                
+
                 filled.push({
                     periodo: label.charAt(0).toUpperCase() + label.slice(1),
                     cantidad: found ? found.cantidad : 0,
@@ -282,11 +282,11 @@ export default function EventosPage() {
 
     const fetchEventos = async () => {
         // Esperar a que la autenticación esté lista Y enriquecida si es necesario
-        const isWaitingForID = (user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user") && 
-                               !effectiveEmpresaId;
-        
+        const isWaitingForID = (user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user") &&
+            !effectiveEmpresaId;
+
         if (!authInitialized || isWaitingForID) return;
-        
+
         setIsLoading(true)
         try {
             const params: any = {
@@ -351,8 +351,8 @@ export default function EventosPage() {
 
             // Si el filtro es N/A, filtramos manualmente para incluir los que tienen estado vacío
             if (statusFilter === "revisar") {
-                finalRows = response.rows.filter((evento: Evento) => 
-                    !evento.estado || 
+                finalRows = response.rows.filter((evento: Evento) =>
+                    !evento.estado ||
                     evento.status?.toLowerCase() === "revisar"
                 )
                 // Usamos el total calculado en las stats para la paginación de N/A
@@ -377,9 +377,9 @@ export default function EventosPage() {
 
     const fetchStats = async () => {
         // Esperar a que la autenticación esté lista Y enriquecida si es necesario
-        const isWaitingForID = (user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user") && 
-                               !effectiveEmpresaId;
-        
+        const isWaitingForID = (user?.rol?.toUpperCase() === "USUARIO" || user?.rol?.toLowerCase() === "user") &&
+            !effectiveEmpresaId;
+
         if (!authInitialized || isWaitingForID) return;
         try {
             const baseParams: any = {
@@ -574,12 +574,13 @@ export default function EventosPage() {
                 "Tarifa Base": `$${formatNumber(evento.tarifa_base || 0)}`,
                 "Monto Descuento": `$${formatNumber(evento.monto_descuento ?? ((evento.tarifa_base || 0) - (evento.monto_pagado || 0)))}`,
                 "Monto Pagado": `$${formatNumber(evento.monto_pagado)}`,
+                "Tipo Pago": evento.tipo_pago || "N/A",
                 "Código Autorización": evento.codigo_autorizacion ?? "N/A",
                 Convenio: evento.convenio?.nombre || "N/A",
                 Estado:
                     evento.status?.toLowerCase() === "error_confirmacion" ? "Error" :
-                    (evento.status?.toLowerCase() === "revisar" || !evento.estado) ? "N/A" :
-                    evento.estado || "N/A",
+                        (evento.status?.toLowerCase() === "revisar" || !evento.estado) ? "N/A" :
+                            evento.estado || "N/A",
                 "Tipo Pasajero": evento.convenio_id ? (evento.invitado ? "Invitado" : "Beneficiario") : "N/A",
             }))
 
@@ -623,10 +624,10 @@ export default function EventosPage() {
                         <Dropdown.DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="h-9 min-w-[120px] justify-between">
                                 {statusFilter === "compra" ? "Confirmados" :
-                                 statusFilter === "anulado" ? "Anulados" :
-                                 statusFilter === "error_confirmacion" ? "Error Confirmación" :
-                                 statusFilter === "revisar" ? "N/A" :
-                                 statusFilter === "expirado" ? "Expirados" : "Todos"}
+                                    statusFilter === "anulado" ? "Anulados" :
+                                        statusFilter === "error_confirmacion" ? "Error Confirmación" :
+                                            statusFilter === "revisar" ? "N/A" :
+                                                statusFilter === "expirado" ? "Expirados" : "Todos"}
                                 <Icon.ChevronDown className="ml-2 h-4 w-4" />
                             </Button>
                         </Dropdown.DropdownMenuTrigger>
@@ -654,30 +655,30 @@ export default function EventosPage() {
                 </div>
 
                 {(user?.rol?.toUpperCase() === "SUPER_USUARIO" || user?.rol?.toUpperCase() === "SISTEMA") && (
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Empresa:</span>
-                    <Dropdown.DropdownMenu>
-                        <Dropdown.DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
-                                <span className="truncate">
-                                    {empresaFilter ? empresas.find(e => e.id === empresaFilter)?.nombre || "Seleccionar..." : "Todas"}
-                                </span>
-                                <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
-                            </Button>
-                        </Dropdown.DropdownMenuTrigger>
-                        <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
-                            <Dropdown.DropdownMenuItem onClick={() => setEmpresaFilter(null)}>
-                                Todas
-                            </Dropdown.DropdownMenuItem>
-                            {empresas.map((empresa) => (
-                                <Dropdown.DropdownMenuItem key={empresa.id} onClick={() => setEmpresaFilter(empresa.id)}>
-                                    {empresa.nombre}
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Empresa:</span>
+                        <Dropdown.DropdownMenu>
+                            <Dropdown.DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-9 min-w-[150px] justify-between text-left">
+                                    <span className="truncate">
+                                        {empresaFilter ? empresas.find(e => e.id === empresaFilter)?.nombre || "Seleccionar..." : "Todas"}
+                                    </span>
+                                    <Icon.ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+                                </Button>
+                            </Dropdown.DropdownMenuTrigger>
+                            <Dropdown.DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+                                <Dropdown.DropdownMenuItem onClick={() => setEmpresaFilter(null)}>
+                                    Todas
                                 </Dropdown.DropdownMenuItem>
-                            ))}
-                        </Dropdown.DropdownMenuContent>
-                    </Dropdown.DropdownMenu>
-                </div>
-            )}
+                                {empresas.map((empresa) => (
+                                    <Dropdown.DropdownMenuItem key={empresa.id} onClick={() => setEmpresaFilter(empresa.id)}>
+                                        {empresa.nombre}
+                                    </Dropdown.DropdownMenuItem>
+                                ))}
+                            </Dropdown.DropdownMenuContent>
+                        </Dropdown.DropdownMenu>
+                    </div>
+                )}
 
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Convenio:</span>
@@ -998,12 +999,12 @@ export default function EventosPage() {
                                                 radius={[4, 4, 0, 0]}
                                             >
                                                 {chartData.map((entry, index) => (
-                                                    <Cell 
-                                                        key={`cell-${index}`} 
+                                                    <Cell
+                                                        key={`cell-${index}`}
                                                         fill={[
-                                                            '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
+                                                            '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
                                                             '#ec4899', '#06b6d4', '#f43f5e', '#14b8a6', '#6366f1'
-                                                        ][index % 10]} 
+                                                        ][index % 10]}
                                                     />
                                                 ))}
                                             </Bar>
@@ -1036,9 +1037,9 @@ export default function EventosPage() {
                             </span>
                         </div>
                         <div className="flex gap-2 shrink-0">
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
+                            <Button
+                                variant="outline"
+                                size="sm"
                                 className="h-7 text-[10px] border-red-300 text-red-900 hover:bg-red-100/50 bg-white/50"
                                 onClick={() => {
                                     setDismissedErrorCount(stats.error_confirmacion);
@@ -1048,9 +1049,9 @@ export default function EventosPage() {
                             >
                                 Marcar como Vistos
                             </Button>
-                            <Button 
-                                variant="destructive" 
-                                size="sm" 
+                            <Button
+                                variant="destructive"
+                                size="sm"
                                 className="h-7 text-[10px] bg-red-600 hover:bg-red-700 font-bold"
                                 onClick={() => setStatusFilter(stats.error_confirmacion > dismissedErrorCount ? 'error_confirmacion' : stats.expirados > dismissedExpiradoCount ? 'expirado' : 'revisar')}
                             >
@@ -1091,9 +1092,8 @@ export default function EventosPage() {
                 </Card.Card>
 
                 <Card.Card
-                    className={`cursor-pointer transition-all hover:ring-2 hover:ring-red-500/20 ${
-                        statusFilter === 'error_confirmacion' ? 'ring-2 ring-red-500 bg-red-50/50' : ''
-                    } ${stats.error_confirmacion > 0 ? 'animate-pulse border-red-500 ring-2 ring-red-500/30 bg-red-50/50' : ''}`}
+                    className={`cursor-pointer transition-all hover:ring-2 hover:ring-red-500/20 ${statusFilter === 'error_confirmacion' ? 'ring-2 ring-red-500 bg-red-50/50' : ''
+                        } ${stats.error_confirmacion > 0 ? 'animate-pulse border-red-500 ring-2 ring-red-500/30 bg-red-50/50' : ''}`}
                     onClick={() => setStatusFilter('error_confirmacion')}
                 >
                     <Card.CardHeader className="pb-2">
@@ -1123,9 +1123,8 @@ export default function EventosPage() {
                 </Card.Card>
 
                 <Card.Card
-                    className={`cursor-pointer transition-all hover:ring-2 hover:ring-slate-500/20 ${
-                        statusFilter === 'expirado' ? 'ring-2 ring-slate-500 bg-slate-50/50' : ''
-                    } ${stats.expirados > dismissedExpiradoCount ? 'animate-pulse border-red-500 ring-2 ring-red-500/30 bg-red-50/50' : ''}`}
+                    className={`cursor-pointer transition-all hover:ring-2 hover:ring-slate-500/20 ${statusFilter === 'expirado' ? 'ring-2 ring-slate-500 bg-slate-50/50' : ''
+                        } ${stats.expirados > dismissedExpiradoCount ? 'animate-pulse border-red-500 ring-2 ring-red-500/30 bg-red-50/50' : ''}`}
                     onClick={() => setStatusFilter('expirado')}
                 >
                     <Card.CardHeader className="pb-2">
@@ -1167,6 +1166,7 @@ export default function EventosPage() {
                             <Table.TableHead>Tarifa Base</Table.TableHead>
                             <Table.TableHead>Descuento</Table.TableHead>
                             <Table.TableHead>Monto Pagado</Table.TableHead>
+                            <Table.TableHead>Tipo Pago</Table.TableHead>
                             <Table.TableHead>Autorización</Table.TableHead>
                             <Table.TableHead>Estado</Table.TableHead>
                             <Table.TableHead>Tipo Pasajero</Table.TableHead>
@@ -1194,7 +1194,7 @@ export default function EventosPage() {
                                         <div className="flex flex-col gap-1">
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <span 
+                                                    <span
                                                         className="cursor-pointer hover:text-primary transition-colors hover:underline underline-offset-2"
                                                         onClick={() => handleCopyToClipboard(evento.id.toString(), "ID")}
                                                     >
@@ -1213,7 +1213,7 @@ export default function EventosPage() {
                                         <div className="flex flex-col">
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <span 
+                                                    <span
                                                         className="font-bold text-sm text-primary cursor-pointer hover:underline underline-offset-4 active:scale-95 transition-all"
                                                         onClick={() => handleCopyToClipboard(evento.pnr || "", "PNR")}
                                                     >
@@ -1225,7 +1225,7 @@ export default function EventosPage() {
                                             <div className="flex flex-col text-[10px] text-muted-foreground leading-tight mt-1">
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <span 
+                                                        <span
                                                             className="cursor-pointer hover:text-primary transition-colors"
                                                             onClick={() => handleCopyToClipboard(evento.numero_ticket || "", "Ticket")}
                                                         >
@@ -1256,7 +1256,7 @@ export default function EventosPage() {
                                             {evento.pasajero ? (
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <span 
+                                                        <span
                                                             className="font-medium cursor-pointer hover:text-primary transition-colors decoration-dotted underline-offset-4 hover:underline active:scale-95 transition-transform"
                                                             onClick={() => handleCopyToClipboard(evento.pasajero!.rut, "RUT")}
                                                             title="Clic para copiar RUT"
@@ -1290,6 +1290,7 @@ export default function EventosPage() {
                                     <Table.TableCell className="text-xs text-muted-foreground">${formatNumber(evento.tarifa_base || 0)}</Table.TableCell>
                                     <Table.TableCell className="text-xs text-red-500 font-medium">${formatNumber(evento.monto_descuento ?? ((evento.tarifa_base || 0) - (evento.monto_pagado || 0)))}</Table.TableCell>
                                     <Table.TableCell className="font-bold text-xs text-green-600">${formatNumber(evento.monto_pagado)}</Table.TableCell>
+                                    <Table.TableCell className="text-xs font-medium uppercase text-muted-foreground">{evento.tipo_pago || "N/A"}</Table.TableCell>
                                     <Table.TableCell>
                                         <Badge variant="outline" className="font-mono text-[10px] bg-slate-50">
                                             {evento.codigo_autorizacion || "N/A"}
@@ -1304,13 +1305,12 @@ export default function EventosPage() {
                                     </Table.TableCell>
                                     <Table.TableCell>
                                         {evento.convenio_id ? (
-                                            <Badge 
+                                            <Badge
                                                 variant={evento.invitado ? "outline" : "secondary"}
-                                                className={`text-[10px] px-2 py-0.5 ${
-                                                    evento.invitado 
-                                                        ? 'border-amber-400 text-amber-700 bg-amber-50' 
+                                                className={`text-[10px] px-2 py-0.5 ${evento.invitado
+                                                        ? 'border-amber-400 text-amber-700 bg-amber-50'
                                                         : 'border-green-400 text-green-700 bg-green-50'
-                                                }`}
+                                                    }`}
                                             >
                                                 {evento.invitado ? (
                                                     <><Icon.UserPlus className="h-3 w-3 mr-1" />Invitado</>
