@@ -17,6 +17,23 @@ import { useDebounce } from "@/hooks/use-debounce"
 import { useAuth } from "@/hooks/useAuth"
 import AddReembolsoModal from "@/components/modals/add-reembolso"
 
+const CopyableCell = ({ text, children }: { text: string, children: React.ReactNode }) => (
+    <div 
+        className="cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 p-1 -m-1 rounded transition-colors group flex items-center justify-between gap-1 w-full"
+        onClick={() => {
+            if (!text || text === "-") return;
+            navigator.clipboard.writeText(text);
+            toast.success("Copiado: " + text);
+        }}
+        title="Clic para copiar"
+    >
+        <span className="truncate">{children}</span>
+        {text && text !== "-" && (
+            <Icon.Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 flex-shrink-0" />
+        )}
+    </div>
+)
+
 export default function ReembolsosPage() {
     const [reembolsos, setReembolsos] = useState<Reembolso[]>([])
     const [isLoading, setIsLoading] = useState(true)
@@ -254,7 +271,9 @@ export default function ReembolsosPage() {
                         ) : (
                             reembolsos.map((item) => (
                                 <Table.TableRow key={item.id}>
-                                    <Table.TableCell className="font-mono text-xs font-bold">{item.pnr}</Table.TableCell>
+                                    <Table.TableCell className="font-mono text-xs font-bold">
+                                        <CopyableCell text={item.pnr}>{item.pnr}</CopyableCell>
+                                    </Table.TableCell>
                                     <Table.TableCell className="text-[10px] uppercase font-medium">{item.origen || '-'}</Table.TableCell>
                                     <Table.TableCell className="text-[10px] uppercase font-medium">{item.destino || '-'}</Table.TableCell>
                                     <Table.TableCell>
@@ -267,22 +286,36 @@ export default function ReembolsosPage() {
                                     <Table.TableCell>{item.fecha_salida ? item.fecha_salida.split('T')[0] : '-'}</Table.TableCell>
                                     <Table.TableCell>{item.fecha_cancelacion}</Table.TableCell>
                                     <Table.TableCell className="font-bold">
-                                        {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(item.monto)}
+                                        <CopyableCell text={item.monto.toString()}>
+                                            {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(item.monto)}
+                                        </CopyableCell>
                                     </Table.TableCell>
                                     <Table.TableCell className="max-w-[150px] truncate" title={item.nombre_beneficiario}>
-                                        <span className="text-primary font-semibold uppercase text-[10px]">
-                                            {item.nombre_beneficiario || <span className="text-muted-foreground italic font-normal lowercase">Pendiente</span>}
-                                        </span>
+                                        <CopyableCell text={item.nombre_beneficiario || ''}>
+                                            <span className="text-primary font-semibold uppercase text-[10px]">
+                                                {item.nombre_beneficiario || <span className="text-muted-foreground italic font-normal lowercase">Pendiente</span>}
+                                            </span>
+                                        </CopyableCell>
                                     </Table.TableCell>
                                     <Table.TableCell className="max-w-[150px] truncate" title={item.correo}>
-                                        {item.correo || <span className="text-xs text-muted-foreground italic">Pendiente</span>}
+                                        <CopyableCell text={item.correo || ''}>
+                                            {item.correo || <span className="text-xs text-muted-foreground italic">Pendiente</span>}
+                                        </CopyableCell>
                                     </Table.TableCell>
-                                    <Table.TableCell>{item.rut ? formatRut(item.rut) : <span className="text-xs text-muted-foreground italic">Pendiente</span>}</Table.TableCell>
+                                    <Table.TableCell>
+                                        <CopyableCell text={item.rut || ''}>
+                                            {item.rut ? formatRut(item.rut) : <span className="text-xs text-muted-foreground italic">Pendiente</span>}
+                                        </CopyableCell>
+                                    </Table.TableCell>
                                     <Table.TableCell>
                                         {item.banco ? (
-                                            <div className="flex flex-col">
-                                                <span className="font-medium text-xs">{item.banco}</span>
-                                                <span className="text-[10px] text-muted-foreground">{item.numero_cuenta}</span>
+                                            <div className="flex flex-col gap-1">
+                                                <CopyableCell text={item.banco}>
+                                                    <span className="font-medium text-xs">{item.banco}</span>
+                                                </CopyableCell>
+                                                <CopyableCell text={item.numero_cuenta || ''}>
+                                                    <span className="text-[10px] text-muted-foreground">{item.numero_cuenta}</span>
+                                                </CopyableCell>
                                             </div>
                                         ) : (
                                             <span className="text-xs text-muted-foreground italic">Sin datos</span>
