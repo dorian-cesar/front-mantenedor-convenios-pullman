@@ -235,6 +235,7 @@ export default function ReembolsosPage() {
                 <Table.Table>
                     <Table.TableHeader>
                         <Table.TableRow>
+                            <Table.TableHead>ID</Table.TableHead>
                             <Table.TableHead>Nro Reserva</Table.TableHead>
                             <Table.TableHead>Origen</Table.TableHead>
                             <Table.TableHead>Destino</Table.TableHead>
@@ -271,6 +272,7 @@ export default function ReembolsosPage() {
                         ) : (
                             reembolsos.map((item) => (
                                 <Table.TableRow key={item.id}>
+                                    <Table.TableCell className="font-mono text-xs text-slate-500 text-center">{item.id}</Table.TableCell>
                                     <Table.TableCell className="font-mono text-xs font-bold">
                                         <CopyableCell text={item.pnr}>{item.pnr}</CopyableCell>
                                     </Table.TableCell>
