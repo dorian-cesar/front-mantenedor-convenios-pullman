@@ -154,6 +154,19 @@ export default function AddReembolsoModal({
         setIsLoading(true)
         console.log("[REEMBOLSO] Enviando datos al backend:", data);
         try {
+            // Verificar si el PNR ya existe en reembolsos
+            const existing = await ReembolsoService.getReembolsos({ pnr: data.pnr, limit: 100 })
+            const matches = existing.rows.filter(r => r.pnr.toLowerCase() === data.pnr.toLowerCase())
+            
+            if (matches.length > 0) {
+                const ids = matches.map(m => m.id).join(", ")
+                const isSure = window.confirm(`ATENCIÓN: El PNR ${data.pnr} ya se encuentra registrado en reembolso con el/los ID(s) de sistema: ${ids}.\n\n¿Está seguro de querer ingresarlo de nuevo?`)
+                if (!isSure) {
+                    setIsLoading(false)
+                    return;
+                }
+            }
+
             await ReembolsoService.crearReembolso({
                 ...data,
                 rut: data.rut ? formatRutForBackend(data.rut) : ""
