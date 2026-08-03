@@ -193,7 +193,7 @@ export const NAVIGATION: NavItem[] = [
         description: "exportar datos · descargar · beneficiarios",
         group: "Reportes",
         section: "tertiary",
-        roles: ["SUPER_USUARIO"]
+        roles: ["SUPER_USUARIO", "SISTEMA"]
     },
     {
         id: "logger",

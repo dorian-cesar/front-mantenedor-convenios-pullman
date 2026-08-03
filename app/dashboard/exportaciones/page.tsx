@@ -9,9 +9,13 @@ import { api } from "@/lib/api"
 import { toast } from "sonner"
 import { downloadBlob } from "@/utils/download"
 import * as XLSX from "xlsx"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function ExportacionesPage() {
     const [isExporting, setIsExporting] = useState<string | null>(null)
+    const { user } = useAuth()
+    
+    const isSystem = user?.rol === 'SISTEMA'
 
     const handleExport = async (type: 'beneficiarios' | 'convenios' | 'eventos' | 'reembolsos', format: 'csv' | 'xlsx') => {
         const loadingKey = `${type}-${format}`
@@ -80,7 +84,9 @@ export default function ExportacionesPage() {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Beneficiarios Card */}
+                {!isSystem && (
+                    <>
+                        {/* Beneficiarios Card */}
                 <Card.Card className="flex flex-col h-full border-primary/10 shadow-sm hover:shadow-md transition-shadow">
                     <Card.CardHeader>
                         <Card.CardTitle className="flex items-center gap-2 text-primary">
@@ -250,6 +256,8 @@ export default function ExportacionesPage() {
                         </div>
                     </Card.CardFooter>
                 </Card.Card>
+                    </>
+                )}
 
                 {/* Reembolsos Card */}
                 <Card.Card className="flex flex-col h-full border-primary/10 shadow-sm hover:shadow-md transition-shadow">
