@@ -13,14 +13,15 @@ import * as XLSX from "xlsx"
 export default function ExportacionesPage() {
     const [isExporting, setIsExporting] = useState<string | null>(null)
 
-    const handleExport = async (type: 'beneficiarios' | 'convenios' | 'eventos', format: 'csv' | 'xlsx') => {
+    const handleExport = async (type: 'beneficiarios' | 'convenios' | 'eventos' | 'reembolsos', format: 'csv' | 'xlsx') => {
         const loadingKey = `${type}-${format}`
         setIsExporting(loadingKey)
         
         const config = {
             beneficiarios: { label: 'beneficiarios', endpoint: 'export/beneficiarios', fileName: 'beneficiarios_completos', sheet: 'Beneficiarios' },
             convenios: { label: 'convenios', endpoint: 'export/convenios', fileName: 'convenios_completos', sheet: 'Convenios' },
-            eventos: { label: 'eventos (boletos)', endpoint: 'export/eventos', fileName: 'eventos_completos', sheet: 'Eventos' }
+            eventos: { label: 'eventos (boletos)', endpoint: 'export/eventos', fileName: 'eventos_completos', sheet: 'Eventos' },
+            reembolsos: { label: 'reembolsos', endpoint: 'export/reembolsos', fileName: 'reembolsos_completos', sheet: 'Reembolsos' }
         }
 
         const { label, endpoint, fileName: defaultFileName, sheet: sheetName } = config[type]
@@ -235,6 +236,63 @@ export default function ExportacionesPage() {
                                 className="w-full bg-primary hover:bg-primary/90"
                             >
                                 {isExporting === 'eventos-xlsx' ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                        Excel
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </Card.CardFooter>
+                </Card.Card>
+
+                {/* Reembolsos Card */}
+                <Card.Card className="flex flex-col h-full border-primary/10 shadow-sm hover:shadow-md transition-shadow">
+                    <Card.CardHeader>
+                        <Card.CardTitle className="flex items-center gap-2 text-primary">
+                            <FileDown className="h-5 w-5" />
+                            Reembolsos Totales
+                        </Card.CardTitle>
+                        <Card.CardDescription>
+                            Exportación masiva de todos los reembolsos y anulaciones.
+                        </Card.CardDescription>
+                    </Card.CardHeader>
+                    <Card.CardContent className="flex-1">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                            Genera un reporte con el histórico de todos los <strong>reembolsos y anulaciones</strong> solicitados, incluyendo el detalle de montos y estados.
+                        </p>
+                    </Card.CardContent>
+                    <Card.CardFooter className="pt-4 flex flex-col gap-2">
+                        <div className="grid grid-cols-2 gap-2 w-full">
+                            <Button 
+                                variant="outline"
+                                onClick={() => handleExport('reembolsos', 'csv')} 
+                                disabled={isExporting !== null}
+                                className="w-full border-primary/20 hover:bg-primary/5"
+                            >
+                                {isExporting === 'reembolsos-csv' ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FileDown className="mr-2 h-4 w-4" />
+                                        CSV
+                                    </>
+                                )}
+                            </Button>
+                            <Button 
+                                onClick={() => handleExport('reembolsos', 'xlsx')} 
+                                disabled={isExporting !== null}
+                                className="w-full bg-primary hover:bg-primary/90"
+                            >
+                                {isExporting === 'reembolsos-xlsx' ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                         ...
