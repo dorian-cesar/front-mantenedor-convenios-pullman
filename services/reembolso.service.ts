@@ -105,4 +105,9 @@ export class ReembolsoService {
         const response = await api.post<{ message: string }>(`/reembolsos/${id}/send-email`, { email });
         return response.data;
     }
+
+    static async getGestores(): Promise<string[]> {
+        const response = await api.get<string[]>('/reembolsos/gestores');
+        return response.data;
+    }
 }

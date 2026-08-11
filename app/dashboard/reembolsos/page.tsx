@@ -66,6 +66,7 @@ export default function ReembolsosPage() {
     const [estadoFilter, setEstadoFilter] = useState<string | null>(null)
     const [categoriaFilter, setCategoriaFilter] = useState<string | null>(null)
     const [gestorFilter, setGestorFilter] = useState("")
+    const [gestores, setGestores] = useState<string[]>([])
     const [totalAnulaciones, setTotalAnulaciones] = useState<number>(0)
     const [totalReembolsos, setTotalReembolsos] = useState<number>(0)
 
@@ -113,12 +114,14 @@ export default function ReembolsosPage() {
     const fetchResumenReembolsos = async () => {
         if (!authInitialized || !hasAccess) return
         try {
-            const [resAnulaciones, resReembolsos] = await Promise.all([
+            const [resAnulaciones, resReembolsos, resGestores] = await Promise.all([
                 ReembolsoService.getReembolsos({ limit: 1, categoria: 'ANULACION' }),
-                ReembolsoService.getReembolsos({ limit: 1, categoria: 'REEMBOLSO' })
+                ReembolsoService.getReembolsos({ limit: 1, categoria: 'REEMBOLSO' }),
+                ReembolsoService.getGestores()
             ])
             setTotalAnulaciones(resAnulaciones.total)
             setTotalReembolsos(resReembolsos.total)
+            setGestores(resGestores)
         } catch (error) {
             console.error('Error fetching resumen:', error)
         }
@@ -205,12 +208,16 @@ export default function ReembolsosPage() {
                 </div>
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Gestor:</span>
-                    <Input
-                        placeholder="Buscar gestor..."
+                    <select 
+                        className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         value={gestorFilter}
                         onChange={(e) => setGestorFilter(e.target.value)}
-                        className="h-9 w-[150px]"
-                    />
+                    >
+                        <option value="">Todos</option>
+                        {gestores.map(g => (
+                            <option key={g} value={g}>{g}</option>
+                        ))}
+                    </select>
                 </div>
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Estado:</span>
