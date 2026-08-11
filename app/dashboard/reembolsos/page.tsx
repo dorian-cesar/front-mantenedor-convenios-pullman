@@ -64,6 +64,9 @@ export default function ReembolsosPage() {
     const [rutFilter, setRutFilter] = useState("")
     const [pnrFilter, setPnrFilter] = useState("")
     const [estadoFilter, setEstadoFilter] = useState<string | null>(null)
+    const [categoriaFilter, setCategoriaFilter] = useState<string | null>(null)
+    const [totalAnulaciones, setTotalAnulaciones] = useState<number>(0)
+    const [totalReembolsos, setTotalReembolsos] = useState<number>(0)
 
     const [pagination, setPagination] = useState({
         page: 1,
@@ -87,7 +90,8 @@ export default function ReembolsosPage() {
                 search: debouncedSearch,
                 rut: debouncedRut,
                 pnr: debouncedPnr,
-                estado: estadoFilter || undefined
+                estado: estadoFilter || undefined,
+                categoria: categoriaFilter || undefined
             })
             setReembolsos(response.rows)
             setPagination(prev => ({
@@ -103,8 +107,23 @@ export default function ReembolsosPage() {
         }
     }
 
+    const fetchResumenReembolsos = async () => {
+        if (!authInitialized || !hasAccess) return
+        try {
+            const [resAnulaciones, resReembolsos] = await Promise.all([
+                ReembolsoService.getReembolsos({ limit: 1, categoria: 'ANULACION' }),
+                ReembolsoService.getReembolsos({ limit: 1, categoria: 'REEMBOLSO' })
+            ])
+            setTotalAnulaciones(resAnulaciones.total)
+            setTotalReembolsos(resReembolsos.total)
+        } catch (error) {
+            console.error('Error fetching resumen:', error)
+        }
+    }
+
     useEffect(() => {
         fetchReembolsos()
+        fetchResumenReembolsos()
         
         // Auto-refresco cada 20 segundos (silencioso, solo actualiza la lista local)
         const interval = setInterval(() => {
@@ -119,6 +138,7 @@ export default function ReembolsosPage() {
         debouncedRut,
         debouncedPnr,
         estadoFilter,
+        categoriaFilter,
         authInitialized
     ])
 
@@ -230,6 +250,44 @@ export default function ReembolsosPage() {
                 }
                 filters={filters}
             />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card.Card 
+                    className={`cursor-pointer transition-all hover:shadow-md ${categoriaFilter === 'ANULACION' ? 'border-primary ring-1 ring-primary' : 'border-primary/10'}`}
+                    onClick={() => setCategoriaFilter(categoriaFilter === 'ANULACION' ? null : 'ANULACION')}
+                >
+                    <Card.CardHeader className="pb-2">
+                        <Card.CardTitle className="flex items-center gap-2 text-primary text-sm font-medium">
+                            <Icon.XCircle className="h-4 w-4" />
+                            Total Anulaciones
+                        </Card.CardTitle>
+                    </Card.CardHeader>
+                    <Card.CardContent>
+                        <div className="text-2xl font-bold">{totalAnulaciones}</div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            {categoriaFilter === 'ANULACION' ? 'Mostrando resultados' : 'Click para filtrar'}
+                        </p>
+                    </Card.CardContent>
+                </Card.Card>
+
+                <Card.Card 
+                    className={`cursor-pointer transition-all hover:shadow-md ${categoriaFilter === 'REEMBOLSO' ? 'border-primary ring-1 ring-primary' : 'border-primary/10'}`}
+                    onClick={() => setCategoriaFilter(categoriaFilter === 'REEMBOLSO' ? null : 'REEMBOLSO')}
+                >
+                    <Card.CardHeader className="pb-2">
+                        <Card.CardTitle className="flex items-center gap-2 text-primary text-sm font-medium">
+                            <Icon.RefreshCcw className="h-4 w-4" />
+                            Total Reembolsos
+                        </Card.CardTitle>
+                    </Card.CardHeader>
+                    <Card.CardContent>
+                        <div className="text-2xl font-bold">{totalReembolsos}</div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            {categoriaFilter === 'REEMBOLSO' ? 'Mostrando resultados' : 'Click para filtrar'}
+                        </p>
+                    </Card.CardContent>
+                </Card.Card>
+            </div>
 
             <div className="rounded-md border bg-card">
                 <Table.Table>
