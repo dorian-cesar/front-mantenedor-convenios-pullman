@@ -65,6 +65,7 @@ export default function ReembolsosPage() {
     const [pnrFilter, setPnrFilter] = useState("")
     const [estadoFilter, setEstadoFilter] = useState<string | null>(null)
     const [categoriaFilter, setCategoriaFilter] = useState<string | null>(null)
+    const [gestorFilter, setGestorFilter] = useState("")
     const [totalAnulaciones, setTotalAnulaciones] = useState<number>(0)
     const [totalReembolsos, setTotalReembolsos] = useState<number>(0)
 
@@ -78,6 +79,7 @@ export default function ReembolsosPage() {
     const debouncedSearch = useDebounce(searchValue, 500)
     const debouncedRut = useDebounce(rutFilter, 500)
     const debouncedPnr = useDebounce(pnrFilter, 500)
+    const debouncedGestor = useDebounce(gestorFilter, 500)
 
     const fetchReembolsos = async (isSilent = false) => {
         if (!authInitialized || !hasAccess) return
@@ -91,7 +93,8 @@ export default function ReembolsosPage() {
                 rut: debouncedRut,
                 pnr: debouncedPnr,
                 estado: estadoFilter || undefined,
-                categoria: categoriaFilter || undefined
+                categoria: categoriaFilter || undefined,
+                gestor: debouncedGestor || undefined
             })
             setReembolsos(response.rows)
             setPagination(prev => ({
@@ -137,6 +140,7 @@ export default function ReembolsosPage() {
         debouncedSearch,
         debouncedRut,
         debouncedPnr,
+        debouncedGestor,
         estadoFilter,
         categoriaFilter,
         authInitialized
@@ -196,6 +200,15 @@ export default function ReembolsosPage() {
                         placeholder="Buscar PNR..."
                         value={pnrFilter}
                         onChange={(e) => setPnrFilter(e.target.value)}
+                        className="h-9 w-[150px]"
+                    />
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Gestor:</span>
+                    <Input
+                        placeholder="Buscar gestor..."
+                        value={gestorFilter}
+                        onChange={(e) => setGestorFilter(e.target.value)}
                         className="h-9 w-[150px]"
                     />
                 </div>

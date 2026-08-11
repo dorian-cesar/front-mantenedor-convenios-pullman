@@ -40,6 +40,7 @@ export interface GetReembolsosParams {
     pnr?: string;
     rut?: string;
     categoria?: string;
+    gestor?: string;
 }
 
 export interface ReembolsosResponse {
