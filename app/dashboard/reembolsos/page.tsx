@@ -115,8 +115,8 @@ export default function ReembolsosPage() {
         if (!authInitialized || !hasAccess) return
         try {
             const [resAnulaciones, resReembolsos, resGestores] = await Promise.all([
-                ReembolsoService.getReembolsos({ limit: 1, categoria: 'ANULACION' }),
-                ReembolsoService.getReembolsos({ limit: 1, categoria: 'REEMBOLSO' }),
+                ReembolsoService.getReembolsos({ limit: 1, categoria: 'ANULACION', gestor: debouncedGestor || undefined }),
+                ReembolsoService.getReembolsos({ limit: 1, categoria: 'REEMBOLSO', gestor: debouncedGestor || undefined }),
                 ReembolsoService.getGestores()
             ])
             setTotalAnulaciones(resAnulaciones.total)
