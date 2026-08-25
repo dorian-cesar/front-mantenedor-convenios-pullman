@@ -33,6 +33,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { ConveniosService, type Ruta, type RutaConfiguracion, type TipoAlcance, type TipoDescuento, normalizeStr } from "@/services/convenio.service"
 import { toast } from "sonner"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 
 interface Empresa {
@@ -113,6 +114,9 @@ export const convenioSchema = z.object({
     limitar_por_monto: z.boolean().nullable().optional(),
 
     beneficio: z.boolean().optional(),
+    inscripcion_activa: z.boolean().default(false).optional(),
+    fecha_inicio_inscripcion: z.string().optional().nullable(),
+    fecha_fin_inscripcion: z.string().optional().nullable(),
 
     imagenes: z.array(z.string()).optional(),
 
@@ -695,6 +699,42 @@ export default function AddConvenioModal({
                             )} />
                         )}
 
+                        
+                        {/* Inscripción */}
+                        <Form.FormField control={form.control} name="inscripcion_activa" render={({ field }) => (
+                            <Form.FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-muted/10">
+                                <div className="space-y-0.5">
+                                    <Form.FormLabel className="text-sm font-medium">Habilitar Formulario de Inscripción</Form.FormLabel>
+                                </div>
+                                <Form.FormControl>
+                                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                </Form.FormControl>
+                            </Form.FormItem>
+                        )} />
+
+                        {form.watch("inscripcion_activa") && (
+                            <div className="grid grid-cols-2 gap-4 border rounded-md p-4 bg-muted/30">
+                                <Form.FormField control={form.control} name="fecha_inicio_inscripcion" render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel className="text-xs">Inicio de inscripción</Form.FormLabel>
+                                        <Form.FormControl>
+                                            <Input type="date" {...field} value={field.value ? field.value.split("T")[0] : ""} onChange={(e) => field.onChange(e.target.value || null)} className="h-9" />
+                                        </Form.FormControl>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )} />
+                                <Form.FormField control={form.control} name="fecha_fin_inscripcion" render={({ field }) => (
+                                    <Form.FormItem>
+                                        <Form.FormLabel className="text-xs">Fin de inscripción</Form.FormLabel>
+                                        <Form.FormControl>
+                                            <Input type="date" {...field} value={field.value ? field.value.split("T")[0] : ""} onChange={(e) => field.onChange(e.target.value || null)} className="h-9" />
+                                        </Form.FormControl>
+                                        <Form.FormMessage />
+                                    </Form.FormItem>
+                                )} />
+                            </div>
+                        )}
+                        
                         {/* Beneficio */}
                         <Form.FormField control={form.control} name="beneficio" render={({ field }) => (
                             <Form.FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">

@@ -62,6 +62,10 @@ export interface Convenio {
     endpoint?: string;
     fecha_inicio?: string;
     fecha_termino?: string;
+    inscripcion_activa?: boolean;
+    fecha_inicio_inscripcion?: string | null;
+    fecha_fin_inscripcion?: string | null;
+    inscription?: boolean;
     tope_monto_descuento?: number;
     tope_cantidad_tickets?: number;
     porcentaje_descuento?: number;
@@ -139,6 +143,9 @@ export interface CreateConvenioData {
     imagenes?: string[];
     fecha_inicio?: string;
     fecha_termino?: string;
+    inscripcion_activa?: boolean;
+    fecha_inicio_inscripcion?: string | null;
+    fecha_fin_inscripcion?: string | null;
     rutas?: Ruta[];
     configuraciones?: any;
 }
@@ -164,6 +171,9 @@ export interface UpdateConvenioData {
     imagenes?: string[];
     fecha_inicio?: string | null;
     fecha_termino?: string | null;
+    inscripcion_activa?: boolean;
+    fecha_inicio_inscripcion?: string | null;
+    fecha_fin_inscripcion?: string | null;
     rutas?: Ruta[] | null;
     configuraciones?: any;
 }
@@ -225,6 +235,9 @@ export class ConveniosService {
             imagenes: convenio.imagenes || [],
             fecha_inicio: convenio.fecha_inicio || null,
             fecha_termino: convenio.fecha_termino || null,
+            inscripcion_activa: convenio.inscripcion_activa ?? false,
+            fecha_inicio_inscripcion: convenio.fecha_inicio_inscripcion || null,
+            fecha_fin_inscripcion: convenio.fecha_fin_inscripcion || null,
             rutas: (Array.isArray(convenio.rutas) ? convenio.rutas : []).map((ruta: any) => {
                 let configs = ruta.configuraciones;
                 if (configs && !Array.isArray(configs)) {

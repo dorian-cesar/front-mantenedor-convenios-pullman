@@ -304,6 +304,12 @@ export function useConvenioForm() {
             if (finalPayload.fecha_termino) {
                 finalPayload.fecha_termino = ensureUTC(finalPayload.fecha_termino, true);
             }
+            if (finalPayload.fecha_inicio_inscripcion) {
+                finalPayload.fecha_inicio_inscripcion = ensureUTC(finalPayload.fecha_inicio_inscripcion);
+            }
+            if (finalPayload.fecha_fin_inscripcion) {
+                finalPayload.fecha_fin_inscripcion = ensureUTC(finalPayload.fecha_fin_inscripcion, true);
+            }
 
             // Pruning final de campos null/empty/array-vacio que el back rechaza
             Object.keys(finalPayload).forEach(key => {

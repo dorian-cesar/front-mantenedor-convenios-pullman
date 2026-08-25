@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
 import * as Dropdown from "@/components/ui/dropdown-menu"
 import * as Table from "@/components/ui/table"
 import * as Icon from "lucide-react"
@@ -529,6 +530,7 @@ function ConveniosPage() {
                             <Table.TableHead>Alcance</Table.TableHead>
                             <Table.TableHead>Precios/Config</Table.TableHead>
                             <Table.TableHead>Beneficio</Table.TableHead>
+                            <Table.TableHead>Inscripción</Table.TableHead>
                             <Table.TableHead>Tope Monto</Table.TableHead>
                             <Table.TableHead>Tope Tickets</Table.TableHead>
                             <Table.TableHead>Periodo</Table.TableHead>
@@ -657,6 +659,22 @@ function ConveniosPage() {
                                             ? <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Sí</span>
                                             : <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">No</span>
                                         }
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        <div className="flex items-center space-x-2">
+                                            <Switch 
+                                                checked={!!convenio.inscripcion_activa} 
+                                                onCheckedChange={async (val) => {
+                                                    try {
+                                                        await ConveniosService.patchConvenio(convenio.id, { inscripcion_activa: val });
+                                                        fetchConvenios();
+                                                        toast.success(val ? "Inscripción habilitada" : "Inscripción deshabilitada");
+                                                    } catch (error) {
+                                                        toast.error("Error al cambiar estado de inscripción");
+                                                    }
+                                                }}
+                                            />
+                                        </div>
                                     </Table.TableCell>
                                     <Table.TableCell>{(convenio.limitar_por_monto && convenio.tope_monto_descuento) ? formatNumber(convenio.tope_monto_descuento) : "Sin tope"}</Table.TableCell>
                                     <Table.TableCell>{(convenio.limitar_por_stock && convenio.tope_cantidad_tickets) ? formatNumber(convenio.tope_cantidad_tickets) : "Sin tope"}</Table.TableCell>
