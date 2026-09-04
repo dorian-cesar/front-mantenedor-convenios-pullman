@@ -15,6 +15,7 @@ import {
     ShieldUser,
     RotateCcw,
     Terminal,
+    Images,
 } from "lucide-react"
 
 export type UserRole = "SUPER_USUARIO" | "USUARIO" | "SISTEMA"
@@ -102,6 +103,16 @@ export const NAVIGATION: NavItem[] = [
         group: "Convenios y Beneficios",
         section: "main",
         roles: ["SUPER_USUARIO"]
+    },
+    {
+        id: "banners",
+        title: "Banners Hero",
+        href: "/dashboard/banners",
+        icon: Images,
+        description: "banners · hero · imágenes · carrusel",
+        group: "Convenios y Beneficios",
+        section: "main",
+        roles: ["SUPER_USUARIO", "SISTEMA"]
     },
 
     {
