@@ -21,7 +21,7 @@ interface UpdateBannerModalProps {
 }
 
 const bannerUpdateSchema = z.object({
-    list_type: z.enum(["A", "B"], { required_error: "Seleccione una lista" }),
+    list_type: z.enum(["A", "B"]),
     order: z.string().optional()
 })
 

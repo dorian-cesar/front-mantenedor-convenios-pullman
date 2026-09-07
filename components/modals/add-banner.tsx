@@ -21,7 +21,7 @@ interface AddBannerModalProps {
 
 const bannerSchema = z.object({
     image: z.any().refine((file) => file instanceof File, "Debe seleccionar una imagen"),
-    list_type: z.enum(["A", "B"], { required_error: "Seleccione una lista" }),
+    list_type: z.enum(["A", "B"]),
     order: z.string().optional()
 })
 

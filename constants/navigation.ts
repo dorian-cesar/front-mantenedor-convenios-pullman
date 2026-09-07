@@ -62,7 +62,7 @@ export const NAVIGATION: NavItem[] = [
         description: "reembolsos · devoluciones · pagos · anulaciones",
         group: "Operación",
         section: "main",
-        roles: ["SUPER_USUARIO", "SISTEMA"]
+        roles: ["SUPER_USUARIO", "SISTEMA", "USUARIO"]
     },
     {
         id: "consulta-tickets",
@@ -72,7 +72,7 @@ export const NAVIGATION: NavItem[] = [
         description: "consulta · tickets · boletos · kupos · pnr",
         group: "Operación",
         section: "main",
-        roles: ["SUPER_USUARIO", "SISTEMA"]
+        roles: ["SUPER_USUARIO", "SISTEMA", "USUARIO"]
     },
     {
         id: "empresas",
@@ -82,7 +82,7 @@ export const NAVIGATION: NavItem[] = [
         description: "empresas · compañias · organizaciones · clientes",
         group: "Empresas",
         section: "main",
-        roles: ["SUPER_USUARIO", "SISTEMA"]
+        roles: ["SUPER_USUARIO", "SISTEMA", "USUARIO"]
     },
     {
         id: "convenios",
@@ -92,7 +92,7 @@ export const NAVIGATION: NavItem[] = [
         description: "convenios · beneficios · alianzas",
         group: "Convenios y Beneficios",
         section: "main",
-        roles: ["SUPER_USUARIO", "SISTEMA"]
+        roles: ["SUPER_USUARIO", "SISTEMA", "USUARIO"]
     },
     {
         id: "categorias",
@@ -112,7 +112,7 @@ export const NAVIGATION: NavItem[] = [
         description: "banners · hero · imágenes · carrusel",
         group: "Convenios y Beneficios",
         section: "main",
-        roles: ["SUPER_USUARIO", "SISTEMA"]
+        roles: ["SUPER_USUARIO", "SISTEMA", "USUARIO"]
     },
 
     {
@@ -153,7 +153,7 @@ export const NAVIGATION: NavItem[] = [
         description: "carabineros · fuerzas armadas · descuentos · convenios",
         group: "Convenios y Beneficios",
         section: "secondary",
-        roles: ["SUPER_USUARIO", "SISTEMA"],
+        roles: ["SUPER_USUARIO", "SISTEMA", "USUARIO"],
         separator: true,
         children: [
             {
@@ -194,7 +194,7 @@ export const NAVIGATION: NavItem[] = [
         description: "pasajeros · clientes · personas · tipos de usuarios",
         group: "Operación",
         section: "tertiary",
-        roles: ["SUPER_USUARIO", "SISTEMA"]
+        roles: ["SUPER_USUARIO", "SISTEMA", "USUARIO"]
     },
     {
         id: "exportaciones",
@@ -204,7 +204,7 @@ export const NAVIGATION: NavItem[] = [
         description: "exportar datos · descargar · beneficiarios",
         group: "Reportes",
         section: "tertiary",
-        roles: ["SUPER_USUARIO", "SISTEMA"]
+        roles: ["SUPER_USUARIO", "SISTEMA", "USUARIO"]
     },
     {
         id: "logger",
