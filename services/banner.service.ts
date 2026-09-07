@@ -6,6 +6,9 @@ export interface Banner {
     list_type: 'A' | 'B';
     order: number | null;
     status: 'ACTIVO' | 'INACTIVO';
+    size?: string;
+    resolution?: string;
+    extension?: string;
     createdAt: string;
     updatedAt: string;
 }

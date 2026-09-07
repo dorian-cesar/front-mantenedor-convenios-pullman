@@ -233,6 +233,7 @@ export default function BannersPage() {
                             <Table.TableHead>Imagen</Table.TableHead>
                             <Table.TableHead>Lista</Table.TableHead>
                             <Table.TableHead>Orden</Table.TableHead>
+                            <Table.TableHead>Detalles (Peso / Res. / Ext.)</Table.TableHead>
                             <Table.TableHead>Status</Table.TableHead>
                             <Table.TableHead className="text-right">Acciones</Table.TableHead>
                         </Table.TableRow>
@@ -265,6 +266,13 @@ export default function BannersPage() {
                                         <span className="font-semibold">{banner.list_type}</span>
                                     </Table.TableCell>
                                     <Table.TableCell>{banner.list_type === 'A' ? banner.order : '-'}</Table.TableCell>
+                                    <Table.TableCell>
+                                        <div className="flex flex-col text-xs text-muted-foreground">
+                                            <span>{banner.size || 'N/A'}</span>
+                                            <span>{banner.resolution || 'N/A'}</span>
+                                            <span>{banner.extension || 'N/A'}</span>
+                                        </div>
+                                    </Table.TableCell>
                                     <Table.TableCell>
                                         <BadgeStatus status={banner.status === "ACTIVO" ? "active" : "inactive"}>
                                             {banner.status === "ACTIVO" ? "Activo" : "Inactivo"}
