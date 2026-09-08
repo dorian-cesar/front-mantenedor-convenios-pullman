@@ -1169,13 +1169,14 @@ export default function EventosPage() {
                             <Table.TableHead>Tipo Pago</Table.TableHead>
                             <Table.TableHead>Autorización</Table.TableHead>
                             <Table.TableHead>Estado</Table.TableHead>
+                            <Table.TableHead>Origen</Table.TableHead>
                             <Table.TableHead>Tipo Pasajero</Table.TableHead>
                         </Table.TableRow>
                     </Table.TableHeader>
                     <Table.TableBody>
                         {isLoading ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={13} className="text-center py-8">
+                                <Table.TableCell colSpan={14} className="text-center py-8">
                                     <div className="flex justify-center">
                                         <Icon.Loader2Icon className="h-6 w-6 animate-spin" />
                                     </div>
@@ -1183,7 +1184,7 @@ export default function EventosPage() {
                             </Table.TableRow>
                         ) : eventos.length === 0 ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={14} className="text-center py-8">
+                                <Table.TableCell colSpan={15} className="text-center py-8">
                                     No se encontraron eventos
                                 </Table.TableCell>
                             </Table.TableRow>
@@ -1302,6 +1303,11 @@ export default function EventosPage() {
                                                 evento.status?.toLowerCase() === "revisar" ? "N/A" :
                                                     evento.estado || evento.status || "N/A"}
                                         </BadgeStatus>
+                                    </Table.TableCell>
+                                    <Table.TableCell>
+                                        <Badge variant="outline" className="font-mono text-[10px] bg-slate-50">
+                                            {evento.origen_compra || "N/A"}
+                                        </Badge>
                                     </Table.TableCell>
                                     <Table.TableCell>
                                         {evento.convenio_id ? (

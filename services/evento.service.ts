@@ -33,6 +33,7 @@ export interface Evento {
     updated_at?: string;
     status?: string;
     invitado?: boolean;
+    origen_compra?: string;
     pasajero?: {
         id: number;
         rut: string;
