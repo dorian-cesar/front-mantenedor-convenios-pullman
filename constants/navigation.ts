@@ -16,6 +16,8 @@ import {
     RotateCcw,
     Terminal,
     Images,
+    Settings,
+    LayoutTemplate,
 } from "lucide-react"
 
 export type UserRole = "SUPER_USUARIO" | "USUARIO" | "SISTEMA"
@@ -105,14 +107,33 @@ export const NAVIGATION: NavItem[] = [
         roles: ["SUPER_USUARIO"]
     },
     {
-        id: "banners",
-        title: "Banners Hero",
-        href: "/dashboard/banners",
-        icon: Images,
-        description: "banners · hero · imágenes · carrusel",
-        group: "Convenios y Beneficios",
+        id: "layout-pagina",
+        title: "Layout de la Página",
+        icon: LayoutTemplate,
+        description: "banners · hero · imágenes · carrusel · configuraciones",
+        group: "Portal Público",
         section: "main",
-        roles: ["SUPER_USUARIO", "SISTEMA", "USUARIO"]
+        roles: ["SUPER_USUARIO", "SISTEMA", "USUARIO"],
+        children: [
+            {
+                id: "banners",
+                title: "Banners Hero",
+                href: "/dashboard/banners",
+                icon: Images,
+                description: "banners · hero · imágenes · carrusel",
+                group: "Portal Público",
+                section: "sub"
+            },
+            {
+                id: "configuraciones",
+                title: "Configuración Carrusel",
+                href: "/dashboard/configuraciones",
+                icon: Settings,
+                description: "configuraciones · portal · destacados",
+                group: "Portal Público",
+                section: "sub"
+            }
+        ]
     },
 
     {

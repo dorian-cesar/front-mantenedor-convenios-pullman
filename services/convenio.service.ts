@@ -78,6 +78,86 @@ export interface Convenio {
     beneficio?: boolean;
     categoria_id?: number | null;
     categoria?: {
+import { api } from '@/lib/api';
+
+export const normalizeStr = (s: string | undefined): string => {
+    if (!s) return ""
+    const map: Record<string, string> = {
+        "SOLO_IDA": "Solo Ida",
+        "IDA_VUELTA": "Ida y Vuelta",
+        "SEMICAMA": "Semi Cama",
+        "SALON_CAMA": "Salon Cama",
+        "CAMA_PREMIUM": "Cama",
+        "CAMA": "Cama",
+        "EJECUTIVO": "Ejecutivo",
+        "Solo ida": "Solo Ida",
+        "Semi cama": "Semi Cama",
+        "Salon cama": "Salon Cama",
+        "Ida y vuelta": "Ida y Vuelta"
+    }
+    const upperS = s.toUpperCase().replace(/\s+/g, '_')
+    return map[upperS] || map[s] || s
+}
+
+export type TipoDescuento = "Porcentaje" | "Monto Fijo" | "Tarifa Plana";
+export type TipoAlcance = "Global" | "Rutas Especificas";
+
+export interface RutaConfiguracion {
+    tipo_viaje: string;
+    tipo_asiento: string;
+    precio_solo_ida?: number;
+    precio_ida_vuelta?: number;
+    max_pasajes?: number;
+    valor_ida?: number; // Compatibilidad legacy
+    valor_ida_vuelta?: number; // Compatibilidad legacy
+}
+
+export interface Ruta {
+    id?: number;
+    convenio_id?: number;
+    origen_codigo: string;
+    origen_ciudad: string;
+    destino_codigo: string;
+    destino_ciudad: string;
+    configuraciones?: RutaConfiguracion[];
+    // Flat configuration fields (for some API versions)
+    tipo_viaje?: string;
+    tipo_asiento?: string;
+    precio_solo_ida?: number;
+    precio_ida_vuelta?: number;
+    max_pasajes?: number;
+    valor_ida?: number; // Compatibility
+    valor_ida_vuelta?: number; // Compatibility
+}
+
+export interface Convenio {
+    id: number;
+    nombre: string;
+    empresa_id: number | null;
+    empresa_nombre?: string;
+    empresa_rut?: string;
+    status: "ACTIVO" | "INACTIVO";
+    tipo_consulta?: "API_EXTERNA" | "CODIGO_DESCUENTO";
+    api_consulta_id?: number;
+    endpoint?: string;
+    fecha_inicio?: string;
+    fecha_termino?: string;
+    inscripcion_activa?: boolean;
+    fecha_inicio_inscripcion?: string | null;
+    fecha_fin_inscripcion?: string | null;
+    inscription?: boolean;
+    tope_monto_descuento?: number;
+    tope_cantidad_tickets?: number;
+    porcentaje_descuento?: number;
+    tipo_descuento?: TipoDescuento;
+    valor_descuento?: number | null;
+    tipo_alcance?: TipoAlcance;
+    codigo?: string;
+    limitar_por_stock?: boolean;
+    limitar_por_monto?: boolean;
+    beneficio?: boolean;
+    categoria_id?: number | null;
+    categoria?: {
         id: number;
         nombre: string;
     };
@@ -99,6 +179,10 @@ export interface Convenio {
         nombre: string;
         rut: string;
     };
+    is_destacado?: boolean;
+    descripcion_destacado?: string;
+    logo_destacado?: string;
+    orden_destacado?: number;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -148,6 +232,10 @@ export interface CreateConvenioData {
     fecha_fin_inscripcion?: string | null;
     rutas?: Ruta[];
     configuraciones?: any;
+    is_destacado?: boolean;
+    descripcion_destacado?: string;
+    logo_destacado?: any; // File or string
+    orden_destacado?: number;
 }
 
 export interface UpdateConvenioData {
@@ -176,6 +264,10 @@ export interface UpdateConvenioData {
     fecha_fin_inscripcion?: string | null;
     rutas?: Ruta[] | null;
     configuraciones?: any;
+    is_destacado?: boolean;
+    descripcion_destacado?: string;
+    logo_destacado?: any; // File or string
+    orden_destacado?: number;
 }
 
 export class ConveniosService {
@@ -190,12 +282,43 @@ export class ConveniosService {
     }
 
     static async createConvenio(data: CreateConvenioData): Promise<Convenio> {
-        const response = await api.post<Convenio>('/convenios', data);
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+                if (key === 'logo_destacado' && value instanceof File) {
+                    formData.append(key, value);
+                } else if (typeof value === 'object') {
+                    formData.append(key, JSON.stringify(value));
+                } else {
+                    formData.append(key, String(value));
+                }
+            }
+        });
+        const response = await api.post<Convenio>('/convenios', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
         return response.data;
     }
 
     static async updateConvenio(id: number, data: UpdateConvenioData): Promise<Convenio> {
-        const response = await api.put<Convenio>(`/convenios/${id}`, data);
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+                if (key === 'logo_destacado' && value instanceof File) {
+                    formData.append(key, value);
+                } else if (key === 'logo_destacado' && typeof value === 'string') {
+                    // Si es un string y no un File, no lo enviamos (ya está guardado)
+                    // o lo enviamos como string.
+                } else if (typeof value === 'object') {
+                    formData.append(key, JSON.stringify(value));
+                } else {
+                    formData.append(key, String(value));
+                }
+            }
+        });
+        const response = await api.put<Convenio>(`/convenios/${id}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
         return response.data;
     }
 
@@ -238,6 +361,10 @@ export class ConveniosService {
             inscripcion_activa: convenio.inscripcion_activa ?? false,
             fecha_inicio_inscripcion: convenio.fecha_inicio_inscripcion || null,
             fecha_fin_inscripcion: convenio.fecha_fin_inscripcion || null,
+            is_destacado: convenio.is_destacado ?? false,
+            descripcion_destacado: convenio.descripcion_destacado || "",
+            logo_destacado: convenio.logo_destacado || "",
+            orden_destacado: convenio.orden_destacado || 0,
             rutas: (Array.isArray(convenio.rutas) ? convenio.rutas : []).map((ruta: any) => {
                 let configs = ruta.configuraciones;
                 if (configs && !Array.isArray(configs)) {

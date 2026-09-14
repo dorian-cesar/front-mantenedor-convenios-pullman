@@ -96,6 +96,11 @@ const convenioSchema = z.object({
     fecha_termino: z.string().optional(),
     rutas: z.array(rutaSchema).optional(),
     configuraciones: z.array(rutaConfiguracionSchema).optional(),
+
+    is_destacado: z.boolean().optional(),
+    descripcion_destacado: z.string().optional(),
+    logo_destacado: z.any().optional(), // File handler
+    orden_destacado: z.number().optional(),
 })
     .refine((data) => {
         if (data.tipo_consulta === "CODIGO_DESCUENTO") return !!data.codigo && data.codigo.length >= 3
@@ -235,6 +240,10 @@ export default function UpdateConvenioModal({
             rutas: [],
             configuraciones: [],
             categoria_id: null,
+            is_destacado: false,
+            descripcion_destacado: "",
+            logo_destacado: undefined,
+            orden_destacado: undefined,
         },
     })
 
@@ -243,6 +252,7 @@ export default function UpdateConvenioModal({
     const tipoDescuento = form.watch("tipo_descuento")
     const empresaSeleccionadaId = form.watch("empresa_id")
     const apiSeleccionadaId = form.watch("api_consulta_id")
+    const isDestacadoValue = form.watch("is_destacado")
     const empresaSeleccionada = empresas.find((e) => e.id === empresaSeleccionadaId)
     const apiSeleccionada = apis.find((a) => a.id === apiSeleccionadaId)
     const formConfigs = form.watch("configuraciones")
@@ -303,7 +313,11 @@ export default function UpdateConvenioModal({
                 ...c,
                 tipo_viaje: normalizeStr(c.tipo_viaje || ""),
                 tipo_asiento: normalizeStr(c.tipo_asiento || "")
-            }))
+            })),
+            is_destacado: full.is_destacado || false,
+            descripcion_destacado: full.descripcion_destacado || "",
+            logo_destacado: full.logo_destacado || undefined,
+            orden_destacado: full.orden_destacado || undefined,
         })
 
         setImagenesInputs(full.imagenes || [])
@@ -385,6 +399,10 @@ export default function UpdateConvenioModal({
             // porcentaje_descuento: data.porcentaje_descuento !== undefined ? Number(data.porcentaje_descuento) : 0,
             api_consulta_id: data.api_consulta_id || undefined,
             endpoint: selectedApi?.endpoint || convenio.endpoint,
+            is_destacado: data.is_destacado || undefined,
+            descripcion_destacado: data.descripcion_destacado || undefined,
+            logo_destacado: data.logo_destacado || undefined,
+            orden_destacado: data.orden_destacado || undefined,
         }
 
         const success = await unifiedSave(convenio.id, submissionData, () => {
@@ -936,6 +954,76 @@ export default function UpdateConvenioModal({
                                 )}
                             </div>
                         )}
+
+                        {/* Convenio Destacado */}
+                        <div className="space-y-4 border rounded-md p-4 bg-primary/5 border-primary/20">
+                            <Form.FormField control={form.control} name="is_destacado" render={({ field }) => (
+                                <Form.FormItem className="flex flex-row items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Form.FormLabel className="text-base font-semibold">Convenio Destacado</Form.FormLabel>
+                                        <p className="text-sm text-muted-foreground">Mostrar este convenio en el carrusel principal.</p>
+                                    </div>
+                                    <Form.FormControl>
+                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                    </Form.FormControl>
+                                </Form.FormItem>
+                            )} />
+
+                            {isDestacadoValue && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-primary/10">
+                                    <Form.FormField control={form.control} name="descripcion_destacado" render={({ field }) => (
+                                        <Form.FormItem className="md:col-span-2">
+                                            <Form.FormLabel>Descripción Promocional</Form.FormLabel>
+                                            <Form.FormControl>
+                                                <Input placeholder="Ej: 15% DCTO TODO EL MES" {...field} value={field.value || ""} />
+                                            </Form.FormControl>
+                                            <Form.FormMessage />
+                                        </Form.FormItem>
+                                    )} />
+                                    <Form.FormField control={form.control} name="logo_destacado" render={({ field: { value, onChange, ...field } }) => (
+                                        <Form.FormItem>
+                                            <Form.FormLabel>Logo de la Empresa (PNG/JPG)</Form.FormLabel>
+                                            <Form.FormControl>
+                                                <div className="flex flex-col gap-2">
+                                                    {convenio?.logo_destacado && !value && (
+                                                        <div className="relative w-20 h-20 rounded-md overflow-hidden border">
+                                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                            <img 
+                                                                src={`http://localhost:3000${convenio.logo_destacado}`} 
+                                                                alt="Logo actual" 
+                                                                className="object-contain w-full h-full"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    <Input 
+                                                        type="file" 
+                                                        accept="image/png, image/jpeg, image/jpg"
+                                                        onChange={(e) => onChange(e.target.files?.[0])} 
+                                                        {...field}
+                                                    />
+                                                </div>
+                                            </Form.FormControl>
+                                            <Form.FormMessage />
+                                        </Form.FormItem>
+                                    )} />
+                                    <Form.FormField control={form.control} name="orden_destacado" render={({ field }) => (
+                                        <Form.FormItem>
+                                            <Form.FormLabel>Orden de aparición</Form.FormLabel>
+                                            <Form.FormControl>
+                                                <Input 
+                                                    type="number" 
+                                                    placeholder="Ej: 1" 
+                                                    {...field} 
+                                                    value={field.value ?? ""}
+                                                    onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
+                                                />
+                                            </Form.FormControl>
+                                            <Form.FormMessage />
+                                        </Form.FormItem>
+                                    )} />
+                                </div>
+                            )}
+                        </div>
 
                         {/* Fechas */}
                         <div className="grid grid-cols-2 gap-4">
