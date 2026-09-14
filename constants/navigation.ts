@@ -127,7 +127,7 @@ export const NAVIGATION: NavItem[] = [
             {
                 id: "configuraciones",
                 title: "Configuración Carrusel",
-                href: "/dashboard/configuraciones",
+                href: "/dashboard/carrusel-destacados",
                 icon: Settings,
                 description: "configuraciones · portal · destacados",
                 group: "Portal Público",
