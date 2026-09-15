@@ -3,6 +3,7 @@ import { api } from '@/lib/api';
 export interface ConfiguracionParams {
     HERO_LISTA_A_COUNT?: string;
     HERO_LISTA_B_COUNT?: string;
+    CARGO_SERVICIO_ACTIVO?: string;
     CARGO_SERVICIO_TIPO?: 'PORCENTAJE' | 'FIJO';
     CARGO_SERVICIO_VALOR?: string;
     REGISTRO_TITULO?: string;

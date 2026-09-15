@@ -573,6 +573,7 @@ export default function EventosPage() {
                 Empresa: evento.empresa?.nombre || "N/A",
                 "Tarifa Base": `$${formatNumber(evento.tarifa_base || 0)}`,
                 "Monto Descuento": `$${formatNumber(evento.monto_descuento ?? ((evento.tarifa_base || 0) - (evento.monto_pagado || 0)))}`,
+                "Cargo Servicio": `$${formatNumber(evento.cargo_servicio || 0)}`,
                 "Monto Pagado": `$${formatNumber(evento.monto_pagado)}`,
                 "Tipo Pago": evento.tipo_pago || "N/A",
                 "Código Autorización": evento.codigo_autorizacion ?? "N/A",
@@ -1165,6 +1166,7 @@ export default function EventosPage() {
                             <Table.TableHead>Pasajero / Empresa</Table.TableHead>
                             <Table.TableHead>Tarifa Base</Table.TableHead>
                             <Table.TableHead>Descuento</Table.TableHead>
+                            <Table.TableHead>Cargo Servicio</Table.TableHead>
                             <Table.TableHead>Monto Pagado</Table.TableHead>
                             <Table.TableHead>Tipo Pago</Table.TableHead>
                             <Table.TableHead>Autorización</Table.TableHead>
@@ -1176,7 +1178,7 @@ export default function EventosPage() {
                     <Table.TableBody>
                         {isLoading ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={14} className="text-center py-8">
+                                <Table.TableCell colSpan={15} className="text-center py-8">
                                     <div className="flex justify-center">
                                         <Icon.Loader2Icon className="h-6 w-6 animate-spin" />
                                     </div>
@@ -1184,7 +1186,7 @@ export default function EventosPage() {
                             </Table.TableRow>
                         ) : eventos.length === 0 ? (
                             <Table.TableRow>
-                                <Table.TableCell colSpan={15} className="text-center py-8">
+                                <Table.TableCell colSpan={16} className="text-center py-8">
                                     No se encontraron eventos
                                 </Table.TableCell>
                             </Table.TableRow>
@@ -1290,6 +1292,7 @@ export default function EventosPage() {
                                     </Table.TableCell>
                                     <Table.TableCell className="text-xs text-muted-foreground">${formatNumber(evento.tarifa_base || 0)}</Table.TableCell>
                                     <Table.TableCell className="text-xs text-red-500 font-medium">${formatNumber(evento.monto_descuento ?? ((evento.tarifa_base || 0) - (evento.monto_pagado || 0)))}</Table.TableCell>
+                                    <Table.TableCell className="text-xs text-muted-foreground">${formatNumber(evento.cargo_servicio || 0)}</Table.TableCell>
                                     <Table.TableCell className="font-bold text-xs text-green-600">${formatNumber(evento.monto_pagado)}</Table.TableCell>
                                     <Table.TableCell className="text-xs font-medium uppercase text-muted-foreground">{evento.tipo_pago || "N/A"}</Table.TableCell>
                                     <Table.TableCell>

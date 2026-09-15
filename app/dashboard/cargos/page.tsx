@@ -6,6 +6,7 @@ import * as Card from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ConfiguracionService } from "@/services/configuracion.service"
 import { toast } from "sonner"
@@ -14,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth"
 export default function CargosPage() {
     const [tipoCargo, setTipoCargo] = useState<string>("PORCENTAJE")
     const [valorCargo, setValorCargo] = useState<string>("0")
+    const [cargoActivo, setCargoActivo] = useState<boolean>(true)
     const [isSaving, setIsSaving] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const { user, initialized: authInitialized } = useAuth()
@@ -28,6 +30,7 @@ export default function CargosPage() {
             const config = await ConfiguracionService.getParametros()
             setTipoCargo(config.CARGO_SERVICIO_TIPO || "PORCENTAJE")
             setValorCargo(config.CARGO_SERVICIO_VALOR || "0")
+            setCargoActivo(config.CARGO_SERVICIO_ACTIVO !== "false")
         } catch (error) {
             console.error('Error fetching config:', error)
             toast.error("No se pudo cargar la configuración")
@@ -50,7 +53,8 @@ export default function CargosPage() {
         try {
             await ConfiguracionService.updateParametros({
                 CARGO_SERVICIO_TIPO: tipoCargo as "PORCENTAJE" | "FIJO",
-                CARGO_SERVICIO_VALOR: valorCargo
+                CARGO_SERVICIO_VALOR: valorCargo,
+                CARGO_SERVICIO_ACTIVO: cargoActivo ? "true" : "false"
             })
             toast.success("Configuración de Cargo guardada correctamente")
         } catch (error) {
@@ -80,7 +84,21 @@ export default function CargosPage() {
                     {isLoading ? (
                         <div className="h-40 flex items-center justify-center">Cargando...</div>
                     ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between space-x-2 border p-4 rounded-lg">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="activar-cargo" className="text-base">Activar Cargo por Servicio</Label>
+                                    <p className="text-sm text-muted-foreground">Si está desactivado, no se cobrará ningún cargo extra en el portal.</p>
+                                </div>
+                                <Switch 
+                                    id="activar-cargo"
+                                    checked={cargoActivo}
+                                    onCheckedChange={setCargoActivo}
+                                    disabled={isReadOnlyRole}
+                                />
+                            </div>
+
+                            <div className={`space-y-4 ${!cargoActivo ? 'opacity-50 pointer-events-none' : ''}`}>
                             <div className="grid gap-2">
                                 <Label htmlFor="tipo-cargo">Tipo de Cargo</Label>
                                 <Select 
@@ -112,6 +130,7 @@ export default function CargosPage() {
                                     placeholder={tipoCargo === 'PORCENTAJE' ? 'Ej: 10' : 'Ej: 1500'}
                                     disabled={isReadOnlyRole}
                                 />
+                            </div>
                             </div>
                         </div>
                     )}

@@ -20,6 +20,7 @@ export interface Evento {
     tarifa_base: number;
     porcentaje_descuento_aplicado: number;
     monto_descuento?: number;
+    cargo_servicio?: number;
     monto_pagado: number;
     monto_devolucion?: number;
     is_deleted?: boolean;
