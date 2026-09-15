@@ -132,6 +132,15 @@ export const NAVIGATION: NavItem[] = [
                 description: "configuraciones · portal · destacados",
                 group: "Portal Público",
                 section: "sub"
+            },
+            {
+                id: "cargos",
+                title: "Cargo por Servicio",
+                href: "/dashboard/cargos",
+                icon: Percent,
+                description: "cargos · tarifas · porcentaje · monto fijo",
+                group: "Portal Público",
+                section: "sub"
             }
         ]
     },

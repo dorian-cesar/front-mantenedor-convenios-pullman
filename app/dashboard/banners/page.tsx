@@ -68,7 +68,10 @@ export default function BannersPage() {
     const handleSaveConfig = async () => {
         setIsSavingConfig(true)
         try {
-            await ConfiguracionService.updateParametros(parseInt(countA), parseInt(countB))
+            await ConfiguracionService.updateParametros({
+                HERO_LISTA_A_COUNT: countA,
+                HERO_LISTA_B_COUNT: countB
+            })
             toast.success("Configuración de Hero guardada correctamente")
         } catch (error) {
             console.error('Error saving config:', error)

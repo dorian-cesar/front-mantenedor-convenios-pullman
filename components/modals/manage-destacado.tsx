@@ -39,7 +39,7 @@ import Image from "next/image"
 const manageDestacadoSchema = z.object({
     convenio_id: z.string().min(1, "Debe seleccionar un convenio"),
     descripcion_destacado: z.string().optional(),
-    orden_destacado: z.coerce.number().int().default(0),
+    orden_destacado: z.coerce.number().int(),
 })
 
 type ManageDestacadoValues = z.infer<typeof manageDestacadoSchema>
@@ -59,7 +59,7 @@ export function ManageDestacadoModal({ isOpen, onClose, convenioToEdit, onSucces
     const [selectedLogo, setSelectedLogo] = useState<File | null>(null)
 
     const form = useForm<ManageDestacadoValues>({
-        resolver: zodResolver(manageDestacadoSchema),
+        resolver: zodResolver(manageDestacadoSchema) as any,
         defaultValues: {
             convenio_id: convenioToEdit ? String(convenioToEdit.id) : "",
             descripcion_destacado: convenioToEdit?.descripcion_destacado || "",

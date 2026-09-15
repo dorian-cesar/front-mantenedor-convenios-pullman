@@ -3,6 +3,8 @@ import { api } from '@/lib/api';
 export interface ConfiguracionParams {
     HERO_LISTA_A_COUNT?: string;
     HERO_LISTA_B_COUNT?: string;
+    CARGO_SERVICIO_TIPO?: 'PORCENTAJE' | 'FIJO';
+    CARGO_SERVICIO_VALOR?: string;
 }
 
 export class ConfiguracionService {
@@ -11,8 +13,8 @@ export class ConfiguracionService {
         return response.data;
     }
 
-    static async updateParametros(countA?: number, countB?: number): Promise<{ message: string }> {
-        const response = await api.put<{ message: string }>('/configuraciones', { countA, countB });
+    static async updateParametros(params: Partial<ConfiguracionParams>): Promise<{ message: string }> {
+        const response = await api.put<{ message: string }>('/configuraciones', params);
         return response.data;
     }
 
