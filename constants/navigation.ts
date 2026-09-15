@@ -141,6 +141,15 @@ export const NAVIGATION: NavItem[] = [
                 description: "cargos · tarifas · porcentaje · monto fijo",
                 group: "Portal Público",
                 section: "sub"
+            },
+            {
+                id: "apariencia-registro",
+                title: "Apariencia Login",
+                href: "/dashboard/apariencia-registro",
+                icon: Images,
+                description: "apariencia · login · registro · texto · imagen",
+                group: "Portal Público",
+                section: "sub"
             }
         ]
     },
